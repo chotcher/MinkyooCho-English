@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>조민규영어 개별진도 학습 대시보드</title>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyDkGme_JgfqobGVFls4thiELStufkxm7zc",
+    authDomain: "minkyoocho-english.firebaseapp.com",
+    projectId: "minkyoocho-english",
+    storageBucket: "minkyoocho-english.firebasestorage.app",
+    messagingSenderId: "359496666211",
+    appId: "1:359496666211:web:53d3226c19c067292a7c56"
+  };
+  const fbApp = initializeApp(firebaseConfig);
+  const db = getFirestore(fbApp);
+  // 전역에 노출
+  window.FB = { db, doc, getDoc, setDoc, onSnapshot };
+  window.dispatchEvent(new Event('fb-ready'));
+</script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{
+    --navy:#10243f; --navy2:#1b3a63; --blue:#2f6fed; --sky:#e8f1ff;
+    --green:#16a34a; --amber:#f59e0b; --gray:#64748b; --line:#e2e8f0;
+    --bg:#f4f7fb; --card:#fff;
+  }
+  body{ font-family:'Pretendard','Malgun Gothic',sans-serif; background:var(--bg); color:#1e293b; line-height:1.5; }
+  .hidden{ display:none !important; }
+  button{ font-family:inherit; cursor:pointer; }
+
+  /* ===== Login ===== */
+  #login{ min-height:100vh; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#10243f,#2f6fed); }
+  .login-box{ background:#fff; border-radius:20px; padding:40px; width:380px; box-shadow:0 20px 60px rgba(0,0,0,.3); text-align:center; }
+  .login-box h1{ color:var(--navy); font-size:24px; margin-bottom:4px; }
+  .login-box .sub{ color:var(--gray); font-size:13px; margin-bottom:24px; }
+  .login-box input{ width:100%; padding:13px 15px; border:1.5px solid var(--line); border-radius:11px; font-size:15px; margin-bottom:12px; }
+  .login-box input:focus{ outline:none; border-color:var(--blue); }
+  .btn-primary{ width:100%; padding:13px; background:var(--blue); color:#fff; border:none; border-radius:11px; font-size:15px; font-weight:700; }
+  .btn-primary:hover{ background:#1d5bd6; }
+  .login-hint{ margin-top:18px; font-size:12px; color:var(--gray); background:var(--sky); padding:10px; border-radius:9px; }
+  .err{ color:#dc2626; font-size:13px; margin-bottom:10px; min-height:18px; }
+
+  /* ===== Top bar ===== */
+  .topbar{ background:var(--navy); color:#fff; padding:14px 22px; display:flex; align-items:center; justify-content:space-between; }
+  .topbar .brand{ font-weight:800; font-size:17px; letter-spacing:.3px; }
+  .topbar .brand span{ color:#7eb0ff; }
+  .topbar .right{ display:flex; align-items:center; gap:14px; font-size:14px; }
+  .topbar button{ background:rgba(255,255,255,.15); color:#fff; border:none; padding:7px 14px; border-radius:8px; font-size:13px; }
+  .topbar button:hover{ background:rgba(255,255,255,.28); }
+
+  .wrap{ max-width:1080px; margin:0 auto; padding:24px 20px 60px; }
+
+  /* ===== Student dashboard ===== */
+  .hero{ background:linear-gradient(135deg,var(--navy2),var(--blue)); border-radius:20px; padding:26px 28px; color:#fff; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; }
+  .hero h2{ font-size:26px; }
+  .hero .lvls{ display:flex; gap:10px; flex-wrap:wrap; }
+  .lvl-chip{ background:rgba(255,255,255,.16); border-radius:13px; padding:10px 16px; text-align:center; min-width:84px; }
+  .lvl-chip .t{ font-size:11px; opacity:.85; }
+  .lvl-chip .v{ font-size:18px; font-weight:800; margin-top:2px; }
+  .lvl-chip .r{ font-size:10px; opacity:.8; margin-top:3px; }
+  .vocab-chip{ background:rgba(255,255,255,.18); border:1.5px solid rgba(255,255,255,.35); border-radius:14px; padding:12px 18px; min-width:230px; }
+  .vocab-chip .t{ font-size:12px; opacity:.9; font-weight:700; letter-spacing:.3px; }
+  .vocab-chip .v{ font-size:15px; margin-top:3px; }
+  .vocab-chip .v b{ font-size:30px; font-weight:900; }
+  .vocab-chip .v .goal{ font-size:13px; opacity:.85; }
+  .vocab-chip .vbar{ height:9px; background:rgba(255,255,255,.25); border-radius:6px; overflow:hidden; margin-top:9px; }
+  .vocab-chip .vbar > div{ height:100%; background:linear-gradient(90deg,#ffe177,#ffb547); border-radius:6px; transition:width 1s cubic-bezier(.2,.8,.2,1); }
+  .vocab-chip .vsub{ font-size:11px; opacity:.85; margin-top:6px; }
+
+  .grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:18px; margin-top:20px; }
+  @media(max-width:760px){ .grid{ grid-template-columns:1fr; } .hero{ flex-direction:column; align-items:flex-start; } }
+  .card{ background:var(--card); border-radius:16px; padding:20px 22px; box-shadow:0 2px 10px rgba(20,40,80,.05); }
+  .card h3{ font-size:15px; color:var(--navy); margin-bottom:14px; display:flex; align-items:center; gap:7px; }
+  .card h3 .dot{ width:8px; height:8px; border-radius:50%; background:var(--blue); }
+
+  .today-row{ display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px dashed var(--line); font-size:14px; }
+  .today-row:last-child{ border:none; }
+  .today-row b{ color:var(--navy); }
+  .book-name{ font-size:18px; font-weight:800; color:var(--blue); }
+
+  /* progress bars */
+  .pbar-wrap{ margin:14px 0; }
+  .pbar-label{ display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px; }
+  .pbar{ height:16px; background:#eef2ف7; background:#eef2f7; border-radius:10px; overflow:hidden; }
+  .pbar > div{ height:100%; border-radius:10px; transition:width .9s cubic-bezier(.2,.8,.2,1); }
+  .fill-word{ background:linear-gradient(90deg,#2f6fed,#7eb0ff); }
+  .fill-hw{ background:linear-gradient(90deg,#16a34a,#5fd98a); }
+
+  /* week goals */
+  .weeks{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
+  .week-box{ border:1.5px solid var(--line); border-radius:13px; padding:13px; position:relative; }
+  .week-box.done{ border-color:var(--green); background:#f0fdf4; }
+  .week-box .wk{ font-size:12px; font-weight:800; color:var(--gray); }
+  .week-box.done .wk{ color:var(--green); }
+  .week-box .goal{ font-size:13px; margin-top:6px; min-height:34px; }
+  .week-box .badge{ position:absolute; top:11px; right:11px; font-size:11px; padding:3px 8px; border-radius:20px; background:#f1f5f9; color:var(--gray); font-weight:700; }
+  .week-box.done .badge{ background:var(--green); color:#fff; }
+
+  .predict{ background:linear-gradient(135deg,#fff7ed,#fef3c7); border:1.5px solid #fcd34d; border-radius:14px; padding:18px 20px; margin-top:18px; font-size:15px; }
+  .predict b{ color:#b45309; }
+  .predict .big{ font-size:22px; font-weight:800; color:#92400e; }
+
+  /* completion ring */
+  .ring-wrap{ display:flex; align-items:center; gap:20px; }
+  .ring{ position:relative; width:120px; height:120px; }
+  .ring svg{ transform:rotate(-90deg); }
+  .ring .pct{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .ring .pct .n{ font-size:26px; font-weight:800; color:var(--navy); }
+  .ring .pct .l{ font-size:11px; color:var(--gray); }
+
+  .empty{ text-align:center; color:var(--gray); padding:50px 20px; }
+
+  /* ===== Teacher panel ===== */
+  .tabs{ display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+
+  /* notice board */
+  .notice-board{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px; }
+  @media(max-width:760px){ .notice-board{ grid-template-columns:1fr; } }
+  .notice-card{ border-radius:16px; padding:18px 20px; }
+  .notice-card.summary{ background:linear-gradient(135deg,#eef4ff,#e0ecff); border:1.5px solid #c7dbff; }
+  .notice-card.overdue{ background:linear-gradient(135deg,#fff7ed,#ffedd5); border:1.5px solid #fed7aa; }
+  .notice-card .nt{ font-size:15px; font-weight:800; color:var(--navy); display:flex; align-items:center; gap:7px; margin-bottom:12px; }
+  .notice-card .nt .cnt{ margin-left:auto; font-size:12px; font-weight:700; background:#fff; padding:3px 10px; border-radius:20px; color:#475569; }
+  .notice-card .nbody{ font-size:13px; color:#334155; line-height:1.6; }
+  .notice-card .nbody > div{ margin-bottom:3px; }
+  .overdue-row{ display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.6); border-radius:9px; padding:7px 10px; margin-bottom:5px !important; }
+  .overdue-row .rank{ width:20px; height:20px; background:#f97316; color:#fff; border-radius:50%; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .overdue-row .nm{ font-weight:700; color:var(--navy); flex:1; }
+  .overdue-row .dt{ font-size:12px; color:#64748b; }
+  .overdue-row .mo{ font-size:11px; font-weight:700; color:#c2410c; background:#ffedd5; padding:2px 8px; border-radius:20px; }
+  .tab{ padding:9px 18px; border-radius:10px; background:#fff; border:1.5px solid var(--line); font-size:14px; font-weight:600; color:var(--gray); }
+  .tab.active{ background:var(--navy); color:#fff; border-color:var(--navy); }
+
+  .stu-list{ display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:14px; }
+  .stu-card{ background:#fff; border-radius:14px; padding:16px; border:1.5px solid var(--line); cursor:pointer; transition:.15s; }
+  .stu-card:hover{ border-color:var(--blue); transform:translateY(-2px); box-shadow:0 6px 18px rgba(47,111,237,.12); }
+  .stu-card .nm{ font-size:17px; font-weight:800; color:var(--navy); }
+  .stu-card .id{ font-size:12px; color:var(--gray); }
+  .stu-card .bk{ font-size:13px; margin-top:8px; color:var(--blue); font-weight:600; }
+  .stu-card .mini{ display:flex; gap:6px; margin-top:9px; }
+  .stu-card .mini span{ font-size:11px; background:var(--sky); color:var(--navy2); padding:3px 8px; border-radius:7px; font-weight:700; }
+
+  .form-card{ background:#fff; border-radius:16px; padding:24px; box-shadow:0 2px 10px rgba(20,40,80,.05); }
+  .form-card h3{ color:var(--navy); margin-bottom:18px; font-size:18px; }
+  .frow{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-bottom:14px; }
+  .frow.three{ grid-template-columns:repeat(3,1fr); }
+  .frow.four{ grid-template-columns:repeat(4,1fr); }
+  @media(max-width:680px){ .frow,.frow.three,.frow.four{ grid-template-columns:1fr; } }
+  .field label{ display:block; font-size:12px; font-weight:700; color:var(--gray); margin-bottom:5px; }
+  .field input,.field select{ width:100%; padding:10px 12px; border:1.5px solid var(--line); border-radius:9px; font-size:14px; }
+  .field input:focus,.field select:focus{ outline:none; border-color:var(--blue); }
+
+  .wk-edit{ border:1.5px solid var(--line); border-radius:12px; padding:14px; margin-bottom:10px; }
+  .wk-edit .head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .wk-edit .head b{ color:var(--navy); }
+  .check-toggle{ display:flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:var(--gray); cursor:pointer; user-select:none; }
+  .check-toggle input{ width:18px; height:18px; accent-color:var(--green); }
+
+  .actions{ display:flex; gap:10px; margin-top:20px; flex-wrap:wrap; }
+  .btn{ padding:11px 20px; border-radius:10px; border:none; font-size:14px; font-weight:700; }
+  .btn-save{ background:var(--blue); color:#fff; }
+  .btn-save:hover{ background:#1d5bd6; }
+  .btn-kakao{ background:#fae100; color:#3a1d1d; }
+  .btn-kakao:hover{ background:#f2d800; }
+  .btn-del{ background:#fee2e2; color:#dc2626; }
+  .btn-ghost{ background:#f1f5f9; color:var(--gray); }
+
+  .month-pick{ display:flex; align-items:center; gap:8px; }
+
+  /* kakao modal */
+  .modal-bg{ position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:50; padding:20px; }
+  .modal{ background:#fff; border-radius:18px; padding:26px; width:480px; max-width:100%; max-height:85vh; overflow:auto; }
+  .modal h3{ color:var(--navy); margin-bottom:6px; }
+  .modal .sub{ font-size:12px; color:var(--gray); margin-bottom:14px; }
+  .modal textarea{ width:100%; min-height:280px; border:1.5px solid var(--line); border-radius:11px; padding:14px; font-size:13px; line-height:1.7; font-family:inherit; resize:vertical; }
+  .toast{ position:fixed; bottom:26px; left:50%; transform:translateX(-50%); background:var(--navy); color:#fff; padding:12px 22px; border-radius:30px; font-size:14px; z-index:60; box-shadow:0 8px 24px rgba(0,0,0,.25); }
+  .seed-note{ font-size:12px; color:var(--gray); margin-top:8px; }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="login">
+  <div class="login-box">
+    <h1>조민규영어 <span style="color:#2f6fed">학습 대시보드</span></h1>
+    <div class="sub">아이디로 로그인하세요</div>
+    <div class="err" id="loginErr"></div>
+    <input type="text" id="loginId" placeholder="아이디 (예: hong / teacher)" autocomplete="off">
+    <input type="password" id="loginPw" placeholder="비밀번호">
+    <button class="btn-primary" onclick="doLogin()">로그인</button>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" class="hidden">
+  <div class="topbar">
+    <div class="brand">조민규영어 <span>대시보드</span></div>
+    <div class="right">
+      <span id="cloudStatus" style="font-size:12px;opacity:.8">☁️ 연결 중…</span>
+      <span id="who"></span>
+      <button onclick="logout()">로그아웃</button>
+    </div>
+  </div>
+  <div class="wrap" id="content"></div>
+</div>
+
+<script>
+/* ============================================================
+   DATA LAYER  (in-memory; persists across session via JS object)
+   ============================================================ */
+const MONTH_WEEKS = {1:4,2:4,3:5,4:4,5:4,6:5,7:4,8:4,9:5,10:4,11:4,12:5}; // 월별 주차 수
+const todayMonth = new Date().getMonth()+1;
+
+let DB = {
+  teacher: { pw:"1234" },
+  students: {
+    hong: {
+      pw:"1234", name:"홍지우", school:"", grade:"중2",
+      level:{ word:"중3", grammar:"중2", reading:"중3", listening:"고1(상)" },
+      levelNum:{ word:6, grammar:5, reading:6, listening:7 },
+      rank:{ word:"상위 29%", grammar:"상위 25%", reading:"상위 20%", listening:"상위 19%" },
+      overallLv:"Lv.6", overallRank:"상위 20%", overallNum:6, testDate:"2026.05.30", vocabSize:3000,
+      book:"Reading Master 2", bookMonths:3, startMonth:6, startYear:2026,
+      todayStudy:"Unit 7 (p.42~48)", todayHw:"Workbook p.20~23 + 단어시험 30개",
+      month: todayMonth,
+      todayWordTotal:30, todayWordDone:18,
+      todayHwTotal:4, todayHwDone:3,
+      weeks:[
+        {goal:"Unit 5~6 완료 / 단어 누적 90%", done:true},
+        {goal:"Unit 7~8 완료 / 문법 관계대명사", done:true},
+        {goal:"Unit 9~10 / 독해 속도 향상", done:false},
+        {goal:"Unit 11~12 / 월말 총정리 테스트", done:false},
+        {goal:"", done:false}
+      ]
+    },
+    binsuho: {
+      pw:"1234", name:"빈수호", school:"", grade:"초6",
+      level:{ word:"중1", grammar:"중1", reading:"초5~6", listening:"중2" },
+      levelNum:{ word:4, grammar:4, reading:3, listening:5 },
+      rank:{ word:"상위 38%", grammar:"상위 22%", reading:"상위 50%", listening:"상위 37%" },
+      overallLv:"Lv.4", overallRank:"상위 41%", overallNum:4, testDate:"2025.05.17", vocabSize:1800,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    leegh: {
+      pw:"1234", name:"이강현", school:"", grade:"중1",
+      level:{ word:"중2", grammar:"중1", reading:"중3", listening:"중3" },
+      levelNum:{ word:5, grammar:4, reading:6, listening:6 },
+      rank:{ word:"상위 31%", grammar:"상위 31%", reading:"상위 10%", listening:"상위 23%" },
+      overallLv:"Lv.5", overallRank:"상위 21%", overallNum:5, testDate:"2025.05.29", vocabSize:2400,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    jomins: {
+      pw:"1234", name:"조민서", school:"", grade:"고1",
+      level:{ word:"고1", grammar:"중3", reading:"고2", listening:"고3" },
+      levelNum:{ word:7, grammar:6, reading:8, listening:9 },
+      rank:{ word:"상위 33%", grammar:"상위 32%", reading:"상위 23%", listening:"상위 24%" },
+      overallLv:"Lv.7", overallRank:"상위 25%", overallNum:7, testDate:"2025.07.12", vocabSize:3800,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    jihu: {
+      pw:"1234", name:"박지후", school:"", grade:"중1",
+      level:{ word:"중3", grammar:"중2", reading:"고1", listening:"고1" },
+      levelNum:{ word:6, grammar:5, reading:7, listening:7 },
+      rank:{ word:"상위 9%", grammar:"상위 16%", reading:"상위 4%", listening:"상위 11%" },
+      overallLv:"Lv.6", overallRank:"상위 5%", overallNum:6, testDate:"2025.09.27", vocabSize:2900,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    gwakmg: {
+      pw:"1234", name:"곽민규", school:"", grade:"중2",
+      level:{ word:"중3", grammar:"중2", reading:"고1", listening:"고2(상)" },
+      levelNum:{ word:6, grammar:5, reading:7, listening:8 },
+      rank:{ word:"상위 20%", grammar:"상위 32%", reading:"상위 12%", listening:"상위 5%" },
+      overallLv:"Lv.6", overallRank:"상위 10%", overallNum:6, testDate:"2025.10.03", vocabSize:3100,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    leejh: {
+      pw:"1234", name:"이준현", school:"", grade:"중2",
+      level:{ word:"중2", grammar:"중2", reading:"중2", listening:"중3" },
+      levelNum:{ word:5, grammar:5, reading:5, listening:6 },
+      rank:{ word:"상위 57%", grammar:"상위 36%", reading:"상위 48%", listening:"상위 58%" },
+      overallLv:"Lv.5", overallRank:"상위 42%", overallNum:5, testDate:"2025.10.09", vocabSize:2400,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    jomina: {
+      pw:"1234", name:"조민아", school:"", grade:"중1",
+      level:{ word:"중2", grammar:"중1", reading:"중1", listening:"고1" },
+      levelNum:{ word:5, grammar:4, reading:4, listening:7 },
+      rank:{ word:"상위 31%", grammar:"상위 27%", reading:"상위 38%", listening:"상위 14%" },
+      overallLv:"Lv.4", overallRank:"상위 38%", overallNum:4, testDate:"2025.10.09", vocabSize:2400,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    gwakcg: {
+      pw:"1234", name:"곽찬규", school:"", grade:"초6",
+      level:{ word:"중2", grammar:"중2", reading:"중2", listening:"중3" },
+      levelNum:{ word:5, grammar:5, reading:5, listening:6 },
+      rank:{ word:"상위 9%", grammar:"상위 8%", reading:"상위 6%", listening:"상위 20%" },
+      overallLv:"Lv.5", overallRank:"상위 8%", overallNum:5, testDate:"2026.02.06", vocabSize:2400,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    leehw: {
+      pw:"1234", name:"이현우", school:"", grade:"초6",
+      level:{ word:"중2", grammar:"초5~6", reading:"중2", listening:"중2" },
+      levelNum:{ word:5, grammar:3, reading:5, listening:5 },
+      rank:{ word:"상위 7%", grammar:"상위 37%", reading:"상위 9%", listening:"상위 27%" },
+      overallLv:"Lv.4", overallRank:"상위 23%", overallNum:4, testDate:"2026.02.25", vocabSize:2300,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    leegw: {
+      pw:"1234", name:"이건우", school:"", grade:"초6",
+      level:{ word:"중1", grammar:"초5~6", reading:"중1", listening:"중2(상)" },
+      levelNum:{ word:4, grammar:3, reading:4, listening:5 },
+      rank:{ word:"상위 25%", grammar:"상위 40%", reading:"상위 32%", listening:"상위 23%" },
+      overallLv:"Lv.4", overallRank:"상위 36%", overallNum:4, testDate:"2026.02.25", vocabSize:1700,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    baekdy: {
+      pw:"1234", name:"백동윤", school:"", grade:"중1",
+      level:{ word:"중1(상)", grammar:"중1", reading:"중3", listening:"중3(상)" },
+      levelNum:{ word:4, grammar:4, reading:6, listening:6 },
+      rank:{ word:"상위 41%", grammar:"상위 35%", reading:"상위 10%", listening:"상위 19%" },
+      overallLv:"Lv.5", overallRank:"상위 25%", overallNum:5, testDate:"2026.02.28", vocabSize:2100,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    shincb: {
+      pw:"1234", name:"신채빈", school:"", grade:"중1",
+      level:{ word:"중1", grammar:"중1", reading:"중1", listening:"중2" },
+      levelNum:{ word:4, grammar:4, reading:4, listening:5 },
+      rank:{ word:"상위 63%", grammar:"상위 36%", reading:"상위 53%", listening:"상위 58%" },
+      overallLv:"Lv.4", overallRank:"상위 52%", overallNum:4, testDate:"2026.02.26", vocabSize:1800,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    janghj: {
+      pw:"1234", name:"장하준", school:"", grade:"중1",
+      level:{ word:"중2", grammar:"중2", reading:"중3", listening:"중3(상)" },
+      levelNum:{ word:5, grammar:5, reading:6, listening:6 },
+      rank:{ word:"상위 29%", grammar:"상위 17%", reading:"상위 10%", listening:"상위 20%" },
+      overallLv:"Lv.5", overallRank:"상위 16%", overallNum:5, testDate:"2026.02.28", vocabSize:2400,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    kimdw: {
+      pw:"1234", name:"김도운", school:"", grade:"중2",
+      level:{ word:"중2(하)", grammar:"초5~6", reading:"중3", listening:"고1" },
+      levelNum:{ word:5, grammar:3, reading:6, listening:7 },
+      rank:{ word:"상위 73%", grammar:"상위 77%", reading:"상위 26%", listening:"상위 28%" },
+      overallLv:"Lv.5", overallRank:"상위 46%", overallNum:5, testDate:"2026.02.26", vocabSize:2200,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    woohj: {
+      pw:"1234", name:"우현진", school:"", grade:"중2",
+      level:{ word:"중2", grammar:"중3", reading:"중3", listening:"중3" },
+      levelNum:{ word:5, grammar:6, reading:6, listening:6 },
+      rank:{ word:"상위 41%", grammar:"상위 15%", reading:"상위 24%", listening:"상위 44%" },
+      overallLv:"Lv.6", overallRank:"상위 21%", overallNum:6, testDate:"2026.02.28", vocabSize:2500,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    kimys: {
+      pw:"1234", name:"김영서", school:"", grade:"중3",
+      level:{ word:"중3(하)", grammar:"중2", reading:"중3", listening:"고1(상)" },
+      levelNum:{ word:6, grammar:5, reading:6, listening:7 },
+      rank:{ word:"상위 63%", grammar:"상위 34%", reading:"상위 41%", listening:"상위 44%" },
+      overallLv:"Lv.6", overallRank:"상위 40%", overallNum:6, testDate:"2026.03.02", vocabSize:2700,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    jungyc: {
+      pw:"1234", name:"정유찬", school:"", grade:"중1",
+      level:{ word:"중1", grammar:"초5~6", reading:"중2", listening:"중2" },
+      levelNum:{ word:4, grammar:3, reading:5, listening:5 },
+      rank:{ word:"상위 69%", grammar:"상위 65%", reading:"상위 31%", listening:"상위 55%" },
+      overallLv:"Lv.4", overallRank:"상위 46%", overallNum:4, testDate:"2026.03.02", vocabSize:1800,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    choidy: {
+      pw:"1234", name:"최다예", school:"", grade:"중3",
+      level:{ word:"중3", grammar:"중3", reading:"중2", listening:"고2" },
+      levelNum:{ word:6, grammar:6, reading:5, listening:8 },
+      rank:{ word:"상위 47%", grammar:"상위 28%", reading:"상위 61%", listening:"상위 34%" },
+      overallLv:"Lv.6", overallRank:"상위 39%", overallNum:6, testDate:"2026.03.02", vocabSize:3000,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    seokjw: {
+      pw:"1234", name:"석지완", school:"", grade:"중1",
+      level:{ word:"중2", grammar:"중3", reading:"중2", listening:"중3" },
+      levelNum:{ word:5, grammar:6, reading:5, listening:6 },
+      rank:{ word:"상위 25%", grammar:"상위 6%", reading:"상위 22%", listening:"상위 33%" },
+      overallLv:"Lv.5", overallRank:"상위 16%", overallNum:5, testDate:"2026.03.02", vocabSize:2500,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    kwonsw: {
+      pw:"1234", name:"권성원", school:"", grade:"중2",
+      level:{ word:"초6", grammar:"초5~6", reading:"중1", listening:"중2" },
+      levelNum:{ word:3, grammar:3, reading:4, listening:5 },
+      rank:{ word:"상위 98%", grammar:"상위 82%", reading:"상위 71%", listening:"상위 86%" },
+      overallLv:"Lv.4", overallRank:"상위 83%", overallNum:4, testDate:"2026.03.02", vocabSize:1500,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    anyj: {
+      pw:"1234", name:"안유준", school:"", grade:"중2",
+      level:{ word:"중2", grammar:"중2", reading:"중2", listening:"고1(상)" },
+      levelNum:{ word:5, grammar:5, reading:5, listening:7 },
+      rank:{ word:"상위 53%", grammar:"상위 40%", reading:"상위 40%", listening:"상위 18%" },
+      overallLv:"Lv.5", overallRank:"상위 35%", overallNum:5, testDate:"2026.03.02", vocabSize:2400,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    ryujh: {
+      pw:"1234", name:"류재혁", school:"", grade:"중1",
+      level:{ word:"중2", grammar:"중2", reading:"중3", listening:"중3" },
+      levelNum:{ word:5, grammar:5, reading:6, listening:6 },
+      rank:{ word:"상위 22%", grammar:"상위 18%", reading:"상위 10%", listening:"상위 24%" },
+      overallLv:"Lv.5", overallRank:"상위 15%", overallNum:5, testDate:"2026.03.04", vocabSize:2500,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    parkhb: {
+      pw:"1234", name:"박해빈", school:"", grade:"중2",
+      level:{ word:"중2", grammar:"중1", reading:"중2", listening:"고1" },
+      levelNum:{ word:5, grammar:4, reading:5, listening:7 },
+      rank:{ word:"상위 38%", grammar:"상위 56%", reading:"상위 48%", listening:"상위 29%" },
+      overallLv:"Lv.5", overallRank:"상위 45%", overallNum:5, testDate:"2026.03.07", vocabSize:2500,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    choijo: {
+      pw:"1234", name:"최지오", school:"", grade:"중3",
+      level:{ word:"고2", grammar:"고1", reading:"고2", listening:"고3(상)" },
+      levelNum:{ word:8, grammar:7, reading:8, listening:9 },
+      rank:{ word:"상위 4%", grammar:"상위 5%", reading:"상위 4%", listening:"상위 1%" },
+      overallLv:"Lv.8", overallRank:"상위 2%", overallNum:8, testDate:"2026.03.13", vocabSize:4600,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    kimya: {
+      pw:"1234", name:"김윤아", school:"", grade:"중2",
+      level:{ word:"중3", grammar:"중2", reading:"중2", listening:"고2" },
+      levelNum:{ word:6, grammar:5, reading:5, listening:8 },
+      rank:{ word:"상위 22%", grammar:"상위 32%", reading:"상위 37%", listening:"상위 14%" },
+      overallLv:"Lv.5", overallRank:"상위 28%", overallNum:5, testDate:"2026.03.25", vocabSize:3100,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    kimsa: {
+      pw:"1234", name:"김수아", school:"", grade:"중1",
+      level:{ word:"중1", grammar:"초5~6", reading:"초6(상)", listening:"중2" },
+      levelNum:{ word:4, grammar:3, reading:3, listening:5 },
+      rank:{ word:"상위 57%", grammar:"상위 67%", reading:"상위 68%", listening:"상위 71%" },
+      overallLv:"Lv.3", overallRank:"상위 70%", overallNum:3, testDate:"2026.03.21", vocabSize:1700,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    johanj: {
+      pw:"1234", name:"조한준", school:"", grade:"중2",
+      level:{ word:"중2", grammar:"중1", reading:"중3", listening:"고1" },
+      levelNum:{ word:5, grammar:4, reading:6, listening:7 },
+      rank:{ word:"상위 49%", grammar:"상위 63%", reading:"상위 24%", listening:"상위 33%" },
+      overallLv:"Lv.5", overallRank:"상위 34%", overallNum:5, testDate:"2026.03.21", vocabSize:2500,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    nosw: {
+      pw:"1234", name:"노서우", school:"", grade:"중1",
+      level:{ word:"중3", grammar:"중2", reading:"중3", listening:"고2" },
+      levelNum:{ word:6, grammar:5, reading:6, listening:8 },
+      rank:{ word:"상위 11%", grammar:"상위 12%", reading:"상위 10%", listening:"상위 6%" },
+      overallLv:"Lv.6", overallRank:"상위 7%", overallNum:6, testDate:"2026.04.04", vocabSize:3100,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    leejp: {
+      pw:"1234", name:"이준표", school:"", grade:"초6",
+      level:{ word:"중1", grammar:"중1", reading:"중2", listening:"중3(상)" },
+      levelNum:{ word:4, grammar:4, reading:5, listening:6 },
+      rank:{ word:"상위 20%", grammar:"상위 22%", reading:"상위 9%", listening:"상위 9%" },
+      overallLv:"Lv.5", overallRank:"상위 12%", overallNum:5, testDate:"2026.04.08", vocabSize:1900,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    leehwa: {
+      pw:"1234", name:"이화", school:"", grade:"중1",
+      level:{ word:"중1", grammar:"중1", reading:"중2", listening:"중2(상)" },
+      levelNum:{ word:4, grammar:4, reading:5, listening:5 },
+      rank:{ word:"상위 59%", grammar:"상위 37%", reading:"상위 26%", listening:"상위 46%" },
+      overallLv:"Lv.4", overallRank:"상위 36%", overallNum:4, testDate:"2026.04.22", vocabSize:1800,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    jangsh: {
+      pw:"1234", name:"장상효", school:"", grade:"중2",
+      level:{ word:"고1", grammar:"중3", reading:"고2", listening:"고3" },
+      levelNum:{ word:7, grammar:6, reading:8, listening:9 },
+      rank:{ word:"상위 10%", grammar:"상위 10%", reading:"상위 4%", listening:"상위 4%" },
+      overallLv:"Lv.7", overallRank:"상위 2%", overallNum:7, testDate:"2026.04.30", vocabSize:3700,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    nosj: {
+      pw:"1234", name:"노승준", school:"", grade:"중3",
+      level:{ word:"고1", grammar:"중2", reading:"고2", listening:"고3" },
+      levelNum:{ word:7, grammar:5, reading:8, listening:9 },
+      rank:{ word:"상위 19%", grammar:"상위 35%", reading:"상위 6%", listening:"상위 7%" },
+      overallLv:"Lv.7", overallRank:"상위 10%", overallNum:7, testDate:"2026.05.09", vocabSize:3800,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    nayw: {
+      pw:"1234", name:"나연우", school:"", grade:"중1",
+      level:{ word:"중2", grammar:"중2", reading:"중3", listening:"중3(상)" },
+      levelNum:{ word:5, grammar:5, reading:6, listening:6 },
+      rank:{ word:"상위 24%", grammar:"상위 15%", reading:"상위 10%", listening:"상위 20%" },
+      overallLv:"Lv.5", overallRank:"상위 15%", overallNum:5, testDate:"2026.05.25", vocabSize:2500,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    choihj: {
+      pw:"1234", name:"최호준", school:"", grade:"중1",
+      level:{ word:"중1", grammar:"초5~6", reading:"중2", listening:"중3(상)" },
+      levelNum:{ word:4, grammar:3, reading:5, listening:6 },
+      rank:{ word:"상위 47%", grammar:"상위 60%", reading:"상위 28%", listening:"상위 19%" },
+      overallLv:"Lv.4", overallRank:"상위 43%", overallNum:4, testDate:"2026.05.25", vocabSize:1900,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    },
+    kimgh: {
+      pw:"1234", name:"김건희", school:"", grade:"중3",
+      level:{ word:"고1", grammar:"중3", reading:"고2", listening:"고3" },
+      levelNum:{ word:7, grammar:6, reading:8, listening:9 },
+      rank:{ word:"상위 23%", grammar:"상위 14%", reading:"상위 6%", listening:"상위 8%" },
+      overallLv:"Lv.7", overallRank:"상위 5%", overallNum:7, testDate:"2026.05.27", vocabSize:3700,
+      book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+      todayStudy:"", todayHw:"", month: todayMonth,
+      todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+      weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+    }
+  }
+};
+
+let session = null; // {role:'teacher'|'student', id}
+let editingId = null;
+
+/* ============================================================
+   PERSISTENCE  (Firebase Firestore 클라우드 저장)
+   ============================================================ */
+const SEED_DB = JSON.parse(JSON.stringify(DB)); // 최초 35명 시드 보관
+const DOC_REF_PATH = ["appdata","main"];
+let cloudReady = false;
+
+function cloudDoc(){
+  return window.FB.doc(window.FB.db, DOC_REF_PATH[0], DOC_REF_PATH[1]);
+}
+
+async function saveDB(){
+  // 항상 로컬에도 캐시
+  try{ localStorage.setItem("jomingyu_dashboard_v1", JSON.stringify(DB)); }catch(e){}
+  if(!cloudReady || !window.FB) return;
+  try{
+    await window.FB.setDoc(cloudDoc(), { payload: JSON.stringify(DB) });
+  }catch(e){ console.warn("클라우드 저장 실패", e); }
+}
+
+function applyCloudPayload(raw){
+  try{
+    const data = JSON.parse(raw);
+    if(data && data.students){ DB = data; return true; }
+  }catch(e){}
+  return false;
+}
+
+async function initCloud(){
+  if(!window.FB){ // SDK 미로드 시 로컬만
+    try{ const raw=localStorage.getItem("jomingyu_dashboard_v1"); if(raw) applyCloudPayload(raw); }catch(e){}
+    return;
+  }
+  cloudReady = true;
+  try{
+    const snap = await window.FB.getDoc(cloudDoc());
+    if(snap.exists() && snap.data().payload){
+      applyCloudPayload(snap.data().payload);
+    }else{
+      // 클라우드가 비어있으면 35명 시드를 한 번 업로드
+      DB = JSON.parse(JSON.stringify(SEED_DB));
+      await window.FB.setDoc(cloudDoc(), { payload: JSON.stringify(DB) });
+    }
+  }catch(e){
+    console.warn("클라우드 불러오기 실패, 로컬 사용", e);
+    try{ const raw=localStorage.getItem("jomingyu_dashboard_v1"); if(raw) applyCloudPayload(raw); }catch(_){}
+  }
+  // 실시간 동기화: 다른 PC에서 바뀌면 즉시 반영
+  try{
+    window.FB.onSnapshot(cloudDoc(), (snap)=>{
+      if(snap.exists() && snap.data().payload){
+        const before = JSON.stringify(DB);
+        applyCloudPayload(snap.data().payload);
+        if(JSON.stringify(DB)!==before && session){
+          if(session.role==='teacher') renderTeacher();
+          else if(session.role==='student' && DB.students[session.id]) renderStudent(session.id);
+        }
+      }
+    });
+  }catch(e){}
+  const st=document.getElementById('cloudStatus');
+  if(st){ st.textContent="☁️ 클라우드 연결됨"; st.style.color="#7eecb0"; }
+}
+
+// SDK 준비되면 클라우드 초기화
+if(window.FB){ initCloud(); }
+else { window.addEventListener('fb-ready', initCloud, {once:true}); }
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+function doLogin(){
+  const id = document.getElementById('loginId').value.trim().toLowerCase();
+  const pw = document.getElementById('loginPw').value;
+  const err = document.getElementById('loginErr');
+  err.textContent = "";
+  if(id==="teacher" && pw===DB.teacher.pw){
+    session={role:'teacher'}; enterApp(); return;
+  }
+  if(DB.students[id] && DB.students[id].pw===pw){
+    session={role:'student', id}; enterApp(); return;
+  }
+  err.textContent = "아이디 또는 비밀번호가 올바르지 않습니다.";
+}
+document.getElementById('loginPw').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+
+function enterApp(){
+  document.getElementById('login').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  if(session.role==='teacher'){
+    document.getElementById('who').textContent = "👩‍🏫 선생님";
+    renderTeacher();
+  }else{
+    document.getElementById('who').textContent = "🎒 "+DB.students[session.id].name;
+    renderStudent(session.id);
+  }
+}
+function logout(){
+  session=null; editingId=null;
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('login').classList.remove('hidden');
+  document.getElementById('loginId').value=""; document.getElementById('loginPw').value="";
+}
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function pct(done,total){ if(!total) return 0; return Math.min(100,Math.round(done/total*100)); }
+function weekCount(m){ return MONTH_WEEKS[m]||4; }
+function lnOpts(sel){
+  const names=["L1 유치~초2","L2 초3~4","L3 초5~6","L4 중1","L5 중2","L6 중3","L7 고1","L8 고2","L9 고3"];
+  return names.map((nm,i)=>`<option value="${i+1}" ${sel==(i+1)?'selected':''}>${nm}</option>`).join('');
+}
+
+function finishDate(s){
+  // startYear/startMonth + bookMonths -> 종료 시점
+  let y=s.startYear, m=s.startMonth + (s.bookMonths-1);
+  y += Math.floor((m-1)/12);
+  m = ((m-1)%12)+1;
+  return {y,m};
+}
+
+/* ============================================================
+   STUDENT DASHBOARD
+   ============================================================ */
+function renderStudent(id){
+  const s = DB.students[id];
+  const wc = weekCount(s.month);
+  const wordPct = pct(s.todayWordDone,s.todayWordTotal);
+  const hwPct = pct(s.todayHwDone,s.todayHwTotal);
+  const doneWeeks = s.weeks.slice(0,wc).filter(w=>w.done).length;
+  const monthPct = pct(doneWeeks,wc);
+  const fd = finishDate(s);
+
+  const ringC = 2*Math.PI*52;
+  const ringOffset = ringC*(1-monthPct/100);
+
+  let weeksHtml="";
+  for(let i=0;i<wc;i++){
+    const w=s.weeks[i]||{goal:"",done:false};
+    weeksHtml+=`
+      <div class="week-box ${w.done?'done':''}">
+        <div class="wk">${i+1}주차 목표</div>
+        <div class="goal">${w.goal||'<span style="color:#cbd5e1">미설정</span>'}</div>
+        <div class="badge">${w.done?'✓ 달성':'진행중'}</div>
+      </div>`;
+  }
+
+  document.getElementById('content').innerHTML = `
+    <div class="hero">
+      <div>
+        <div style="font-size:13px;opacity:.85">${s.month}월 개별진도${(s.school||s.grade)?' · '+[s.school,s.grade].filter(Boolean).join(' '):''}</div>
+        <h2>${s.name} 학생 ${s.overallLv?`<span style="font-size:15px;background:rgba(255,255,255,.22);padding:4px 12px;border-radius:20px;vertical-align:middle">종합 ${s.overallLv}${s.overallRank?' · '+s.overallRank:''}</span>`:''}</h2>
+      </div>
+      <div class="lvls">
+        <div class="lvl-chip"><div class="t">단어</div><div class="v">${s.level.word}</div>${(s.rank&&s.rank.word)?`<div class="r">${s.rank.word}</div>`:''}</div>
+        <div class="lvl-chip"><div class="t">문법</div><div class="v">${s.level.grammar}</div>${(s.rank&&s.rank.grammar)?`<div class="r">${s.rank.grammar}</div>`:''}</div>
+        <div class="lvl-chip"><div class="t">독해</div><div class="v">${s.level.reading}</div>${(s.rank&&s.rank.reading)?`<div class="r">${s.rank.reading}</div>`:''}</div>
+        <div class="lvl-chip"><div class="t">듣기</div><div class="v">${s.level.listening||'-'}</div>${(s.rank&&s.rank.listening)?`<div class="r">${s.rank.listening}</div>`:''}</div>
+        <div class="vocab-chip">
+          <div class="t">Vocabulary Size</div>
+          <div class="v"><b>${(s.vocabSize||0).toLocaleString()}</b> <span class="goal">/ 6,000 단어</span></div>
+          <div class="vbar"><div style="width:0%" data-w="${pct(s.vocabSize||0,6000)}"></div></div>
+          <div class="vsub">현재 어휘량 · 목표 고3(6,000단어) ${pct(s.vocabSize||0,6000)}%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3><span class="dot"></span>오늘의 학습</h3>
+        <div class="today-row"><span>현재 교재</span><span class="book-name">${s.book}</span></div>
+        <div class="today-row"><span>오늘 학습 분량</span><b>${s.todayStudy}</b></div>
+        <div class="today-row"><span>오늘 숙제</span><b>${s.todayHw}</b></div>
+
+        <div class="pbar-wrap">
+          <div class="pbar-label"><span>📘 오늘 단어</span><b>${s.todayWordDone} / ${s.todayWordTotal} (${wordPct}%)</b></div>
+          <div class="pbar"><div class="fill-word" style="width:0%" data-w="${wordPct}"></div></div>
+        </div>
+        <div class="pbar-wrap">
+          <div class="pbar-label"><span>✏️ 오늘 숙제</span><b>${s.todayHwDone} / ${s.todayHwTotal} (${hwPct}%)</b></div>
+          <div class="pbar"><div class="fill-hw" style="width:0%" data-w="${hwPct}"></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="dot"></span>이번 달 목표 달성률</h3>
+        <div class="ring-wrap">
+          <div class="ring">
+            <svg width="120" height="120">
+              <circle cx="60" cy="60" r="52" fill="none" stroke="#eef2f7" stroke-width="12"/>
+              <circle id="ringFg" cx="60" cy="60" r="52" fill="none" stroke="#2f6fed" stroke-width="12"
+                stroke-linecap="round" stroke-dasharray="${ringC}" stroke-dashoffset="${ringC}"/>
+            </svg>
+            <div class="pct"><div class="n">${monthPct}%</div><div class="l">${doneWeeks}/${wc}주 달성</div></div>
+          </div>
+          <div style="font-size:14px;color:#475569">
+            이번 달은 <b>${wc}주차</b>로 구성돼 있어요.<br>
+            지금까지 <b style="color:#16a34a">${doneWeeks}개 목표</b>를 달성했어요!<br>
+            ${monthPct>=100?'🎉 이번 달 목표 완료!':'끝까지 화이팅 💪'}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h3><span class="dot"></span>주차별 목표 보드</h3>
+      <div class="weeks">${weeksHtml}</div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h3><span class="dot"></span>NELT 종합 수준 (4영역 레이더)
+        ${s.testDate?`<span style="margin-left:auto;font-size:11px;font-weight:700;color:#16a34a;background:#f0fdf4;padding:3px 10px;border-radius:20px">📅 ${s.testDate} 최신 기준</span>`:`<span style="margin-left:auto;font-size:11px;color:#94a3b8">응시일 미입력</span>`}
+      </h3>
+      <div id="radarBox" style="display:flex;justify-content:center"></div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h3><span class="dot"></span>종합 위치 · 고3(L9)까지 목표</h3>
+      <div style="font-size:13px;color:#475569;margin-bottom:8px">중3까지 <b style="color:#2f6fed">L9(고3)</b> 도달이 목표예요. 현재 위치를 표시했어요.</div>
+      <div id="overallCurveBox"></div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h3><span class="dot"></span>영역별 세부 위치</h3>
+      <div id="areaCurvesBox" style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px"></div>
+    </div>
+
+    <div class="predict">
+      현재 학습하고 있는 <b>『${s.book}』</b> 교재는<br>
+      이 속도면 <span class="big">${fd.y}년 ${fd.m}월</span> 까지 끝납니다. 📚
+    </div>
+  `;
+
+  // animate bars + ring
+  requestAnimationFrame(()=>{
+    document.querySelectorAll('.pbar > div').forEach(el=>{ el.style.width=el.dataset.w+'%'; });
+    document.querySelectorAll('.vbar > div').forEach(el=>{ el.style.width=el.dataset.w+'%'; });
+    const fg=document.getElementById('ringFg');
+    if(fg){ fg.style.transition="stroke-dashoffset 1.1s cubic-bezier(.2,.8,.2,1)"; setTimeout(()=>{fg.style.strokeDashoffset=ringOffset;},80); }
+    drawCharts(s);
+  });
+}
+
+/* ============================================================
+   CHARTS (NELT)
+   ============================================================ */
+const L_LABELS = ["L1\n유치~초2","L2\n초3~4","L3\n초5~6","L4\n중1","L5\n중2","L6\n중3","L7\n고1","L8\n고2","L9\n고3"];
+
+function drawCharts(s){
+  const ln = s.levelNum || {word:5,grammar:5,reading:5,listening:5};
+  drawRadar(s, ln);
+  // 종합 위치 곡선
+  const on = s.overallNum || Math.round((ln.word+ln.grammar+ln.reading+ln.listening)/4);
+  document.getElementById('overallCurveBox').innerHTML = curveSVG(on, "#2f6fed", true);
+  // 영역별
+  const areas=[["어휘",ln.word,"#f59e0b"],["문법",ln.grammar,"#8b5cf6"],["듣기",ln.listening,"#16a34a"],["독해",ln.reading,"#2f6fed"]];
+  let html="";
+  areas.forEach(([nm,v,col])=>{
+    html+=`<div><div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:4px">${nm} <span style="color:${col}">${L_LABELS[(v||1)-1].split("\\n")[0]}</span></div>${curveSVG(v,col,false)}</div>`;
+  });
+  document.getElementById('areaCurvesBox').innerHTML = html;
+}
+
+/* 종 모양 분포 곡선 + 현재 위치 + L9 목표 */
+function curveSVG(level, color, big){
+  const W = big?640:300, H = big?180:130, padL=24, padR=24, padB=big?34:26, padT=14;
+  const n=9, plot=W-padL-padR;
+  const x = i => padL + plot*(i/(n-1));
+  // 종 모양(가운데가 높은 분포) y값 0~1
+  const peak=4; // L5 부근 최빈
+  const bell = i => Math.exp(-Math.pow((i-peak)/2.0,2));
+  const yTop=padT, yBot=H-padB, h=yBot-yTop;
+  const y = v => yBot - v*h*0.82;
+
+  let path="";
+  for(let i=0;i<n;i++){ path += (i===0?"M":"L") + x(i).toFixed(1) + " " + y(bell(i)).toFixed(1) + " "; }
+
+  const curIdx=(level||1)-1, goalIdx=8;
+  // x labels
+  let labels="";
+  for(let i=0;i<n;i++){
+    const parts=L_LABELS[i].split("\\n");
+    labels+=`<text x="${x(i)}" y="${H-padB+13}" font-size="${big?10:8}" fill="#94a3b8" text-anchor="middle">${parts[0]}</text>`;
+    if(big) labels+=`<text x="${x(i)}" y="${H-padB+25}" font-size="8" fill="#cbd5e1" text-anchor="middle">${parts[1]}</text>`;
+  }
+  // 목표 라인 (L9)
+  const goalLine=`<line x1="${x(goalIdx)}" y1="${yTop}" x2="${x(goalIdx)}" y2="${yBot}" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <text x="${x(goalIdx)}" y="${yTop+4}" font-size="${big?10:8}" fill="#16a34a" text-anchor="end" font-weight="700">🎯목표</text>`;
+  // 현재 위치
+  const cx=x(curIdx), cy=y(bell(curIdx));
+  const cur=`<line x1="${cx}" y1="${cy}" x2="${cx}" y2="${yBot}" stroke="${color}" stroke-width="2"/>
+    <circle cx="${cx}" cy="${cy}" r="${big?7:5}" fill="${color}" stroke="#fff" stroke-width="2"/>
+    <text x="${cx}" y="${cy-10}" font-size="${big?11:9}" fill="${color}" text-anchor="middle" font-weight="800">현재</text>`;
+  // 현재→목표 화살표 (big만)
+  let arrow="";
+  if(big && curIdx<goalIdx){
+    const ay=yBot-6;
+    arrow=`<line x1="${cx+8}" y1="${ay}" x2="${x(goalIdx)-8}" y2="${ay}" stroke="#22c55e" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="${(cx+x(goalIdx))/2}" y="${ay-5}" font-size="10" fill="#16a34a" text-anchor="middle" font-weight="700">앞으로 ${goalIdx-curIdx}단계</text>`;
+  }
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#22c55e"/></marker>
+    <linearGradient id="g${color.replace('#','')}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity="0.18"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
+    <path d="${path} L${x(n-1)} ${yBot} L${x(0)} ${yBot} Z" fill="url(#g${color.replace('#','')})"/>
+    <path d="${path}" fill="none" stroke="#cbd5e1" stroke-width="2"/>
+    ${goalLine}${arrow}${cur}${labels}
+  </svg>`;
+}
+
+/* 레이더(오각형이 아닌 4각) */
+function drawRadar(s, ln){
+  const size=300, c=size/2, R=105, max=9;
+  const axes=[["어휘",ln.word],["문법",ln.grammar],["독해",ln.reading],["듣기",ln.listening]];
+  const ang=i => (Math.PI/2) + i*(2*Math.PI/4) * -1; // start top, clockwise
+  const pt=(i,r)=>[c+r*Math.cos(ang(i)), c-r*Math.sin(ang(i))];
+
+  let grid="";
+  for(let g=1;g<=3;g++){
+    const rr=R*g/3;
+    let pts="";
+    for(let i=0;i<4;i++){ const[px,py]=pt(i,rr); pts+=`${px.toFixed(1)},${py.toFixed(1)} `; }
+    grid+=`<polygon points="${pts}" fill="none" stroke="#e2e8f0" stroke-width="1"/>`;
+  }
+  // 목표(L9) 외곽
+  let goalPts="";
+  for(let i=0;i<4;i++){ const[px,py]=pt(i,R); goalPts+=`${px.toFixed(1)},${py.toFixed(1)} `; }
+
+  let axisLines="", labels="", dataPts="";
+  axes.forEach(([nm,v],i)=>{
+    const[ex,ey]=pt(i,R); axisLines+=`<line x1="${c}" y1="${c}" x2="${ex}" y2="${ey}" stroke="#e2e8f0" stroke-width="1"/>`;
+    const[lx,ly]=pt(i,R+20); labels+=`<text x="${lx}" y="${ly}" font-size="13" font-weight="700" fill="#1e293b" text-anchor="middle" dominant-baseline="middle">${nm} ${v||0}</text>`;
+    const[dx,dy]=pt(i, R*(v||0)/max); dataPts+=`${dx.toFixed(1)},${dy.toFixed(1)} `;
+  });
+
+  document.getElementById('radarBox').innerHTML=`
+    <svg viewBox="0 0 ${size} ${size}" width="${size}" xmlns="http://www.w3.org/2000/svg">
+      ${grid}
+      <polygon points="${goalPts}" fill="none" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="4 3"/>
+      ${axisLines}
+      <polygon points="${dataPts}" fill="rgba(47,111,237,.22)" stroke="#2f6fed" stroke-width="2.5"/>
+      ${axes.map((a,i)=>{const[dx,dy]=pt(i,R*(a[1]||0)/max);return `<circle cx="${dx}" cy="${dy}" r="4" fill="#2f6fed" stroke="#fff" stroke-width="1.5"/>`}).join("")}
+      ${labels}
+      <text x="${c}" y="${c-R-2}" font-size="9" fill="#16a34a" text-anchor="middle">- - 외곽=L9(고3) 목표</text>
+    </svg>`;
+}
+
+/* ============================================================
+   TEACHER PANEL
+   ============================================================ */
+let teacherTab='list';
+
+/* ---- 공지창: 총평 + 정기평가 미응시 명단 ---- */
+const NOW = new Date(2026,5,13); // 2026.06.13
+function parseTestDate(str){
+  if(!str) return null;
+  const m=str.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
+  if(!m) return null;
+  return new Date(+m[1], +m[2]-1, +m[3]);
+}
+function monthsSince(d){
+  if(!d) return null;
+  return (NOW - d) / (1000*60*60*24*30.44);
+}
+function buildNotices(){
+  const ids=Object.keys(DB.students);
+  const n=ids.length;
+  if(n===0) return '';
+
+  // ---- 총평 통계 ----
+  const lvCount={};
+  let vocabSum=0, vocabN=0;
+  const weakGrammar=[], weakReading=[], weakVocab=[];
+  ids.forEach(id=>{
+    const s=DB.students[id];
+    const lv=s.overallLv||'-'; lvCount[lv]=(lvCount[lv]||0)+1;
+    if(s.vocabSize){ vocabSum+=s.vocabSize; vocabN++; }
+    const ln=s.levelNum||{};
+    // 영역 약점: 같은 학생의 다른 영역 평균보다 2단계 이상 낮으면 약점
+    const vals=[ln.word,ln.grammar,ln.reading,ln.listening].filter(v=>v);
+    if(vals.length){
+      const avg=vals.reduce((a,b)=>a+b,0)/vals.length;
+      if(ln.grammar && ln.grammar<=avg-1.5) weakGrammar.push(s.name);
+      if(ln.reading && ln.reading<=avg-1.5) weakReading.push(s.name);
+      if(ln.word && ln.word<=avg-1.5) weakVocab.push(s.name);
+    }
+  });
+  const avgVocab = vocabN? Math.round(vocabSum/vocabN) : 0;
+  const lvText = Object.keys(lvCount).sort().map(k=>`${k} ${lvCount[k]}명`).join(' · ');
+
+  let weakLines='';
+  if(weakGrammar.length) weakLines+=`<div>📕 <b>문법</b>이 상대적 약점: ${weakGrammar.join(', ')}</div>`;
+  if(weakReading.length) weakLines+=`<div>📗 <b>독해</b>가 상대적 약점: ${weakReading.join(', ')}</div>`;
+  if(weakVocab.length) weakLines+=`<div>📘 <b>어휘</b>가 상대적 약점: ${weakVocab.join(', ')}</div>`;
+  if(!weakLines) weakLines='<div>영역별로 크게 치우친 학생은 없어요.</div>';
+
+  // ---- 6개월 미응시 ----
+  const overdue=[];
+  ids.forEach(id=>{
+    const s=DB.students[id];
+    const d=parseTestDate(s.testDate);
+    const mo=monthsSince(d);
+    if(mo===null || mo>=6){ overdue.push({id, name:s.name, grade:s.grade, date:s.testDate||'미응시', d, mo}); }
+  });
+  // 가장 오래된(=마지막 응시일이 이른) 순. 미응시(null)는 맨 위.
+  overdue.sort((a,b)=>{
+    if(!a.d && !b.d) return 0;
+    if(!a.d) return -1;
+    if(!b.d) return 1;
+    return a.d - b.d;
+  });
+
+  let overdueRows = overdue.length===0
+    ? '<div style="color:#16a34a;font-size:13px">🎉 최근 6개월 내 모든 학생이 정기평가에 응시했어요!</div>'
+    : overdue.map((o,i)=>{
+        const moTxt = o.mo===null? '응시 기록 없음' : `${Math.floor(o.mo)}개월 경과`;
+        return `<div class="overdue-row">
+          <span class="rank">${i+1}</span>
+          <span class="nm">${o.name} <span style="color:#94a3b8;font-size:12px">${o.grade||''}</span></span>
+          <span class="dt">${o.date}</span>
+          <span class="mo">${moTxt}</span>
+        </div>`;
+      }).join('');
+
+  return `
+    <div class="notice-board">
+      <div class="notice-card summary">
+        <div class="nt"><span>📣</span> 전체 총평 <span class="cnt">학생 ${n}명</span></div>
+        <div class="nbody">
+          <div style="margin-bottom:8px">평균 어휘량 <b>${avgVocab.toLocaleString()}단어</b> · 종합레벨 분포: ${lvText}</div>
+          ${weakLines}
+        </div>
+      </div>
+      <div class="notice-card overdue">
+        <div class="nt"><span>⏰</span> 정기평가 미응시 (6개월+) <span class="cnt">${overdue.length}명</span></div>
+        <div class="nbody">
+          <div style="font-size:12px;color:#94a3b8;margin-bottom:8px">가장 오래 안 본 학생부터 · 기준일 2026.06.13</div>
+          ${overdueRows}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderTeacher(){
+  const c=document.getElementById('content');
+  c.innerHTML=`
+    ${teacherTab==='list'?buildNotices():''}
+    <div class="tabs">
+      <div class="tab ${teacherTab==='list'?'active':''}" onclick="teacherTab='list';renderTeacher()">📋 학생 목록</div>
+      <div class="tab ${teacherTab==='new'?'active':''}" onclick="newStudent()">➕ 학생 추가</div>
+      <div class="tab ${teacherTab==='bulk'?'active':''}" onclick="teacherTab='bulk';editingId=null;renderTeacher()">📥 일괄 등록</div>
+    </div>
+    <div id="tcontent"></div>`;
+  if(teacherTab==='list') renderStudentList();
+  else if(teacherTab==='bulk') renderBulk();
+  else renderStudentForm(editingId);
+}
+
+function renderStudentList(){
+  const ids=Object.keys(DB.students);
+  let html='<div class="stu-list">';
+  if(ids.length===0) html+='<div class="empty">등록된 학생이 없습니다. 상단의 ➕ 학생 추가를 눌러주세요.</div>';
+  ids.forEach(id=>{
+    const s=DB.students[id];
+    const wc=weekCount(s.month);
+    const dw=s.weeks.slice(0,wc).filter(w=>w.done).length;
+    html+=`
+      <div class="stu-card" onclick="editStudent('${id}')">
+        <div class="nm">${s.name}</div>
+        <div class="id">@${id} · ${[s.school,s.grade].filter(Boolean).join(' ')||'학교 미입력'} · ${s.month}월</div>
+        <div class="bk">📖 ${s.book}</div>
+        <div class="mini">
+          <span>단어 ${s.level.word}</span><span>문법 ${s.level.grammar}</span><span>독해 ${s.level.reading}</span><span>듣기 ${s.level.listening||'-'}</span>
+        </div>
+        <div class="mini"><span style="background:#f0fdf4;color:#16a34a">목표 ${dw}/${wc} 달성</span></div>
+      </div>`;
+  });
+  html+='</div><div class="seed-note">학생 카드를 클릭하면 진도·목표를 수정하고, 학부모 카톡 요약을 생성할 수 있어요. <b style="color:#16a34a">✓ 모든 변경사항은 이 PC에 자동 저장됩니다.</b></div>';
+  html+=`<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn btn-ghost" onclick="exportBackup()">💾 백업 파일 내보내기</button>
+    <button class="btn btn-ghost" onclick="document.getElementById('importFile').click()">📂 백업 불러오기</button>
+    <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importBackup(event)">
+    <button class="btn btn-del" onclick="resetAll()">🗑 전체 초기화</button>
+  </div>`;
+  document.getElementById('tcontent').innerHTML=html;
+}
+
+function newStudent(){
+  editingId=null; teacherTab='new'; renderTeacher();
+}
+function editStudent(id){
+  editingId=id; teacherTab='new'; renderTeacher();
+}
+
+/* ---- 일괄 등록 ---- */
+function renderBulk(){
+  document.getElementById('tcontent').innerHTML=`
+    <div class="form-card">
+      <h3>📥 학생 일괄 등록</h3>
+      <div style="font-size:13px;color:var(--gray);margin-bottom:6px">
+        엑셀에서 복사하거나, 한 줄에 한 명씩 아래 형식으로 붙여넣으세요.<br>
+        형식: <b style="color:var(--navy)">아이디, 비밀번호, 이름, 중학교, 학년</b> (쉼표 또는 탭으로 구분)
+      </div>
+      <div style="background:var(--sky);border-radius:9px;padding:10px 12px;font-size:12px;color:var(--navy2);margin-bottom:12px;line-height:1.8">
+        예시)<br>
+        hong, 1234, 홍지우, 대치중, 중2<br>
+        kim, 1234, 김민지, 대청중, 중3<br>
+        lee, 1234, 이서준, 단대부중, 중1
+      </div>
+      <textarea id="bulkText" style="width:100%;min-height:220px;border:1.5px solid var(--line);border-radius:11px;padding:13px;font-size:14px;font-family:inherit;line-height:1.7" placeholder="hong, 1234, 홍지우, 대치중, 중2&#10;kim, 1234, 김민지, 대청중, 중3"></textarea>
+      <div style="font-size:12px;color:var(--gray);margin-top:8px">※ 레벨·교재·진도는 비워둔 채 등록되고, 나중에 학생 카드에서 채우면 됩니다. 이미 있는 아이디는 이름·학교·학년만 업데이트돼요.</div>
+      <div class="actions">
+        <button class="btn btn-save" onclick="doBulk()">📥 일괄 등록하기</button>
+        <button class="btn btn-ghost" onclick="teacherTab='list';renderTeacher()">취소</button>
+      </div>
+      <div id="bulkResult" style="margin-top:14px;font-size:13px"></div>
+    </div>`;
+}
+
+function doBulk(){
+  const raw=document.getElementById('bulkText').value.trim();
+  if(!raw){ showToast('붙여넣은 내용이 없습니다'); return; }
+  const lines=raw.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  let added=0, updated=0, errors=[];
+  lines.forEach((line,idx)=>{
+    const cols=line.split(/\t|,/).map(c=>c.trim());
+    const [id0,pw,name,school,grade]=cols;
+    const id=(id0||'').toLowerCase();
+    if(!id||!name){ errors.push(`${idx+1}행: 아이디·이름 누락 → "${line}"`); return; }
+    if(DB.students[id]){
+      DB.students[id].name=name;
+      if(pw) DB.students[id].pw=pw;
+      DB.students[id].school=school||DB.students[id].school||"";
+      DB.students[id].grade=grade||DB.students[id].grade||"";
+      updated++;
+    }else{
+      DB.students[id]={
+        pw:pw||"1234", name, school:school||"", grade:grade||"",
+        level:{word:"",grammar:"",reading:"",listening:""},
+        levelNum:{word:5,grammar:5,reading:5,listening:5},
+        rank:{word:"",grammar:"",reading:"",listening:""},
+        overallLv:"", overallRank:"", overallNum:5, testDate:"", vocabSize:0,
+        book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+        todayStudy:"", todayHw:"", month:todayMonth,
+        todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+        weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+      };
+      added++;
+    }
+  });
+  saveDB();
+  const box=document.getElementById('bulkResult');
+  box.innerHTML=`<div style="color:#16a34a;font-weight:700">✓ 신규 ${added}명 등록, ${updated}명 업데이트 완료</div>`+
+    (errors.length?`<div style="color:#dc2626;margin-top:6px">⚠ ${errors.length}개 행 오류:<br>${errors.join('<br>')}</div>`:'');
+  showToast(`등록 완료: 신규 ${added} · 수정 ${updated}`);
+}
+function editStudent(id){
+  editingId=id; teacherTab='new'; renderTeacher();
+}
+
+function renderStudentForm(id){
+  const isNew = !id;
+  const s = isNew ? {
+    pw:"1234", name:"", school:"", grade:"", level:{word:"Lv.1",grammar:"Lv.1",reading:"Lv.1",listening:"Lv.1"},
+    rank:{word:"",grammar:"",reading:"",listening:""}, overallLv:"", overallRank:"", overallNum:5, testDate:"", vocabSize:0,
+    levelNum:{word:5,grammar:5,reading:5,listening:5},
+    book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+    todayStudy:"", todayHw:"", month:todayMonth,
+    todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+    weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+  } : JSON.parse(JSON.stringify(DB.students[id]));
+
+  const yearOpts=[2025,2026,2027,2028].map(y=>`<option value="${y}" ${s.startYear==y?'selected':''}>${y}년</option>`).join('');
+  const monthOpts=(sel)=>Array.from({length:12},(_,i)=>i+1).map(m=>`<option value="${m}" ${sel==m?'selected':''}>${m}월</option>`).join('');
+
+  const wc=weekCount(s.month);
+  let weekEdit="";
+  for(let i=0;i<5;i++){
+    const w=s.weeks[i]||{goal:"",done:false};
+    const active = i<wc;
+    weekEdit+=`
+      <div class="wk-edit" style="${active?'':'opacity:.45'}">
+        <div class="head">
+          <b>${i+1}주차 ${i===4?'(5주 있는 달만)':''}</b>
+          <label class="check-toggle"><input type="checkbox" id="wk_done_${i}" ${w.done?'checked':''}> 달성</label>
+        </div>
+        <input class="wkgoal" id="wk_goal_${i}" value="${(w.goal||'').replace(/"/g,'&quot;')}" placeholder="${i+1}주차 목표 입력" style="width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px">
+      </div>`;
+  }
+
+  document.getElementById('tcontent').innerHTML=`
+    <div class="form-card">
+      <h3>${isNew?'➕ 새 학생 등록':'✏️ '+s.name+' 진도 수정'}</h3>
+
+      <div class="frow">
+        <div class="field"><label>학생 이름</label><input id="f_name" value="${s.name}" placeholder="홍길동"></div>
+        <div class="field"><label>아이디 (로그인용)</label><input id="f_id" value="${id||''}" ${isNew?'':'readonly style=background:#f1f5f9'} placeholder="hong"></div>
+      </div>
+      <div class="frow">
+        <div class="field"><label>학교</label><input id="f_school" value="${s.school||''}" placeholder="대치중"></div>
+        <div class="field"><label>학년</label><input id="f_grade" value="${s.grade||''}" placeholder="중2"></div>
+      </div>
+      <div class="frow">
+        <div class="field"><label>비밀번호</label><input id="f_pw" value="${s.pw}"></div>
+        <div class="field"><label>진도 기준 월</label>
+          <select id="f_month" onchange="this.dataset.changed=1">${monthOpts(s.month)}</select>
+        </div>
+      </div>
+
+      <div class="frow">
+        <div class="field"><label>종합 레벨 (예: Lv.6)</label><input id="f_olv" value="${s.overallLv||''}" placeholder="Lv.6"></div>
+        <div class="field"><label>종합 석차 (예: 상위 20%)</label><input id="f_ork" value="${s.overallRank||''}" placeholder="상위 20%"></div>
+      </div>
+      <div class="frow">
+        <div class="field"><label>NELT 응시일 (최신 성적표 기준)</label><input id="f_td" value="${s.testDate||''}" placeholder="2026.05.30"></div>
+        <div class="field"><label>Vocabulary Size (현재 어휘량, 목표 6000)</label><input id="f_vs" type="number" min="0" value="${s.vocabSize||0}" placeholder="3000"></div>
+      </div>
+      <div class="frow four">
+        <div class="field"><label>단어 수준</label><input id="f_lw" value="${s.level.word}" placeholder="중3"><input id="f_rw" value="${(s.rank&&s.rank.word)||''}" placeholder="상위 29%" style="margin-top:6px"><select id="f_nw" style="margin-top:6px">${lnOpts((s.levelNum&&s.levelNum.word)||5)}</select></div>
+        <div class="field"><label>문법 수준</label><input id="f_lg" value="${s.level.grammar}" placeholder="중2"><input id="f_rg" value="${(s.rank&&s.rank.grammar)||''}" placeholder="상위 25%" style="margin-top:6px"><select id="f_ng" style="margin-top:6px">${lnOpts((s.levelNum&&s.levelNum.grammar)||5)}</select></div>
+        <div class="field"><label>독해 수준</label><input id="f_lr" value="${s.level.reading}" placeholder="중3"><input id="f_rr" value="${(s.rank&&s.rank.reading)||''}" placeholder="상위 20%" style="margin-top:6px"><select id="f_nr" style="margin-top:6px">${lnOpts((s.levelNum&&s.levelNum.reading)||5)}</select></div>
+        <div class="field"><label>듣기 수준</label><input id="f_ll" value="${s.level.listening||''}" placeholder="고1(상)"><input id="f_rl" value="${(s.rank&&s.rank.listening)||''}" placeholder="상위 19%" style="margin-top:6px"><select id="f_nl" style="margin-top:6px">${lnOpts((s.levelNum&&s.levelNum.listening)||5)}</select></div>
+      </div>
+      <div style="font-size:12px;color:var(--gray);margin:-6px 0 14px">각 영역: 학년 수준 / 상위% 석차 / 그래프용 L단계(L1~L9)</div>
+      <div class="frow">
+        <div class="field"><label>종합 그래프 위치 (L단계)</label><select id="f_on">${lnOpts(s.overallNum||5)}</select></div>
+        <div class="field"></div>
+      </div>
+
+      <div class="frow">
+        <div class="field"><label>현재 교재명</label><input id="f_book" value="${s.book}" placeholder="Reading Master 2"></div>
+        <div class="field"><label>이 교재 목표 기간 (개월)</label><input id="f_bm" type="number" min="1" value="${s.bookMonths}"></div>
+      </div>
+      <div class="frow">
+        <div class="field"><label>교재 시작 연도</label><select id="f_sy">${yearOpts}</select></div>
+        <div class="field"><label>교재 시작 월</label><select id="f_sm">${monthOpts(s.startMonth)}</select></div>
+      </div>
+
+      <div class="frow">
+        <div class="field"><label>오늘 학습 분량</label><input id="f_ts" value="${s.todayStudy}" placeholder="Unit 7 (p.42~48)"></div>
+        <div class="field"><label>오늘 숙제 분량</label><input id="f_th" value="${s.todayHw}" placeholder="Workbook p.20~23"></div>
+      </div>
+      <div class="frow">
+        <div class="field"><label>오늘 단어 (완료 / 전체)</label>
+          <div style="display:flex;gap:8px"><input id="f_wd" type="number" min="0" value="${s.todayWordDone}"><input id="f_wt" type="number" min="0" value="${s.todayWordTotal}"></div>
+        </div>
+        <div class="field"><label>오늘 숙제 (완료 / 전체)</label>
+          <div style="display:flex;gap:8px"><input id="f_hd" type="number" min="0" value="${s.todayHwDone}"><input id="f_ht" type="number" min="0" value="${s.todayHwTotal}"></div>
+        </div>
+      </div>
+
+      <h3 style="margin-top:22px;font-size:15px">주차별 목표 · 달성</h3>
+      ${weekEdit}
+
+      <div class="actions">
+        <button class="btn btn-save" onclick="saveStudent(${isNew})">💾 저장</button>
+        ${isNew?'':`<button class="btn btn-kakao" onclick="openKakao('${id}')">💬 학부모 카톡 요약</button>`}
+        ${isNew?'':`<button class="btn btn-del" onclick="deleteStudent('${id}')">🗑 삭제</button>`}
+        <button class="btn btn-ghost" onclick="teacherTab='list';editingId=null;renderTeacher()">취소</button>
+      </div>
+    </div>`;
+}
+
+function saveStudent(isNew){
+  const id = document.getElementById('f_id').value.trim().toLowerCase();
+  const name = document.getElementById('f_name').value.trim();
+  if(!id||!name){ showToast('이름과 아이디는 필수입니다'); return; }
+  if(isNew && DB.students[id]){ showToast('이미 존재하는 아이디입니다'); return; }
+
+  const weeks=[];
+  for(let i=0;i<5;i++){
+    weeks.push({
+      goal: document.getElementById('wk_goal_'+i).value.trim(),
+      done: document.getElementById('wk_done_'+i).checked
+    });
+  }
+
+  DB.students[id]={
+    pw: document.getElementById('f_pw').value,
+    name,
+    school: document.getElementById('f_school').value.trim(),
+    grade: document.getElementById('f_grade').value.trim(),
+    level:{
+      word: document.getElementById('f_lw').value,
+      grammar: document.getElementById('f_lg').value,
+      reading: document.getElementById('f_lr').value,
+      listening: document.getElementById('f_ll').value
+    },
+    rank:{
+      word: document.getElementById('f_rw').value,
+      grammar: document.getElementById('f_rg').value,
+      reading: document.getElementById('f_rr').value,
+      listening: document.getElementById('f_rl').value
+    },
+    overallLv: document.getElementById('f_olv').value,
+    overallRank: document.getElementById('f_ork').value,
+    testDate: document.getElementById('f_td').value,
+    vocabSize: parseInt(document.getElementById('f_vs').value)||0,
+    overallNum: parseInt(document.getElementById('f_on').value)||5,
+    levelNum:{
+      word: parseInt(document.getElementById('f_nw').value)||5,
+      grammar: parseInt(document.getElementById('f_ng').value)||5,
+      reading: parseInt(document.getElementById('f_nr').value)||5,
+      listening: parseInt(document.getElementById('f_nl').value)||5
+    },
+    book: document.getElementById('f_book').value.trim(),
+    bookMonths: parseInt(document.getElementById('f_bm').value)||1,
+    startMonth: parseInt(document.getElementById('f_sm').value),
+    startYear: parseInt(document.getElementById('f_sy').value),
+    todayStudy: document.getElementById('f_ts').value,
+    todayHw: document.getElementById('f_th').value,
+    month: parseInt(document.getElementById('f_month').value),
+    todayWordDone: parseInt(document.getElementById('f_wd').value)||0,
+    todayWordTotal: parseInt(document.getElementById('f_wt').value)||0,
+    todayHwDone: parseInt(document.getElementById('f_hd').value)||0,
+    todayHwTotal: parseInt(document.getElementById('f_ht').value)||0,
+    weeks
+  };
+  saveDB();
+  showToast('저장되었습니다 ✓');
+  editingId=null; teacherTab='list'; renderTeacher();
+}
+
+function deleteStudent(id){
+  if(confirm(DB.students[id].name+' 학생을 삭제할까요?')){
+    delete DB.students[id];
+    saveDB();
+    showToast('삭제되었습니다');
+    editingId=null; teacherTab='list'; renderTeacher();
+  }
+}
+
+/* ---- 백업 / 복원 / 초기화 ---- */
+function exportBackup(){
+  const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const d=new Date();
+  a.href=url; a.download=`조민규영어_백업_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast('백업 파일을 내려받았어요 ✓');
+}
+function importBackup(ev){
+  const file=ev.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.students){ showToast('올바른 백업 파일이 아닙니다'); return; }
+      DB=data; saveDB();
+      showToast('백업을 불러왔어요 ✓');
+      teacherTab='list'; renderTeacher();
+    }catch(err){ showToast('파일을 읽을 수 없습니다'); }
+  };
+  reader.readAsText(file);
+}
+function resetAll(){
+  if(confirm('모든 학생 데이터를 삭제하고 초기화할까요? 되돌릴 수 없습니다.\n(먼저 백업 내보내기를 권장합니다)')){
+    DB={ teacher:{pw:DB.teacher.pw||"1234"}, students:{} };
+    saveDB();
+    showToast('초기화되었습니다');
+    teacherTab='list'; renderTeacher();
+  }
+}
+
+/* ============================================================
+   KAKAO SUMMARY
+   ============================================================ */
+function openKakao(id){
+  const s=DB.students[id];
+  const wc=weekCount(s.month);
+  const fd=finishDate(s);
+  const dw=s.weeks.slice(0,wc).filter(w=>w.done).length;
+
+  let wkText="";
+  for(let i=0;i<wc;i++){
+    const w=s.weeks[i]||{goal:"",done:false};
+    wkText+=`${i+1}주차) ${w.goal||'-'} ${w.done?'✅':'⬜'}\n`;
+  }
+
+  const text =
+`[조민규영어] ${s.name} 학생 학습 안내 (${s.month}월)
+${[s.school,s.grade].filter(Boolean).join(' ')}
+
+📊 현재 레벨${s.overallLv?` (종합 ${s.overallLv}${s.overallRank?', '+s.overallRank:''})`:''}${s.testDate?`
+   [${s.testDate} NELT 기준]`:''}
+· 단어 ${s.level.word}${(s.rank&&s.rank.word)?' ('+s.rank.word+')':''}
+· 문법 ${s.level.grammar}${(s.rank&&s.rank.grammar)?' ('+s.rank.grammar+')':''}
+· 독해 ${s.level.reading}${(s.rank&&s.rank.reading)?' ('+s.rank.reading+')':''}
+· 듣기 ${s.level.listening||'-'}${(s.rank&&s.rank.listening)?' ('+s.rank.listening+')':''}
+· 어휘량 ${(s.vocabSize||0).toLocaleString()}단어 (목표 6,000)
+
+📖 현재 교재: 『${s.book}』
+· 오늘 학습: ${s.todayStudy}
+· 오늘 숙제: ${s.todayHw}
+
+🎯 이번 달 주차별 목표 (${dw}/${wc} 달성)
+${wkText}
+📅 이 속도면 『${s.book}』 교재는
+   ${fd.y}년 ${fd.m}월 완료 예정입니다.
+
+가정에서도 숙제 점검 부탁드립니다. 감사합니다 🙏
+- 조민규영어`;
+
+  const bg=document.createElement('div');
+  bg.className='modal-bg';
+  bg.innerHTML=`
+    <div class="modal">
+      <h3>💬 학부모 카톡 발송 요약</h3>
+      <div class="sub">아래 내용을 복사해서 카카오톡에 붙여넣으세요.</div>
+      <textarea id="kakaoText">${text}</textarea>
+      <div class="actions">
+        <button class="btn btn-kakao" onclick="copyKakao()">📋 복사하기</button>
+        <button class="btn btn-ghost" onclick="this.closest('.modal-bg').remove()">닫기</button>
+      </div>
+    </div>`;
+  bg.addEventListener('click',e=>{ if(e.target===bg) bg.remove(); });
+  document.body.appendChild(bg);
+}
+function copyKakao(){
+  const t=document.getElementById('kakaoText');
+  t.select();
+  navigator.clipboard.writeText(t.value).then(()=>showToast('복사완료! 카톡에 붙여넣으세요 ✓'))
+    .catch(()=>{ document.execCommand('copy'); showToast('복사완료 ✓'); });
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+let toastTimer=null;
+function showToast(msg){
+  const old=document.querySelector('.toast'); if(old) old.remove();
+  const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
+  document.body.appendChild(t);
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.remove(),2200);
+}
+</script>
+</body>
+</html>
