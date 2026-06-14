@@ -215,6 +215,22 @@
 const MONTH_WEEKS = {1:4,2:4,3:5,4:4,5:4,6:5,7:4,8:4,9:5,10:4,11:4,12:5}; // 월별 주차 수
 const todayMonth = new Date().getMonth()+1;
 
+/* 단어책 목록 (이름 / 대상학년 / 총 Day) */
+const VOCAB_BOOKS = [
+  {name:"능률중등기본", grade:"초6-중1", days:50},
+  {name:"능률중등필수", grade:"중1-2", days:50},
+  {name:"능률중등어원", grade:"중2", days:30},
+  {name:"능률중등고난도", grade:"중2-3", days:40},
+  {name:"능률고등기본", grade:"중3-고1", days:40},
+  {name:"능률고등어원", grade:"중3-고1", days:60},
+  {name:"어원2023", grade:"중3-고1", days:60},
+  {name:"고교필수2000", grade:"고1", days:70},
+  {name:"능률수능필수", grade:"고1", days:60},
+  {name:"블랙라벨 1등급", grade:"고2", days:50},
+  {name:"5개년 EBS 수능 영단어", grade:"고2-3", days:50}
+];
+function bookInfo(name){ return VOCAB_BOOKS.find(b=>b.name===name); }
+
 let DB = {
   teacher: { pw:"1234" },
   students: {
@@ -737,6 +753,12 @@ function logout(){
    ============================================================ */
 function pct(done,total){ if(!total) return 0; return Math.min(100,Math.round(done/total*100)); }
 function weekCount(m){ return MONTH_WEEKS[m]||4; }
+function lvWithGrade(lv){
+  if(!lv) return lv||'';
+  const map={ "Lv.2":"초3-4","Lv.3":"초5-6","Lv.4":"중1","Lv.5":"중2","Lv.6":"중3","Lv.7":"고1","Lv.8":"고2","Lv.9":"고3" };
+  const g = map[lv];
+  return g ? `${lv}(${g})` : lv;
+}
 function lnOpts(sel){
   const names=["L1 유치~초2","L2 초3~4","L3 초5~6","L4 중1","L5 중2","L6 중3","L7 고1","L8 고2","L9 고3"];
   return names.map((nm,i)=>`<option value="${i+1}" ${sel==(i+1)?'selected':''}>${nm}</option>`).join('');
@@ -780,7 +802,7 @@ function renderStudent(id){
     <div class="hero">
       <div>
         <div style="font-size:13px;opacity:.85">${s.month}월 개별진도${(s.school||s.grade)?' · '+[s.school,s.grade].filter(Boolean).join(' '):''}</div>
-        <h2>${s.name} 학생 ${s.overallLv?`<span style="font-size:15px;background:rgba(255,255,255,.22);padding:4px 12px;border-radius:20px;vertical-align:middle">종합 ${s.overallLv}${s.overallRank?' · '+s.overallRank:''}</span>`:''}</h2>
+        <h2>${s.name} 학생 ${s.overallLv?`<span style="font-size:15px;background:rgba(255,255,255,.22);padding:4px 12px;border-radius:20px;vertical-align:middle">종합 ${lvWithGrade(s.overallLv)}${s.overallRank?' · '+s.overallRank:''}</span>`:''}</h2>
       </div>
       <div class="lvls">
         <div class="lvl-chip"><div class="t">단어</div><div class="v">${s.level.word}</div>${(s.rank&&s.rank.word)?`<div class="r">${s.rank.word}</div>`:''}</div>
@@ -831,6 +853,25 @@ function renderStudent(id){
           </div>
         </div>
       </div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h3><span class="dot"></span>단어책 진도</h3>
+      ${(()=>{
+        const bk=bookInfo(s.vocabBook);
+        if(!s.vocabBook||!bk) return '<div style="color:#94a3b8;font-size:14px">아직 단어책이 지정되지 않았어요.</div>';
+        const day=Math.min(s.vocabDay||0, bk.days);
+        const p=pct(day, bk.days);
+        return `
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+            <span style="font-size:18px;font-weight:800;color:var(--blue)">${s.vocabBook}</span>
+            <span style="font-size:13px;color:#64748b">${bk.grade} · 총 ${bk.days}일</span>
+          </div>
+          <div class="pbar-label"><span>📗 진도</span><b>Day ${day} / ${bk.days} (${p}%)</b></div>
+          <div class="pbar"><div class="fill-hw" style="width:0%" data-w="${p}"></div></div>
+          <div style="font-size:13px;color:#475569;margin-top:8px">남은 분량 <b>${bk.days-day}일</b>${p>=100?' · 🎉 완료!':''}</div>
+        `;
+      })()}
     </div>
 
     <div class="card" style="margin-top:18px">
@@ -1016,7 +1057,7 @@ function buildNotices(){
     }
   });
   const avgVocab = vocabN? Math.round(vocabSum/vocabN) : 0;
-  const lvText = Object.keys(lvCount).sort().map(k=>`${k} ${lvCount[k]}명`).join(' · ');
+  const lvText = Object.keys(lvCount).sort().map(k=>`${lvWithGrade(k)} ${lvCount[k]}명`).join(' · ');
 
   let weakLines='';
   if(weakGrammar.length) weakLines+=`<div>📕 <b>문법</b>이 상대적 약점: ${weakGrammar.join(', ')}</div>`;
@@ -1172,6 +1213,8 @@ function doBulk(){
         overallLv:"", overallRank:"", overallNum:5, testDate:"", vocabSize:0,
         book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
         todayStudy:"", todayHw:"", month:todayMonth,
+        vocabBook:"", vocabDay:0,
+    vocabBook:"", vocabDay:0,
         todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
         weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
       };
@@ -1279,6 +1322,16 @@ function renderStudentForm(id){
         </div>
       </div>
 
+      <div class="frow">
+        <div class="field"><label>단어책</label>
+          <select id="f_vbook">
+            <option value="">— 선택 안 함 —</option>
+            ${VOCAB_BOOKS.map(b=>`<option value="${b.name}" ${s.vocabBook===b.name?'selected':''}>${b.name} (${b.grade}, ~Day${b.days})</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>현재 Day (진행한 일수)</label><input id="f_vday" type="number" min="0" value="${s.vocabDay||0}" placeholder="0"></div>
+      </div>
+
       <h3 style="margin-top:22px;font-size:15px">주차별 목표 · 달성</h3>
       ${weekEdit}
 
@@ -1340,6 +1393,8 @@ function saveStudent(isNew){
     todayStudy: document.getElementById('f_ts').value,
     todayHw: document.getElementById('f_th').value,
     month: parseInt(document.getElementById('f_month').value),
+    vocabBook: document.getElementById('f_vbook').value,
+    vocabDay: parseInt(document.getElementById('f_vday').value)||0,
     todayWordDone: parseInt(document.getElementById('f_wd').value)||0,
     todayWordTotal: parseInt(document.getElementById('f_wt').value)||0,
     todayHwDone: parseInt(document.getElementById('f_hd').value)||0,
@@ -1412,7 +1467,7 @@ function openKakao(id){
 `[조민규영어] ${s.name} 학생 학습 안내 (${s.month}월)
 ${[s.school,s.grade].filter(Boolean).join(' ')}
 
-📊 현재 레벨${s.overallLv?` (종합 ${s.overallLv}${s.overallRank?', '+s.overallRank:''})`:''}${s.testDate?`
+📊 현재 레벨${s.overallLv?` (종합 ${lvWithGrade(s.overallLv)}${s.overallRank?', '+s.overallRank:''})`:''}${s.testDate?`
    [${s.testDate} NELT 기준]`:''}
 · 단어 ${s.level.word}${(s.rank&&s.rank.word)?' ('+s.rank.word+')':''}
 · 문법 ${s.level.grammar}${(s.rank&&s.rank.grammar)?' ('+s.rank.grammar+')':''}
@@ -1422,7 +1477,7 @@ ${[s.school,s.grade].filter(Boolean).join(' ')}
 
 📖 현재 교재: 『${s.book}』
 · 오늘 학습: ${s.todayStudy}
-· 오늘 숙제: ${s.todayHw}
+· 오늘 숙제: ${s.todayHw}${(()=>{const bk=bookInfo(s.vocabBook);if(!s.vocabBook||!bk)return '';const day=Math.min(s.vocabDay||0,bk.days);return `\n\n📗 단어책: ${s.vocabBook}\n· 진도 Day ${day}/${bk.days} (${pct(day,bk.days)}%)`;})()}
 
 🎯 이번 달 주차별 목표 (${dw}/${wc} 달성)
 ${wkText}
@@ -1467,4 +1522,4 @@ function showToast(msg){
 }
 </script>
 </body>
-</html>
+</html> 
