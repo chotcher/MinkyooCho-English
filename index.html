@@ -155,6 +155,13 @@
   .field input:focus,.field select:focus{ outline:none; border-color:var(--blue); }
 
   .wk-edit{ border:1.5px solid var(--line); border-radius:12px; padding:14px; margin-bottom:10px; }
+  .mock-grade{ border:1.5px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:10px; }
+  .mock-grade-title{ font-weight:800; color:var(--navy); margin-bottom:8px; }
+  .mock-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:6px; }
+  .mock-item{ display:flex; align-items:center; gap:6px; background:#f8fafc; border-radius:8px; padding:5px 8px; font-size:13px; }
+  .mock-item input[type=checkbox]{ width:16px; height:16px; accent-color:#6366f1; flex-shrink:0; }
+  .mock-item .ml{ flex:1; }
+  .mock-item .mock-score{ width:54px; padding:4px 6px; border:1px solid var(--line); border-radius:6px; font-size:12px; }
   .wk-edit .head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
   .wk-edit .head b{ color:var(--navy); }
   .check-toggle{ display:flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:var(--gray); cursor:pointer; user-select:none; }
@@ -230,6 +237,124 @@ const VOCAB_BOOKS = [
   {name:"5개년 EBS 수능 영단어", grade:"고2-3", days:50}
 ];
 function bookInfo(name){ return VOCAB_BOOKS.find(b=>b.name===name); }
+
+/* 문법 교재 (이름 / 대상학년 / 챕터목록) */
+const GRAMMAR_BOOKS = [
+  {name:"해커스중학영문법 1학년", grade:"중1", chapters:[
+    "be동사","일반동사","시제","조동사","문장의 형식","다양한 문장의 종류","to부정사","동명사",
+    "명사와 관사","대명사","형용사","부사","비교구문","전치사","접속사"]},
+  {name:"해커스중학영문법 2학년", grade:"중2", chapters:[
+    "문장의 형식","다양한 문장의 종류","시제","조동사","수동태","부정사","동명사","분사",
+    "명사와 관사","대명사","형용사","부사","비교구문","전치사","접속사","관계사","가정법","일치·화법·도치"]},
+  {name:"해커스중학영문법 3학년", grade:"중3", chapters:[
+    "문장의 형식","시제","조동사","수동태","부정사","동명사","분사","명사와 대명사",
+    "형용사와 부사","비교구문","전치사","접속사","관계사","가정법","일치와 화법","특수구문"]},
+  {name:"해커스고등영문법", grade:"고1", chapters:[
+    "문장의 형식","시제","조동사","수동태","명사/관사/대명사","형용사와 부사","전치사","부정사",
+    "동명사","분사","관계사","접속사","비교구문","가정법","일치와 화법","특수구문"]}
+];
+function grammarInfo(name){ return GRAMMAR_BOOKS.find(b=>b.name===name); }
+
+/* 서술형 교재 (이름 / 대상학년 / 단원목록) */
+const RANK77 = [
+  "주어-동사의 수일치 Ⅰ","주어-동사의 수일치 Ⅱ","능동 vs. 수동_단순시제 Ⅰ","능동 vs. 수동_단순시제 Ⅱ",
+  "현재분사 vs. 과거분사_명사 수식","분사구문","동사+목적어+보어 Ⅰ","동사+목적어+보어 Ⅱ",
+  "등위접속사의 병렬구조","상관접속사의 병렬구조","동사의 목적어가 되는 to-v, v-ing",
+  "if+가정법","to부정사의 부사적 역할","가주어-진주어(to부정사)","주어로 쓰이는 동명사",
+  "진행·완료시제의 능동 vs. 수동","의문사가 이끄는 명사절의 어순","부정어구 강조+의문문 어순",
+  "if절을 대신하는 여러 표현","주의해야 할 분사구문","주의해야 할 시제 Ⅰ","주의해야 할 시제 Ⅱ",
+  "명사절을 이끄는 that","동사 자리 vs. 준동사 자리","주격 관계대명사 who, which, that","관계대명사 what",
+  "목적격 관계대명사 who(m), which, that","콤마(,)+관계대명사_계속적 용법","전치사+관계대명사",
+  "관계부사 when, where, why, how","the+비교급~, the+비교급...","가목적어-진목적어","대명사의 수일치",
+  "목적·결과의 부사절","시간·조건의 부사절","양보·대조의 부사절","형용사 자리 vs. 부사 자리",
+  "주어+동사+보어(2문형)","to부정사와 동명사의 태","to부정사와 동명사의 완료형","비교급+than~",
+  "원급을 이용한 비교 표현","최상급을 나타내는 여러 표현","4문형·5문형 수동태",
+  "it be ~ that... 강조구문","to부정사의 명사 수식","자동사로 오해하기 쉬운 타동사","S+wish/as if 가정법",
+  "used to / be used to-v / be used to v-ing","with+명사+v-ing/p.p.","주의해야 할 부정구문",
+  "동격을 나타내는 구문","가주어-진주어(명사절)","감정을 나타내는 분사","인칭대명사, 재귀대명사",
+  "소유격 관계대명사 whose, of which","관계대명사의 선행사에 수일치","3문형↔4문형 전환","조동사+have p.p.",
+  "부사구 강조 도치 / 기타 도치","여러 가지 조동사 표현","전치사를 동반하는 동사 쓰임 Ⅰ","전치사를 동반하는 동사 쓰임 Ⅱ",
+  "의문사+to부정사","원인·이유의 부사절","양태의 부사절","do 동사의 쓰임","생략구문","보어로 쓰이는 to부정사",
+  "that절이 목적어인 문장의 수동태","전치사의 의미와 쓰임","전치사+동명사","당위성 동사+that+S'+(should+)동사원형",
+  "혼동하기 쉬운 동사","명사와 수식어의 수일치","There+V+S","명사절을 이끄는 복합관계대명사"];
+const ESSAY_BOOKS = [
+  {name:"어법끝 서술형", grade:"고등", unit:"Point", chapters:[
+    "주어와 수일치 I","주어와 수일치 II","동사의 태 I","동사의 태 II","시제","조동사","SVO문형","SVOC문형",
+    "to부정사","분사","분사구문","동사 자리 vs. 준동사 자리","등위접속사와 병렬관계","명사절 접속사","부사절 접속사",
+    "가정법","관계대명사","콤마(,) + 관계대명사","<전치사 + 관계대명사> · 관계부사","What / Which / That",
+    "비교구문 I","비교구문 II","도치구문","It을 활용한 구문"]},
+  {name:"RANK 77 고등 영어 서술형", grade:"고등", unit:"Rank", chapters:RANK77},
+  {name:"고등 영어 서술형 RANK 77 실전문제 700제", grade:"고등", unit:"Rank", chapters:RANK77}
+];
+function essayInfo(name){ return ESSAY_BOOKS.find(b=>b.name===name); }
+
+/* 수능·내신 어법 교재 */
+const USAGE_BOOKS = [
+  {name:"어법끝 Start 실력다지기", grade:"수능·내신", unit:"UNIT", chapters:[
+    "[네모]주어와 동사의 수일치","[네모]명사/대명사의 일치","[네모]동사의 시제","[네모]조동사와 법",
+    "[네모]능동태 vs. 수동태","[네모]분사의 능동 vs. 수동","[네모]동사와 준동사","[네모]병렬구조와 비교구문",
+    "[네모]쓰임상의 구별 Ⅰ","[네모]쓰임상의 구별 Ⅱ","[밑줄]동사","[밑줄]명사/대명사","[밑줄]형용사/부사",
+    "[밑줄]비교구문","[밑줄]v-ing/p.p.","[밑줄]부정사","[밑줄]전치사/접속사","[밑줄]wh-/that",
+    "실전 모의고사 01~05회","실전 모의고사 06~10회","실전 모의고사 11~15회"]},
+  {name:"해커스 수능 어법 (실력편)", grade:"수능", unit:"CH", chapters:[
+    "동사 vs 준동사","동명사/to부정사/분사","주어-동사 수일치","동사의 능동태/수동태",
+    "시제/가정법/조동사","전치사/접속사/관계사","명사/대명사/한정사","형용사/부사/비교구문",
+    "실전 모의고사 01~04","실전 모의고사 05~08"]},
+  {name:"어법끝 실전 모의고사", grade:"수능", unit:"문제", byProblem:true, total:288},
+  {name:"EBS 수능 기출의 미래 영어 어법·어휘", grade:"수능", unit:"UNIT", chapters:[
+    "[어법]문장의 구성","[어법]동사의 활용","[어법]수식어와 준동사의 활용","[어법]연결어의 활용",
+    "[어법]구문의 활용","[어휘]밑줄 어휘","[어휘]네모 어휘"]}
+];
+function usageInfo(name){ return USAGE_BOOKS.find(b=>b.name===name); }
+
+/* 독해 교재 */
+function rangeUnits(prefix, n){ return Array.from({length:n},(_,i)=>`${prefix} ${i+1}`); }
+const MINIMOGO = [
+  ...rangeUnits("미니 모의고사", 12).map((x,i)=>`${String(i+1).padStart(2,'0')}회 미니 모의고사`),
+  "01회 실전 모의고사","02회 실전 모의고사"
+];
+const READING_BOOKS = [
+  {name:"리딩튜터 주니어 Level 1", grade:"중등", unit:"Sec", chapters:rangeUnits("Section",10)},
+  {name:"리딩튜터 주니어 Level 2", grade:"중등", unit:"Sec", chapters:rangeUnits("Section",10)},
+  {name:"리딩튜터 주니어 Level 3", grade:"중등", unit:"Sec", chapters:rangeUnits("Section",10)},
+  {name:"리딩튜터 주니어 Level 4", grade:"중등", unit:"Sec", chapters:rangeUnits("Section",10)},
+  {name:"리딩튜터 챌린저 1", grade:"중·고", unit:"Sec", chapters:rangeUnits("Section",10)},
+  {name:"리딩튜터 챌린저 2", grade:"중·고", unit:"Sec", chapters:rangeUnits("Section",10)},
+  {name:"수능 딥독 Level 3", grade:"고등", unit:"Unit", chapters:rangeUnits("Unit",10)},
+  {name:"해커스 미니모고 기본", grade:"고등", unit:"회", chapters:MINIMOGO},
+  {name:"해커스 미니모고 필수", grade:"고등", unit:"회", chapters:MINIMOGO},
+  {name:"해커스 미니모고 완성", grade:"고등", unit:"회", chapters:MINIMOGO},
+  {name:"쎄듀 수능 영어 절대유형 2024", grade:"수능", unit:"회",
+    chapters:rangeUnits("모의고사",25).map((x,i)=>`2024 모의고사 ${String(i+1).padStart(2,'0')}회`)},
+  {name:"쎄듀 수능 영어 절대유형 3142", grade:"수능", unit:"회",
+    chapters:rangeUnits("모의고사",12).map((x,i)=>`3142 모의고사 ${String(i+1).padStart(2,'0')}회`)},
+  {name:"쎄듀 빈순삽함 전략편", grade:"수능", unit:"단계", chapters:[
+    "[빈칸]Point1 초반 빈칸","[빈칸]Point2 중반 빈칸","[빈칸]Point3 후반 빈칸","[빈칸]Point4 마지막 빈칸",
+    "[빈칸]Actual Test 1","[빈칸]Actual Test 2",
+    "[순서]Point1 문법적 단서","[순서]Point2 연결어 단서","[순서]Point3 내용 흐름",
+    "[순서]Actual Test 1","[순서]Actual Test 2",
+    "[삽입]Point1 문법적 단서","[삽입]Point2 연결어 단서","[삽입]Point3 내용 흐름",
+    "[삽입]Actual Test 1","[삽입]Actual Test 2",
+    "[함의]Point1 앞뒤 맥락","[함의]Point2 글의 주제",
+    "[함의]Actual Test 1","[함의]Actual Test 2",
+    "Final Check 1","Final Check 2","Final Check 3"]},
+  {name:"쎄듀 빈순삽함 실전편", grade:"수능", unit:"회",
+    chapters:rangeUnits("모의고사",15).map((x,i)=>`빈순삽함 모의고사 ${String(i+1).padStart(2,'0')}회`)}
+];
+function readingInfo(name){ return READING_BOOKS.find(b=>b.name===name); }
+
+/* 모의고사 세트 (학년별 연도×월) */
+const MOCK_SETS = {
+  "고1": { years:[2022,2023,2024,2025,2026], months:[3,6,9] },
+  "고2": { years:[2022,2023,2024,2025,2026], months:[3,6,9] },
+  "고3": { years:[2023,2024,2025,2026,2027], months:[3,6,9] }
+};
+function mockList(gradeKey){
+  const set=MOCK_SETS[gradeKey]; if(!set) return [];
+  const arr=[];
+  set.years.forEach(y=>set.months.forEach(m=>arr.push({key:`${y}-${m}`, label:`${y}년 ${m}월`})));
+  return arr;
+}
 
 let DB = {
   teacher: { pw:"1234" },
@@ -875,6 +1000,160 @@ function renderStudent(id){
     </div>
 
     <div class="card" style="margin-top:18px">
+      <h3><span class="dot"></span>문법 교재 진도</h3>
+      ${(()=>{
+        const gb=grammarInfo(s.grammarBook);
+        if(!s.grammarBook||!gb) return '<div style="color:#94a3b8;font-size:14px">아직 문법 교재가 지정되지 않았어요.</div>';
+        const total=gb.chapters.length;
+        const ch=Math.min(s.grammarCh||0, total);
+        const p=pct(ch, total);
+        const curName = ch>0 ? gb.chapters[ch-1] : null;
+        const nextName = ch<total ? gb.chapters[ch] : null;
+        return `
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+            <span style="font-size:18px;font-weight:800;color:#8b5cf6">${s.grammarBook}</span>
+            <span style="font-size:13px;color:#64748b">${gb.grade} · 총 ${total}챕터</span>
+          </div>
+          <div class="pbar-label"><span>📕 진도</span><b>Ch.${ch} / ${total} (${p}%)</b></div>
+          <div class="pbar"><div style="width:0%;background:linear-gradient(90deg,#8b5cf6,#c4b5fd)" data-w="${p}"></div></div>
+          <div style="font-size:13px;color:#475569;margin-top:8px">
+            ${curName?`최근 완료: <b>Ch.${ch} ${curName}</b>`:'아직 시작 전'}
+            ${nextName?` · 다음: Ch.${ch+1} ${nextName}`:(p>=100?' · 🎉 완료!':'')}
+          </div>
+          ${s.grammarPage?`<div style="font-size:13px;color:#475569;margin-top:4px">📄 현재 페이지: <b>p.${s.grammarPage}</b></div>`:''}
+        `;
+      })()}
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h3><span class="dot"></span>서술형 교재 진도</h3>
+      ${(()=>{
+        const eb=essayInfo(s.essayBook);
+        if(!s.essayBook||!eb) return '<div style="color:#94a3b8;font-size:14px">아직 서술형 교재가 지정되지 않았어요.</div>';
+        const total=eb.chapters.length;
+        const u=eb.unit;
+        const n=Math.min(s.essayCh||0, total);
+        const p=pct(n, total);
+        const curName = n>0 ? eb.chapters[n-1] : null;
+        const nextName = n<total ? eb.chapters[n] : null;
+        return `
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+            <span style="font-size:18px;font-weight:800;color:#0d9488">${s.essayBook}</span>
+            <span style="font-size:13px;color:#64748b">${eb.grade} · 총 ${total}${u}</span>
+          </div>
+          <div class="pbar-label"><span>📘 진도</span><b>${u} ${n} / ${total} (${p}%)</b></div>
+          <div class="pbar"><div style="width:0%;background:linear-gradient(90deg,#0d9488,#5eead4)" data-w="${p}"></div></div>
+          <div style="font-size:13px;color:#475569;margin-top:8px">
+            ${curName?`최근 완료: <b>${u} ${n} ${curName}</b>`:'아직 시작 전'}
+            ${nextName?` · 다음: ${u} ${n+1} ${nextName}`:(p>=100?' · 🎉 완료!':'')}
+          </div>
+          ${s.essayPage?`<div style="font-size:13px;color:#475569;margin-top:4px">📄 현재 페이지: <b>p.${s.essayPage}</b></div>`:''}
+        `;
+      })()}
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h3><span class="dot"></span>어법 교재 진도</h3>
+      ${(()=>{
+        const ub=usageInfo(s.usageBook);
+        if(!s.usageBook||!ub) return '<div style="color:#94a3b8;font-size:14px">아직 어법 교재가 지정되지 않았어요.</div>';
+        const u=ub.unit;
+        const total= ub.byProblem ? ub.total : ub.chapters.length;
+        const n=Math.min(s.usageCh||0, total);
+        const p=pct(n, total);
+        const pageLine = s.usagePage ? `<div style="font-size:13px;color:#475569;margin-top:4px">📄 현재 페이지: <b>p.${s.usagePage}</b></div>` : '';
+        if(ub.byProblem){
+          return `
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+              <span style="font-size:18px;font-weight:800;color:#e11d48">${s.usageBook}</span>
+              <span style="font-size:13px;color:#64748b">${ub.grade} · 총 ${total}${u}</span>
+            </div>
+            <div class="pbar-label"><span>📙 진도</span><b>${n} / ${total}${u} (${p}%)</b></div>
+            <div class="pbar"><div style="width:0%;background:linear-gradient(90deg,#e11d48,#fda4af)" data-w="${p}"></div></div>
+            <div style="font-size:13px;color:#475569;margin-top:8px">남은 문제 <b>${total-n}${u}</b>${p>=100?' · 🎉 완료!':''}</div>
+            ${pageLine}`;
+        }
+        const curName = n>0 ? ub.chapters[n-1] : null;
+        const nextName = n<total ? ub.chapters[n] : null;
+        return `
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+            <span style="font-size:18px;font-weight:800;color:#e11d48">${s.usageBook}</span>
+            <span style="font-size:13px;color:#64748b">${ub.grade} · 총 ${total}${u}</span>
+          </div>
+          <div class="pbar-label"><span>📙 진도</span><b>${u} ${n} / ${total} (${p}%)</b></div>
+          <div class="pbar"><div style="width:0%;background:linear-gradient(90deg,#e11d48,#fda4af)" data-w="${p}"></div></div>
+          <div style="font-size:13px;color:#475569;margin-top:8px">
+            ${curName?`최근 완료: <b>${u} ${n} ${curName}</b>`:'아직 시작 전'}
+            ${nextName?` · 다음: ${u} ${n+1} ${nextName}`:(p>=100?' · 🎉 완료!':'')}
+          </div>
+          ${pageLine}`;
+      })()}
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h3><span class="dot"></span>독해 교재 진도</h3>
+      ${(()=>{
+        const rb=readingInfo(s.readingBook);
+        if(!s.readingBook||!rb) return '<div style="color:#94a3b8;font-size:14px">아직 독해 교재가 지정되지 않았어요.</div>';
+        const u=rb.unit;
+        const total=rb.chapters.length;
+        const n=Math.min(s.readingCh||0, total);
+        const p=pct(n, total);
+        const curName = n>0 ? rb.chapters[n-1] : null;
+        const nextName = n<total ? rb.chapters[n] : null;
+        return `
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+            <span style="font-size:18px;font-weight:800;color:#ea580c">${s.readingBook}</span>
+            <span style="font-size:13px;color:#64748b">${rb.grade} · 총 ${total}${u}</span>
+          </div>
+          <div class="pbar-label"><span>📖 진도</span><b>${u} ${n} / ${total} (${p}%)</b></div>
+          <div class="pbar"><div style="width:0%;background:linear-gradient(90deg,#ea580c,#fdba74)" data-w="${p}"></div></div>
+          <div style="font-size:13px;color:#475569;margin-top:8px">
+            ${curName?`최근 완료: <b>${curName}</b>`:'아직 시작 전'}
+            ${nextName?` · 다음: ${nextName}`:(p>=100?' · 🎉 완료!':'')}
+          </div>
+          ${s.readingPage?`<div style="font-size:13px;color:#475569;margin-top:4px">📄 현재 페이지: <b>p.${s.readingPage}</b></div>`:''}
+        `;
+      })()}
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h3><span class="dot"></span>모의고사 기록</h3>
+      ${(()=>{
+        const mk=s.mocks||{};
+        let done=[];
+        Object.keys(MOCK_SETS).forEach(gk=>{
+          mockList(gk).forEach(m=>{
+            const rec=(mk[gk]||{})[m.key];
+            if(rec && rec.done){ done.push({gk, label:m.label, score:rec.score}); }
+          });
+        });
+        if(done.length===0) return '<div style="color:#94a3b8;font-size:14px">아직 기록된 모의고사가 없어요.</div>';
+        // 점수 평균
+        const scored = done.filter(d=>d.score!==undefined && d.score!==null && d.score!=='');
+        const avg = scored.length? Math.round(scored.reduce((a,b)=>a+Number(b.score),0)/scored.length) : null;
+        let rows = done.map(d=>`
+          <div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border-radius:8px;padding:7px 11px;margin-bottom:5px">
+            <span style="font-size:11px;font-weight:800;color:#fff;background:#6366f1;padding:2px 8px;border-radius:6px">${d.gk}</span>
+            <span style="flex:1;font-size:14px;color:var(--navy);font-weight:600">${d.label}</span>
+            ${(d.score!==undefined&&d.score!==null&&d.score!=='')?`<span style="font-size:14px;font-weight:800;color:#6366f1">${d.score}점</span>`:'<span style="font-size:12px;color:#94a3b8">점수 미입력</span>'}
+          </div>`).join('');
+        return `
+          <div style="display:flex;gap:14px;margin-bottom:12px">
+            <div style="flex:1;background:#eef2ff;border-radius:11px;padding:12px;text-align:center">
+              <div style="font-size:12px;color:#6366f1;font-weight:700">응시 횟수</div>
+              <div style="font-size:24px;font-weight:900;color:var(--navy)">${done.length}회</div>
+            </div>
+            <div style="flex:1;background:#eef2ff;border-radius:11px;padding:12px;text-align:center">
+              <div style="font-size:12px;color:#6366f1;font-weight:700">평균 점수</div>
+              <div style="font-size:24px;font-weight:900;color:var(--navy)">${avg!==null?avg+'점':'-'}</div>
+            </div>
+          </div>
+          ${rows}`;
+      })()}
+    </div>
+
+    <div class="card" style="margin-top:18px">
       <h3><span class="dot"></span>주차별 목표 보드</h3>
       <div class="weeks">${weeksHtml}</div>
     </div>
@@ -1213,7 +1492,7 @@ function doBulk(){
         overallLv:"", overallRank:"", overallNum:5, testDate:"", vocabSize:0,
         book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
         todayStudy:"", todayHw:"", month:todayMonth,
-        vocabBook:"", vocabDay:0,
+        vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{}, mocks:{}, readingBook:"", readingCh:0, readingPage:0, essayBook:"", essayCh:0,
     vocabBook:"", vocabDay:0,
         todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
         weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
@@ -1332,6 +1611,71 @@ function renderStudentForm(id){
         <div class="field"><label>현재 Day (진행한 일수)</label><input id="f_vday" type="number" min="0" value="${s.vocabDay||0}" placeholder="0"></div>
       </div>
 
+      <div class="frow three">
+        <div class="field"><label>문법 교재</label>
+          <select id="f_gbook">
+            <option value="">— 선택 안 함 —</option>
+            ${GRAMMAR_BOOKS.map(b=>`<option value="${b.name}" ${s.grammarBook===b.name?'selected':''}>${b.name} (${b.grade}, ~Ch${b.chapters.length})</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>현재 Chapter</label><input id="f_gch" type="number" min="0" value="${s.grammarCh||0}" placeholder="0"></div>
+        <div class="field"><label>현재 페이지(선택)</label><input id="f_gpage" type="number" min="0" value="${s.grammarPage||0}" placeholder="0"></div>
+      </div>
+
+      <div class="frow three">
+        <div class="field"><label>서술형 교재</label>
+          <select id="f_ebook">
+            <option value="">— 선택 안 함 —</option>
+            ${ESSAY_BOOKS.map(b=>`<option value="${b.name}" ${s.essayBook===b.name?'selected':''}>${b.name} (~${b.unit}${b.chapters.length})</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>현재 Point/Rank</label><input id="f_ech" type="number" min="0" value="${s.essayCh||0}" placeholder="0"></div>
+        <div class="field"><label>현재 페이지(선택)</label><input id="f_epage" type="number" min="0" value="${s.essayPage||0}" placeholder="0"></div>
+      </div>
+
+      <div class="frow three">
+        <div class="field"><label>어법 교재</label>
+          <select id="f_ubook">
+            <option value="">— 선택 안 함 —</option>
+            ${USAGE_BOOKS.map(b=>`<option value="${b.name}" ${s.usageBook===b.name?'selected':''}>${b.name} (~${b.unit}${b.byProblem?b.total:b.chapters.length})</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>현재 진도(Unit/문제 번호)</label><input id="f_uch" type="number" min="0" value="${s.usageCh||0}" placeholder="0"></div>
+        <div class="field"><label>현재 페이지(선택)</label><input id="f_upage" type="number" min="0" value="${s.usagePage||0}" placeholder="0"></div>
+      </div>
+
+      <div class="frow three">
+        <div class="field"><label>독해 교재</label>
+          <select id="f_rbook">
+            <option value="">— 선택 안 함 —</option>
+            ${READING_BOOKS.map(b=>`<option value="${b.name}" ${s.readingBook===b.name?'selected':''}>${b.name} (~${b.unit}${b.chapters.length})</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>현재 진도(Section/Unit/회)</label><input id="f_rch" type="number" min="0" value="${s.readingCh||0}" placeholder="0"></div>
+        <div class="field"><label>현재 페이지(선택)</label><input id="f_rpage" type="number" min="0" value="${s.readingPage||0}" placeholder="0"></div>
+      </div>
+
+      <h3 style="margin-top:22px;font-size:15px">모의고사 기록 (응시 체크 + 점수)</h3>
+      <div style="font-size:12px;color:var(--gray);margin-bottom:10px">학생이 푼 모의고사를 체크하고 점수를 입력하세요. 점수는 선택이에요.</div>
+      ${(()=>{
+        const mk=s.mocks||{};
+        return Object.keys(MOCK_SETS).map(gk=>{
+          const rows=mockList(gk).map(m=>{
+            const rec=(mk[gk]||{})[m.key]||{};
+            const id=`mock_${gk}_${m.key}`.replace(/-/g,'_');
+            return `<label class="mock-item">
+              <input type="checkbox" id="${id}_chk" ${rec.done?'checked':''}>
+              <span class="ml">${m.label}</span>
+              <input type="number" id="${id}_sc" class="mock-score" min="0" max="100" value="${(rec.score!==undefined&&rec.score!==null)?rec.score:''}" placeholder="점수">
+            </label>`;
+          }).join('');
+          return `<div class="mock-grade">
+            <div class="mock-grade-title">${gk}</div>
+            <div class="mock-grid">${rows}</div>
+          </div>`;
+        }).join('');
+      })()}
+
       <h3 style="margin-top:22px;font-size:15px">주차별 목표 · 달성</h3>
       ${weekEdit}
 
@@ -1357,6 +1701,21 @@ function saveStudent(isNew){
       done: document.getElementById('wk_done_'+i).checked
     });
   }
+
+  // 모의고사 기록 수집
+  const mocks={};
+  Object.keys(MOCK_SETS).forEach(gk=>{
+    mockList(gk).forEach(m=>{
+      const id=`mock_${gk}_${m.key}`.replace(/-/g,'_');
+      const chk=document.getElementById(id+'_chk');
+      const sc=document.getElementById(id+'_sc');
+      if(chk && chk.checked){
+        if(!mocks[gk]) mocks[gk]={};
+        const v=sc.value.trim();
+        mocks[gk][m.key]={ done:true, score: v===''?null:Number(v) };
+      }
+    });
+  });
 
   DB.students[id]={
     pw: document.getElementById('f_pw').value,
@@ -1395,6 +1754,19 @@ function saveStudent(isNew){
     month: parseInt(document.getElementById('f_month').value),
     vocabBook: document.getElementById('f_vbook').value,
     vocabDay: parseInt(document.getElementById('f_vday').value)||0,
+    grammarBook: document.getElementById('f_gbook').value,
+    grammarCh: parseInt(document.getElementById('f_gch').value)||0,
+    grammarPage: parseInt(document.getElementById('f_gpage').value)||0,
+    essayBook: document.getElementById('f_ebook').value,
+    essayCh: parseInt(document.getElementById('f_ech').value)||0,
+    essayPage: parseInt(document.getElementById('f_epage').value)||0,
+    usageBook: document.getElementById('f_ubook').value,
+    usageCh: parseInt(document.getElementById('f_uch').value)||0,
+    usagePage: parseInt(document.getElementById('f_upage').value)||0,
+    readingBook: document.getElementById('f_rbook').value,
+    readingCh: parseInt(document.getElementById('f_rch').value)||0,
+    readingPage: parseInt(document.getElementById('f_rpage').value)||0,
+    mocks,
     todayWordDone: parseInt(document.getElementById('f_wd').value)||0,
     todayWordTotal: parseInt(document.getElementById('f_wt').value)||0,
     todayHwDone: parseInt(document.getElementById('f_hd').value)||0,
@@ -1477,7 +1849,7 @@ ${[s.school,s.grade].filter(Boolean).join(' ')}
 
 📖 현재 교재: 『${s.book}』
 · 오늘 학습: ${s.todayStudy}
-· 오늘 숙제: ${s.todayHw}${(()=>{const bk=bookInfo(s.vocabBook);if(!s.vocabBook||!bk)return '';const day=Math.min(s.vocabDay||0,bk.days);return `\n\n📗 단어책: ${s.vocabBook}\n· 진도 Day ${day}/${bk.days} (${pct(day,bk.days)}%)`;})()}
+· 오늘 숙제: ${s.todayHw}${(()=>{const bk=bookInfo(s.vocabBook);if(!s.vocabBook||!bk)return '';const day=Math.min(s.vocabDay||0,bk.days);return `\n\n📗 단어책: ${s.vocabBook}\n· 진도 Day ${day}/${bk.days} (${pct(day,bk.days)}%)`;})()}${(()=>{const gb=grammarInfo(s.grammarBook);if(!s.grammarBook||!gb)return '';const total=gb.chapters.length;const ch=Math.min(s.grammarCh||0,total);const cn=ch>0?gb.chapters[ch-1]:'';return `\n\n📕 문법: ${s.grammarBook}\n· 진도 Ch.${ch}/${total} (${pct(ch,total)}%)${cn?' · 최근 '+cn:''}${s.grammarPage?' · p.'+s.grammarPage:''}`;})()}${(()=>{const eb=essayInfo(s.essayBook);if(!s.essayBook||!eb)return '';const total=eb.chapters.length;const u=eb.unit;const n=Math.min(s.essayCh||0,total);const cn=n>0?eb.chapters[n-1]:'';return `\n\n📘 서술형: ${s.essayBook}\n· 진도 ${u} ${n}/${total} (${pct(n,total)}%)${cn?' · 최근 '+cn:''}${s.essayPage?' · p.'+s.essayPage:''}`;})()}${(()=>{const ub=usageInfo(s.usageBook);if(!s.usageBook||!ub)return '';const total=ub.byProblem?ub.total:ub.chapters.length;const u=ub.unit;const n=Math.min(s.usageCh||0,total);const cn=(!ub.byProblem&&n>0)?ub.chapters[n-1]:'';return `\n\n📙 어법: ${s.usageBook}\n· 진도 ${u} ${n}/${total} (${pct(n,total)}%)${cn?' · 최근 '+cn:''}${s.usagePage?' · p.'+s.usagePage:''}`;})()}${(()=>{const rb=readingInfo(s.readingBook);if(!s.readingBook||!rb)return '';const total=rb.chapters.length;const u=rb.unit;const n=Math.min(s.readingCh||0,total);const cn=n>0?rb.chapters[n-1]:'';return `\n\n📖 독해: ${s.readingBook}\n· 진도 ${u} ${n}/${total} (${pct(n,total)}%)${cn?' · 최근 '+cn:''}${s.readingPage?' · p.'+s.readingPage:''}`;})()}${(()=>{const mk=s.mocks||{};let done=[];Object.keys(MOCK_SETS).forEach(gk=>{mockList(gk).forEach(m=>{const rec=(mk[gk]||{})[m.key];if(rec&&rec.done)done.push(`${gk} ${m.label}${(rec.score!==undefined&&rec.score!==null)?' '+rec.score+'점':''}`);});});if(done.length===0)return '';return `\n\n📝 모의고사 (${done.length}회)\n· ${done.join('\n· ')}`;})()}
 
 🎯 이번 달 주차별 목표 (${dw}/${wc} 달성)
 ${wkText}
