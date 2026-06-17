@@ -123,7 +123,11 @@
   .notice-card{ border-radius:16px; padding:18px 20px; }
   .notice-card.summary{ background:linear-gradient(135deg,#eef4ff,#e0ecff); border:1.5px solid #c7dbff; }
   .notice-card.overdue{ background:linear-gradient(135deg,#fff7ed,#ffedd5); border:1.5px solid #fed7aa; }
-  .notice-card .nt{ font-size:15px; font-weight:800; color:var(--navy); display:flex; align-items:center; gap:7px; margin-bottom:12px; }
+  .notice-card .nt{ font-size:15px; font-weight:800; color:var(--navy); display:flex; align-items:center; gap:7px; margin-bottom:0; cursor:pointer; list-style:none; user-select:none; }
+  .notice-card summary.nt::-webkit-details-marker{ display:none; }
+  .notice-card summary.nt::before{ content:'▸'; color:#94a3b8; transition:transform .2s; }
+  .notice-card[open] summary.nt::before{ transform:rotate(90deg); }
+  details.notice-card[open] .nt{ margin-bottom:0; }
   .notice-card .nt .cnt{ margin-left:auto; font-size:12px; font-weight:700; background:#fff; padding:3px 10px; border-radius:20px; color:#475569; }
   .notice-card .nbody{ font-size:13px; color:#334155; line-height:1.6; }
   .notice-card .nbody > div{ margin-bottom:3px; }
@@ -359,7 +363,7 @@ function mockList(gradeKey){
 let DB = {
   teacher: { pw:"1234" },
   students: {
-    cmk591: { pw:"1234", name:"곽민규", school:"도곡중", grade:"중3",
+    cmk591: { pw:"cmk591000000", name:"곽민규", school:"도곡중", grade:"중3",
       level:{ word:"중3", grammar:"중2", reading:"고1", listening:"고2(상)" }, levelNum:{ word:6, grammar:5, reading:7, listening:8 },
       rank:{ word:"상위 20%", grammar:"상위 32%", reading:"상위 12%", listening:"상위 5%" },
       overallLv:"Lv.6", overallRank:"상위 10%", overallNum:6, testDate:"2025.10.03", vocabSize:3100,
@@ -367,7 +371,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk588: { pw:"1234", name:"곽찬규", school:"역삼중", grade:"중1",
+    cmk588: { pw:"cmk588000000", name:"곽찬규", school:"역삼중", grade:"중1",
       level:{ word:"중2", grammar:"중2", reading:"중2", listening:"중3" }, levelNum:{ word:5, grammar:5, reading:5, listening:6 },
       rank:{ word:"상위 9%", grammar:"상위 8%", reading:"상위 6%", listening:"상위 20%" },
       overallLv:"Lv.5", overallRank:"상위 8%", overallNum:5, testDate:"2026.02.06", vocabSize:2400,
@@ -375,7 +379,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk618: { pw:"1234", name:"권성원", school:"휘문중", grade:"중2",
+    cmk618: { pw:"cmk618000000", name:"권성원", school:"휘문중", grade:"중2",
       level:{ word:"초6", grammar:"초5~6", reading:"중1", listening:"중2" }, levelNum:{ word:3, grammar:3, reading:4, listening:5 },
       rank:{ word:"상위 98%", grammar:"상위 82%", reading:"상위 71%", listening:"상위 86%" },
       overallLv:"Lv.4", overallRank:"상위 83%", overallNum:4, testDate:"2026.03.02", vocabSize:1500,
@@ -383,7 +387,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk663: { pw:"1234", name:"김건희", school:"휘문중", grade:"중3",
+    cmk663: { pw:"cmk663000000", name:"김건희", school:"휘문중", grade:"중3",
       level:{ word:"고1", grammar:"중3", reading:"고2", listening:"고3" }, levelNum:{ word:7, grammar:6, reading:8, listening:9 },
       rank:{ word:"상위 23%", grammar:"상위 14%", reading:"상위 6%", listening:"상위 8%" },
       overallLv:"Lv.7", overallRank:"상위 5%", overallNum:7, testDate:"2026.05.27", vocabSize:3700,
@@ -391,7 +395,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk577: { pw:"1234", name:"김도운", school:"중동중", grade:"중3",
+    cmk577: { pw:"cmk577000000", name:"김도운", school:"중동중", grade:"중3",
       level:{ word:"중2(하)", grammar:"초5~6", reading:"중3", listening:"고1" }, levelNum:{ word:5, grammar:3, reading:6, listening:7 },
       rank:{ word:"상위 73%", grammar:"상위 77%", reading:"상위 26%", listening:"상위 28%" },
       overallLv:"Lv.5", overallRank:"상위 46%", overallNum:5, testDate:"2026.02.26", vocabSize:2200,
@@ -399,7 +403,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk653: { pw:"1234", name:"김수아", school:"대명중", grade:"중1",
+    cmk653: { pw:"cmk653000000", name:"김수아", school:"대명중", grade:"중1",
       level:{ word:"중1", grammar:"초5~6", reading:"초6(상)", listening:"중2" }, levelNum:{ word:4, grammar:3, reading:3, listening:5 },
       rank:{ word:"상위 57%", grammar:"상위 67%", reading:"상위 68%", listening:"상위 71%" },
       overallLv:"Lv.3", overallRank:"상위 70%", overallNum:3, testDate:"2026.03.21", vocabSize:1700,
@@ -407,7 +411,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk541: { pw:"1234", name:"김영서", school:"수서중", grade:"중3",
+    cmk541: { pw:"cmk541000000", name:"김영서", school:"수서중", grade:"중3",
       level:{ word:"중3(하)", grammar:"중2", reading:"중3", listening:"고1(상)" }, levelNum:{ word:6, grammar:5, reading:6, listening:7 },
       rank:{ word:"상위 63%", grammar:"상위 34%", reading:"상위 41%", listening:"상위 44%" },
       overallLv:"Lv.6", overallRank:"상위 40%", overallNum:6, testDate:"2026.03.02", vocabSize:2700,
@@ -415,7 +419,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk652: { pw:"1234", name:"김윤아", school:"대명중", grade:"중2",
+    cmk652: { pw:"cmk652000000", name:"김윤아", school:"대명중", grade:"중2",
       level:{ word:"중3", grammar:"중2", reading:"중2", listening:"고2" }, levelNum:{ word:6, grammar:5, reading:5, listening:8 },
       rank:{ word:"상위 22%", grammar:"상위 32%", reading:"상위 37%", listening:"상위 14%" },
       overallLv:"Lv.5", overallRank:"상위 28%", overallNum:5, testDate:"2026.03.25", vocabSize:3100,
@@ -423,7 +427,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk631: { pw:"1234", name:"나연우", school:"대명중", grade:"중1",
+    cmk631: { pw:"cmk631000000", name:"나연우", school:"대명중", grade:"중1",
       level:{ word:"중2", grammar:"중2", reading:"중3", listening:"중3(상)" }, levelNum:{ word:5, grammar:5, reading:6, listening:6 },
       rank:{ word:"상위 24%", grammar:"상위 15%", reading:"상위 10%", listening:"상위 20%" },
       overallLv:"Lv.5", overallRank:"상위 15%", overallNum:5, testDate:"2026.05.25", vocabSize:2500,
@@ -431,7 +435,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk656: { pw:"1234", name:"노서우", school:"휘문중", grade:"중1",
+    cmk656: { pw:"cmk656000000", name:"노서우", school:"휘문중", grade:"중1",
       level:{ word:"중3", grammar:"중2", reading:"중3", listening:"고2" }, levelNum:{ word:6, grammar:5, reading:6, listening:8 },
       rank:{ word:"상위 11%", grammar:"상위 12%", reading:"상위 10%", listening:"상위 6%" },
       overallLv:"Lv.6", overallRank:"상위 7%", overallNum:6, testDate:"2026.04.04", vocabSize:3100,
@@ -439,7 +443,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk662: { pw:"1234", name:"노승준", school:"대명중", grade:"중3",
+    cmk662: { pw:"cmk662000000", name:"노승준", school:"대명중", grade:"중3",
       level:{ word:"고1", grammar:"중2", reading:"고2", listening:"고3" }, levelNum:{ word:7, grammar:5, reading:8, listening:9 },
       rank:{ word:"상위 19%", grammar:"상위 35%", reading:"상위 6%", listening:"상위 7%" },
       overallLv:"Lv.7", overallRank:"상위 10%", overallNum:7, testDate:"2026.05.09", vocabSize:3800,
@@ -447,7 +451,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk648: { pw:"1234", name:"류재혁", school:"대명중", grade:"중1",
+    cmk648: { pw:"cmk648000000", name:"류재혁", school:"대명중", grade:"중1",
       level:{ word:"중2", grammar:"중2", reading:"중3", listening:"중3" }, levelNum:{ word:5, grammar:5, reading:6, listening:6 },
       rank:{ word:"상위 22%", grammar:"상위 18%", reading:"상위 10%", listening:"상위 24%" },
       overallLv:"Lv.5", overallRank:"상위 15%", overallNum:5, testDate:"2026.03.04", vocabSize:2500,
@@ -455,7 +459,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk621: { pw:"1234", name:"박지후", school:"개포중", grade:"중2",
+    cmk621: { pw:"cmk621000000", name:"박지후", school:"개포중", grade:"중2",
       level:{ word:"중3", grammar:"중2", reading:"고1", listening:"고1" }, levelNum:{ word:6, grammar:5, reading:7, listening:7 },
       rank:{ word:"상위 9%", grammar:"상위 16%", reading:"상위 4%", listening:"상위 11%" },
       overallLv:"Lv.6", overallRank:"상위 5%", overallNum:6, testDate:"2025.09.27", vocabSize:2900,
@@ -463,7 +467,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk651: { pw:"1234", name:"박해빈", school:"아주중", grade:"중2",
+    cmk651: { pw:"cmk651000000", name:"박해빈", school:"아주중", grade:"중2",
       level:{ word:"중2", grammar:"중1", reading:"중2", listening:"고1" }, levelNum:{ word:5, grammar:4, reading:5, listening:7 },
       rank:{ word:"상위 38%", grammar:"상위 56%", reading:"상위 48%", listening:"상위 29%" },
       overallLv:"Lv.5", overallRank:"상위 45%", overallNum:5, testDate:"2026.03.07", vocabSize:2500,
@@ -471,7 +475,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    "29gt491": { pw:"1234", name:"백동윤", school:"중동중", grade:"중2",
+    "29gt491": { pw:"29gt491000000", name:"백동윤", school:"중동중", grade:"중2",
       level:{ word:"중1(상)", grammar:"중1", reading:"중3", listening:"중3(상)" }, levelNum:{ word:4, grammar:4, reading:6, listening:6 },
       rank:{ word:"상위 41%", grammar:"상위 35%", reading:"상위 10%", listening:"상위 19%" },
       overallLv:"Lv.5", overallRank:"상위 25%", overallNum:5, testDate:"2026.02.28", vocabSize:2100,
@@ -479,7 +483,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk599: { pw:"1234", name:"빈수호", school:"개포중", grade:"중1",
+    cmk599: { pw:"cmk599000000", name:"빈수호", school:"개포중", grade:"중1",
       level:{ word:"중1", grammar:"중1", reading:"초5~6", listening:"중2" }, levelNum:{ word:4, grammar:4, reading:3, listening:5 },
       rank:{ word:"상위 38%", grammar:"상위 22%", reading:"상위 50%", listening:"상위 37%" },
       overallLv:"Lv.4", overallRank:"상위 41%", overallNum:4, testDate:"2025.05.17", vocabSize:1800,
@@ -487,7 +491,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk633: { pw:"1234", name:"석지완", school:"휘문중", grade:"중1",
+    cmk633: { pw:"cmk633000000", name:"석지완", school:"휘문중", grade:"중1",
       level:{ word:"중2", grammar:"중3", reading:"중2", listening:"중3" }, levelNum:{ word:5, grammar:6, reading:5, listening:6 },
       rank:{ word:"상위 25%", grammar:"상위 6%", reading:"상위 22%", listening:"상위 33%" },
       overallLv:"Lv.5", overallRank:"상위 16%", overallNum:5, testDate:"2026.03.02", vocabSize:2500,
@@ -495,7 +499,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk624: { pw:"1234", name:"신채빈", school:"개포중", grade:"중2",
+    cmk624: { pw:"cmk624000000", name:"신채빈", school:"개포중", grade:"중2",
       level:{ word:"중1", grammar:"중1", reading:"중1", listening:"중2" }, levelNum:{ word:4, grammar:4, reading:4, listening:5 },
       rank:{ word:"상위 63%", grammar:"상위 36%", reading:"상위 53%", listening:"상위 58%" },
       overallLv:"Lv.4", overallRank:"상위 52%", overallNum:4, testDate:"2026.02.26", vocabSize:1800,
@@ -503,7 +507,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk603: { pw:"1234", name:"안유준", school:"휘문중", grade:"중2",
+    cmk603: { pw:"cmk603000000", name:"안유준", school:"휘문중", grade:"중2",
       level:{ word:"중2", grammar:"중2", reading:"중2", listening:"고1(상)" }, levelNum:{ word:5, grammar:5, reading:5, listening:7 },
       rank:{ word:"상위 53%", grammar:"상위 40%", reading:"상위 40%", listening:"상위 18%" },
       overallLv:"Lv.5", overallRank:"상위 35%", overallNum:5, testDate:"2026.03.02", vocabSize:2400,
@@ -511,7 +515,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    "29gt454": { pw:"1234", name:"우현진", school:"서운중", grade:"중3",
+    "29gt454": { pw:"29gt454000000", name:"우현진", school:"서운중", grade:"중3",
       level:{ word:"중2", grammar:"중3", reading:"중3", listening:"중3" }, levelNum:{ word:5, grammar:6, reading:6, listening:6 },
       rank:{ word:"상위 41%", grammar:"상위 15%", reading:"상위 24%", listening:"상위 44%" },
       overallLv:"Lv.6", overallRank:"상위 21%", overallNum:6, testDate:"2026.02.28", vocabSize:2500,
@@ -519,7 +523,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk572: { pw:"1234", name:"이강현", school:"휘문중", grade:"중2",
+    cmk572: { pw:"cmk572000000", name:"이강현", school:"휘문중", grade:"중2",
       level:{ word:"중2", grammar:"중1", reading:"중3", listening:"중3" }, levelNum:{ word:5, grammar:4, reading:6, listening:6 },
       rank:{ word:"상위 31%", grammar:"상위 31%", reading:"상위 10%", listening:"상위 23%" },
       overallLv:"Lv.5", overallRank:"상위 21%", overallNum:5, testDate:"2025.05.29", vocabSize:2400,
@@ -527,7 +531,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk644: { pw:"1234", name:"이건우", school:"대명중", grade:"중1",
+    cmk644: { pw:"cmk644000000", name:"이건우", school:"대명중", grade:"중1",
       level:{ word:"중1", grammar:"초5~6", reading:"중1", listening:"중2(상)" }, levelNum:{ word:4, grammar:3, reading:4, listening:5 },
       rank:{ word:"상위 25%", grammar:"상위 40%", reading:"상위 32%", listening:"상위 23%" },
       overallLv:"Lv.4", overallRank:"상위 36%", overallNum:4, testDate:"2026.02.25", vocabSize:1700,
@@ -535,7 +539,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk657: { pw:"1234", name:"이준표", school:"대현초", grade:"초6",
+    cmk657: { pw:"cmk657000000", name:"이준표", school:"대현초", grade:"초6",
       level:{ word:"중1", grammar:"중1", reading:"중2", listening:"중3(상)" }, levelNum:{ word:4, grammar:4, reading:5, listening:6 },
       rank:{ word:"상위 20%", grammar:"상위 22%", reading:"상위 9%", listening:"상위 9%" },
       overallLv:"Lv.5", overallRank:"상위 12%", overallNum:5, testDate:"2026.04.08", vocabSize:1900,
@@ -543,7 +547,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    "29gt468": { pw:"1234", name:"이준현", school:"휘문중", grade:"중3",
+    "29gt468": { pw:"29gt468000000", name:"이준현", school:"휘문중", grade:"중3",
       level:{ word:"중2", grammar:"중2", reading:"중2", listening:"중3" }, levelNum:{ word:5, grammar:5, reading:5, listening:6 },
       rank:{ word:"상위 57%", grammar:"상위 36%", reading:"상위 48%", listening:"상위 58%" },
       overallLv:"Lv.5", overallRank:"상위 42%", overallNum:5, testDate:"2025.10.09", vocabSize:2400,
@@ -551,7 +555,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk643: { pw:"1234", name:"이현우", school:"대명중", grade:"중1",
+    cmk643: { pw:"cmk643000000", name:"이현우", school:"대명중", grade:"중1",
       level:{ word:"중2", grammar:"초5~6", reading:"중2", listening:"중2" }, levelNum:{ word:5, grammar:3, reading:5, listening:5 },
       rank:{ word:"상위 7%", grammar:"상위 37%", reading:"상위 9%", listening:"상위 27%" },
       overallLv:"Lv.4", overallRank:"상위 23%", overallNum:4, testDate:"2026.02.25", vocabSize:2300,
@@ -559,7 +563,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk659: { pw:"1234", name:"이화", school:"휘문중", grade:"중1",
+    cmk659: { pw:"cmk659000000", name:"이화", school:"휘문중", grade:"중1",
       level:{ word:"중1", grammar:"중1", reading:"중2", listening:"중2(상)" }, levelNum:{ word:4, grammar:4, reading:5, listening:5 },
       rank:{ word:"상위 59%", grammar:"상위 37%", reading:"상위 26%", listening:"상위 46%" },
       overallLv:"Lv.4", overallRank:"상위 36%", overallNum:4, testDate:"2026.04.22", vocabSize:1800,
@@ -567,7 +571,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk538: { pw:"1234", name:"장상효", school:"역삼중", grade:"중2",
+    cmk538: { pw:"cmk538000000", name:"장상효", school:"역삼중", grade:"중2",
       level:{ word:"고1", grammar:"중3", reading:"고2", listening:"고3" }, levelNum:{ word:7, grammar:6, reading:8, listening:9 },
       rank:{ word:"상위 10%", grammar:"상위 10%", reading:"상위 4%", listening:"상위 4%" },
       overallLv:"Lv.7", overallRank:"상위 2%", overallNum:7, testDate:"2026.04.30", vocabSize:3700,
@@ -575,7 +579,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk625: { pw:"1234", name:"장하준", school:"개원중", grade:"중2",
+    cmk625: { pw:"cmk625000000", name:"장하준", school:"개원중", grade:"중2",
       level:{ word:"중2", grammar:"중2", reading:"중3", listening:"중3(상)" }, levelNum:{ word:5, grammar:5, reading:6, listening:6 },
       rank:{ word:"상위 29%", grammar:"상위 17%", reading:"상위 10%", listening:"상위 20%" },
       overallLv:"Lv.5", overallRank:"상위 16%", overallNum:5, testDate:"2026.02.28", vocabSize:2400,
@@ -583,7 +587,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk629: { pw:"1234", name:"정유찬", school:"휘문중", grade:"중1",
+    cmk629: { pw:"cmk629000000", name:"정유찬", school:"휘문중", grade:"중1",
       level:{ word:"중1", grammar:"초5~6", reading:"중2", listening:"중2" }, levelNum:{ word:4, grammar:3, reading:5, listening:5 },
       rank:{ word:"상위 69%", grammar:"상위 65%", reading:"상위 31%", listening:"상위 55%" },
       overallLv:"Lv.4", overallRank:"상위 46%", overallNum:4, testDate:"2026.03.02", vocabSize:1800,
@@ -591,7 +595,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    mscho09: { pw:"1234", name:"조민서", school:"숙명여고", grade:"고2",
+    mscho09: { pw:"mscho09000000", name:"조민서", school:"숙명여고", grade:"고2",
       level:{ word:"고1", grammar:"중3", reading:"고2", listening:"고3" }, levelNum:{ word:7, grammar:6, reading:8, listening:9 },
       rank:{ word:"상위 33%", grammar:"상위 32%", reading:"상위 23%", listening:"상위 24%" },
       overallLv:"Lv.7", overallRank:"상위 25%", overallNum:7, testDate:"2025.07.12", vocabSize:3800,
@@ -599,7 +603,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    mahcho1204: { pw:"1234", name:"조민아", school:"숙명여중", grade:"중2",
+    mahcho1204: { pw:"mahcho1204000000", name:"조민아", school:"숙명여중", grade:"중2",
       level:{ word:"중2", grammar:"중1", reading:"중1", listening:"고1" }, levelNum:{ word:5, grammar:4, reading:4, listening:7 },
       rank:{ word:"상위 31%", grammar:"상위 27%", reading:"상위 38%", listening:"상위 14%" },
       overallLv:"Lv.4", overallRank:"상위 38%", overallNum:4, testDate:"2025.10.09", vocabSize:2400,
@@ -607,7 +611,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk654: { pw:"1234", name:"조한준", school:"도곡중", grade:"중2",
+    cmk654: { pw:"cmk654000000", name:"조한준", school:"도곡중", grade:"중2",
       level:{ word:"중2", grammar:"중1", reading:"중3", listening:"고1" }, levelNum:{ word:5, grammar:4, reading:6, listening:7 },
       rank:{ word:"상위 49%", grammar:"상위 63%", reading:"상위 24%", listening:"상위 33%" },
       overallLv:"Lv.5", overallRank:"상위 34%", overallNum:5, testDate:"2026.03.21", vocabSize:2500,
@@ -615,7 +619,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    "29gt114": { pw:"1234", name:"최다예", school:"개포중", grade:"중3",
+    "29gt114": { pw:"29gt114000000", name:"최다예", school:"개포중", grade:"중3",
       level:{ word:"중3", grammar:"중3", reading:"중2", listening:"고2" }, levelNum:{ word:6, grammar:6, reading:5, listening:8 },
       rank:{ word:"상위 47%", grammar:"상위 28%", reading:"상위 61%", listening:"상위 34%" },
       overallLv:"Lv.6", overallRank:"상위 39%", overallNum:6, testDate:"2026.03.02", vocabSize:3000,
@@ -623,7 +627,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk614: { pw:"1234", name:"최지오", school:"숙명여중", grade:"중3",
+    cmk614: { pw:"cmk614000000", name:"최지오", school:"숙명여중", grade:"중3",
       level:{ word:"고2", grammar:"고1", reading:"고2", listening:"고3(상)" }, levelNum:{ word:8, grammar:7, reading:8, listening:9 },
       rank:{ word:"상위 4%", grammar:"상위 5%", reading:"상위 4%", listening:"상위 1%" },
       overallLv:"Lv.8", overallRank:"상위 2%", overallNum:8, testDate:"2026.03.13", vocabSize:4600,
@@ -631,7 +635,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    "29gt355": { pw:"1234", name:"최호준", school:"구룡중", grade:"중1",
+    "29gt355": { pw:"29gt355000000", name:"최호준", school:"구룡중", grade:"중1",
       level:{ word:"중1", grammar:"초5~6", reading:"중2", listening:"중3(상)" }, levelNum:{ word:4, grammar:3, reading:5, listening:6 },
       rank:{ word:"상위 47%", grammar:"상위 60%", reading:"상위 28%", listening:"상위 19%" },
       overallLv:"Lv.4", overallRank:"상위 43%", overallNum:4, testDate:"2026.05.25", vocabSize:1900,
@@ -639,7 +643,7 @@ let DB = {
       vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{},
       todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
       weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}] },
-    cmk664: { pw:"1234", name:"홍지우", school:"개포중", grade:"중2",
+    cmk664: { pw:"cmk664000000", name:"홍지우", school:"개포중", grade:"중2",
       level:{ word:"중3", grammar:"중2", reading:"중3", listening:"고1(상)" }, levelNum:{ word:6, grammar:5, reading:6, listening:7 },
       rank:{ word:"상위 29%", grammar:"상위 25%", reading:"상위 20%", listening:"상위 19%" },
       overallLv:"Lv.6", overallRank:"상위 20%", overallNum:6, testDate:"2026.05.30", vocabSize:3000,
@@ -1203,14 +1207,18 @@ function buildNotices(){
 
   // ---- 총평 통계 ----
   const lvCount={};
-  let vocabSum=0, vocabN=0;
   const weakGrammar=[], weakReading=[], weakVocab=[];
+  const gradeVocab={}; // 학년별 어휘량 합계/인원
   ids.forEach(id=>{
     const s=DB.students[id];
     const lv=s.overallLv||'-'; lvCount[lv]=(lvCount[lv]||0)+1;
-    if(s.vocabSize){ vocabSum+=s.vocabSize; vocabN++; }
+    // 학년별 어휘량
+    if(s.vocabSize){
+      const g=s.grade||'기타';
+      if(!gradeVocab[g]) gradeVocab[g]={sum:0,cnt:0};
+      gradeVocab[g].sum+=s.vocabSize; gradeVocab[g].cnt++;
+    }
     const ln=s.levelNum||{};
-    // 영역 약점: 같은 학생의 다른 영역 평균보다 2단계 이상 낮으면 약점
     const vals=[ln.word,ln.grammar,ln.reading,ln.listening].filter(v=>v);
     if(vals.length){
       const avg=vals.reduce((a,b)=>a+b,0)/vals.length;
@@ -1219,8 +1227,36 @@ function buildNotices(){
       if(ln.word && ln.word<=avg-1.5) weakVocab.push(s.name);
     }
   });
-  const avgVocab = vocabN? Math.round(vocabSum/vocabN) : 0;
-  const lvText = Object.keys(lvCount).sort().map(k=>`${lvWithGrade(k)} ${lvCount[k]}명`).join(' · ');
+
+  // 학년별 평균 어휘량 (정렬: 초6, 중1, 중2, 중3, 그 외)
+  const gradeOrder=["초6","중1","중2","중3","고1","고2","고3"];
+  const gKeys=Object.keys(gradeVocab).sort((a,b)=>{
+    const ia=gradeOrder.indexOf(a), ib=gradeOrder.indexOf(b);
+    return (ia<0?99:ia)-(ib<0?99:ib);
+  });
+  let vocabByGrade = gKeys.map(g=>{
+    const avg=Math.round(gradeVocab[g].sum/gradeVocab[g].cnt);
+    return `<div style="flex:1;min-width:90px;background:#fff;border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:12px;color:#6366f1;font-weight:700">${g}</div>
+      <div style="font-size:20px;font-weight:900;color:var(--navy)">${avg.toLocaleString()}</div>
+      <div style="font-size:10px;color:#94a3b8">단어 · ${gradeVocab[g].cnt}명</div>
+    </div>`;
+  }).join('');
+  if(!vocabByGrade) vocabByGrade='<div style="color:#94a3b8;font-size:13px">어휘량 데이터 없음</div>';
+
+  // 종합레벨 분포 막대그래프 (Lv.2~Lv.9 순)
+  const lvOrder=["Lv.2","Lv.3","Lv.4","Lv.5","Lv.6","Lv.7","Lv.8","Lv.9"];
+  const maxLv=Math.max(1,...Object.values(lvCount));
+  let lvBars = lvOrder.filter(k=>lvCount[k]).map(k=>{
+    const c=lvCount[k];
+    const h=Math.round(c/maxLv*90)+10;
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+      <div style="font-size:12px;font-weight:800;color:var(--navy)">${c}</div>
+      <div style="width:100%;max-width:38px;height:${h}px;background:linear-gradient(180deg,#2f6fed,#7eb0ff);border-radius:6px 6px 0 0"></div>
+      <div style="font-size:10px;color:#64748b;text-align:center;line-height:1.2">${lvWithGrade(k)}</div>
+    </div>`;
+  }).join('');
+  if(!lvBars) lvBars='<div style="color:#94a3b8;font-size:13px">레벨 데이터 없음</div>';
 
   let weakLines='';
   if(weakGrammar.length) weakLines+=`<div>📕 <b>문법</b>이 상대적 약점: ${weakGrammar.join(', ')}</div>`;
@@ -1236,14 +1272,12 @@ function buildNotices(){
     const mo=monthsSince(d);
     if(mo===null || mo>=6){ overdue.push({id, name:s.name, grade:s.grade, date:s.testDate||'미응시', d, mo}); }
   });
-  // 가장 오래된(=마지막 응시일이 이른) 순. 미응시(null)는 맨 위.
   overdue.sort((a,b)=>{
     if(!a.d && !b.d) return 0;
     if(!a.d) return -1;
     if(!b.d) return 1;
     return a.d - b.d;
   });
-
   let overdueRows = overdue.length===0
     ? '<div style="color:#16a34a;font-size:13px">🎉 최근 6개월 내 모든 학생이 정기평가에 응시했어요!</div>'
     : overdue.map((o,i)=>{
@@ -1258,20 +1292,24 @@ function buildNotices(){
 
   return `
     <div class="notice-board">
-      <div class="notice-card summary">
-        <div class="nt"><span>📣</span> 전체 총평 <span class="cnt">학생 ${n}명</span></div>
-        <div class="nbody">
-          <div style="margin-bottom:8px">평균 어휘량 <b>${avgVocab.toLocaleString()}단어</b> · 종합레벨 분포: ${lvText}</div>
+      <details class="notice-card summary">
+        <summary class="nt"><span>📣</span> 전체 총평 <span class="cnt">학생 ${n}명</span></summary>
+        <div class="nbody" style="margin-top:12px">
+          <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:6px">📘 학년별 평균 어휘량</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">${vocabByGrade}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:6px">📊 종합레벨 분포</div>
+          <div style="display:flex;align-items:flex-end;gap:6px;height:130px;background:#fff;border-radius:10px;padding:12px 10px;margin-bottom:14px">${lvBars}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px">⚠ 영역별 약점</div>
           ${weakLines}
         </div>
-      </div>
-      <div class="notice-card overdue">
-        <div class="nt"><span>⏰</span> 정기평가 미응시 (6개월+) <span class="cnt">${overdue.length}명</span></div>
-        <div class="nbody">
+      </details>
+      <details class="notice-card overdue">
+        <summary class="nt"><span>⏰</span> 정기평가 미응시 (6개월+) <span class="cnt">${overdue.length}명</span></summary>
+        <div class="nbody" style="margin-top:12px">
           <div style="font-size:12px;color:#94a3b8;margin-bottom:8px">가장 오래 안 본 학생부터 · 기준일 2026.06.13</div>
           ${overdueRows}
         </div>
-      </div>
+      </details>
     </div>`;
 }
 
@@ -1302,7 +1340,7 @@ function renderStudentList(){
       <div class="stu-card" onclick="editStudent('${id}')">
         <div class="nm">${s.name}</div>
         <div class="id">@${id} · ${[s.school,s.grade].filter(Boolean).join(' ')||'학교 미입력'} · ${s.month}월</div>
-        <div class="bk">📖 ${s.book}</div>
+        <div class="bk">📖 ${s.book||'교재 미지정'} ${s.overallLv?`<span style="background:var(--sky);color:var(--navy2);padding:2px 8px;border-radius:7px;font-size:12px;font-weight:800;margin-left:4px">${lvWithGrade(s.overallLv)}</span>`:''}</div>
         <div class="mini">
           <span>단어 ${s.level.word}</span><span>문법 ${s.level.grammar}</span><span>독해 ${s.level.reading}</span><span>듣기 ${s.level.listening||'-'}</span>
         </div>
