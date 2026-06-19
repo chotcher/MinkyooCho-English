@@ -788,25 +788,24 @@ const CLASS_GROUPS = {
 };
 const CLASS_ORDER = ['monfri1','monfri2','tuethu1','tuethu2'];
 
-// 학생 ID -> 반 키 매핑 (사진 배정표 기준)
+// 학생 ID -> 반 키 매핑 (실제 등록 ID 기준)
 const CLASS_ASSIGN = {
   // 월금 Class2 (5:00-7:50)
   cmk599:'monfri2', cmk633:'monfri2', cmk629:'monfri2', cmk643:'monfri2',
   cmk631:'monfri2', cmk656:'monfri2', cmk659:'monfri2', cmk618:'monfri2',
-  cmk355:'monfri2', cmk666:'monfri2', '29gt355':'monfri2',
+  '29gt355':'monfri2', cmk666:'monfri2',
   // 월금 Class1 (6:30-9:20)
   cmk591:'monfri1', cmk614:'monfri1', cmk541:'monfri1', cmk651:'monfri1',
   cmk572:'monfri1', cmk662:'monfri1', cmk663:'monfri1',
-  cmk114:'monfri1', cmk454:'monfri1', '29gt114':'monfri1', '29gt454':'monfri1',
+  '29gt114':'monfri1', '29gt454':'monfri1',
   // 화목 Class2 (5:00-7:50)
   cmk657:'tuethu2', cmk644:'tuethu2', cmk648:'tuethu2', cmk653:'tuethu2',
   cmk588:'tuethu2', cmk624:'tuethu2', cmk621:'tuethu2', cmk625:'tuethu2',
-  cmk491:'tuethu2', '29gt491':'tuethu2',
+  '29gt491':'tuethu2',
   // 화목 Class1 (6:30-9:20)
   cmk538:'tuethu1', cmk654:'tuethu1', cmk652:'tuethu1', cmk664:'tuethu1',
-  cmk577:'tuethu1',
-  cmk603:'tuethu1', cmk002:'tuethu1', cmk468:'tuethu1', cmk001:'tuethu1',
-  '29gt468':'tuethu1', mahcho1204:'tuethu1', mscho09:'tuethu1',
+  cmk577:'tuethu1', cmk603:'tuethu1', cmk002:'tuethu1', cmk001:'tuethu1',
+  '29gt468':'tuethu1',
 };
 
 // 학생 이름 -> 반 키 매핑 (ID가 달라도 이름으로 매칭하는 백업용)
