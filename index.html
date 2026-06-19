@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -139,6 +139,14 @@
   .tab{ padding:9px 18px; border-radius:10px; background:#fff; border:1.5px solid var(--line); font-size:14px; font-weight:600; color:var(--gray); }
   .tab.active{ background:var(--navy); color:#fff; border-color:var(--navy); }
 
+  .cls-block{ margin-bottom:22px; }
+  .cls-block-title{ font-size:18px; font-weight:900; color:var(--navy); margin:0 0 12px; padding-left:10px; border-left:4px solid var(--blue); }
+  .cls-cols{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .cls-col-head{ font-size:14px; font-weight:800; color:var(--navy2); margin-bottom:10px; }
+  .cls-col-head .cls-time{ font-size:11px; color:var(--gray); font-weight:600; margin-left:4px; }
+  .cls-col-head .cls-cnt{ font-size:11px; background:var(--sky); color:var(--blue); padding:2px 8px; border-radius:7px; font-weight:800; margin-left:4px; }
+  .cls-col .stu-list{ grid-template-columns:1fr; gap:10px; }
+  @media(max-width:720px){ .cls-cols{ grid-template-columns:1fr; } }
   .stu-list{ display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:14px; }
   .stu-card{ background:#fff; border-radius:14px; padding:16px; border:1.5px solid var(--line); cursor:pointer; transition:.15s; }
   .stu-card:hover{ border-color:var(--blue); transform:translateY(-2px); box-shadow:0 6px 18px rgba(47,111,237,.12); }
@@ -766,6 +774,58 @@ function logout(){
    ============================================================ */
 function pct(done,total){ if(!total) return 0; return Math.min(100,Math.round(done/total*100)); }
 function weekCount(m){ return MONTH_WEEKS[m]||4; }
+
+/* ============================================================
+   반(Class) 배정
+   - day: 'monfri'(월금) | 'tuethu'(화목)
+   - cls: 1 | 2
+   ============================================================ */
+const CLASS_GROUPS = {
+  monfri1: { day:'monfri', cls:1, label:'월금 Class1', time:'6:30-9:20' },
+  monfri2: { day:'monfri', cls:2, label:'월금 Class2', time:'5:00-7:50' },
+  tuethu1: { day:'tuethu', cls:1, label:'화목 Class1', time:'6:30-9:20' },
+  tuethu2: { day:'tuethu', cls:2, label:'화목 Class2', time:'5:00-7:50' },
+};
+const CLASS_ORDER = ['monfri1','monfri2','tuethu1','tuethu2'];
+
+// 학생 ID -> 반 키 매핑 (사진 배정표 기준)
+const CLASS_ASSIGN = {
+  // 월금 Class2 (5:00-7:50)
+  cmk599:'monfri2', cmk633:'monfri2', cmk629:'monfri2', cmk643:'monfri2',
+  cmk631:'monfri2', cmk656:'monfri2', cmk659:'monfri2', cmk618:'monfri2',
+  cmk355:'monfri2', cmk666:'monfri2', '29gt355':'monfri2',
+  // 월금 Class1 (6:30-9:20)
+  cmk591:'monfri1', cmk614:'monfri1', cmk541:'monfri1', cmk651:'monfri1',
+  cmk572:'monfri1', cmk662:'monfri1', cmk663:'monfri1',
+  cmk114:'monfri1', cmk454:'monfri1', '29gt114':'monfri1', '29gt454':'monfri1',
+  // 화목 Class2 (5:00-7:50)
+  cmk657:'tuethu2', cmk644:'tuethu2', cmk648:'tuethu2', cmk653:'tuethu2',
+  cmk588:'tuethu2', cmk624:'tuethu2', cmk621:'tuethu2', cmk625:'tuethu2',
+  cmk491:'tuethu2', '29gt491':'tuethu2',
+  // 화목 Class1 (6:30-9:20)
+  cmk538:'tuethu1', cmk654:'tuethu1', cmk652:'tuethu1', cmk664:'tuethu1',
+  cmk577:'tuethu1',
+  cmk603:'tuethu1', cmk002:'tuethu1', cmk468:'tuethu1', cmk001:'tuethu1',
+  '29gt468':'tuethu1', mahcho1204:'tuethu1', mscho09:'tuethu1',
+};
+
+// 학생의 반 키 얻기 (개별 student.classGroup이 있으면 우선, 없으면 매핑표)
+function studentClassKey(id){
+  const s = DB.students[id];
+  if(s && s.classGroup && CLASS_GROUPS[s.classGroup]) return s.classGroup;
+  return CLASS_ASSIGN[id] || null;
+}
+function classLabel(id){
+  const k = studentClassKey(id);
+  return k ? CLASS_GROUPS[k].label : '미배정';
+}
+// 오늘 요일 기준 우선 노출할 day 그룹: 월(1)금(5)->monfri, 화(2)목(4)->tuethu, 그 외->monfri
+function todayDayGroup(){
+  const d = new Date().getDay(); // 0일 1월 2화 3수 4목 5금 6토
+  if(d===2 || d===4) return 'tuethu';
+  return 'monfri';
+}
+
 function lvWithGrade(lv){
   if(!lv) return lv||'';
   const map={ "Lv.2":"초3-4","Lv.3":"초5-6","Lv.4":"중1","Lv.5":"중2","Lv.6":"중3","Lv.7":"고1","Lv.8":"고2","Lv.9":"고3" };
@@ -814,7 +874,7 @@ function renderStudent(id){
   document.getElementById('content').innerHTML = `
     <div class="hero">
       <div>
-        <div style="font-size:13px;opacity:.85">${s.month}월 개별진도${(s.school||s.grade)?' · '+[s.school,s.grade].filter(Boolean).join(' '):''}</div>
+        <div style="font-size:13px;opacity:.85">${s.month}월 개별진도${(s.school||s.grade)?' · '+[s.school,s.grade].filter(Boolean).join(' '):''}${studentClassKey(id)?' · '+classLabel(id):''}</div>
         <h2>${s.name} 학생 ${s.overallLv?`<span style="font-size:15px;background:rgba(255,255,255,.22);padding:4px 12px;border-radius:20px;vertical-align:middle">종합 ${lvWithGrade(s.overallLv)}${s.overallRank?' · '+s.overallRank:''}</span>`:''}</h2>
       </div>
       <div class="lvls">
@@ -914,6 +974,33 @@ function renderStudent(id){
     </div>
 
     <div class="card" style="margin-top:18px">
+      <h3><span class="dot"></span>독해 교재 진도</h3>
+      ${(()=>{
+        const rb=readingInfo(s.readingBook);
+        if(!s.readingBook||!rb) return '<div style="color:#94a3b8;font-size:14px">아직 독해 교재가 지정되지 않았어요.</div>';
+        const u=rb.unit;
+        const total=rb.chapters.length;
+        const n=Math.min(s.readingCh||0, total);
+        const p=pct(n, total);
+        const curName = n>0 ? rb.chapters[n-1] : null;
+        const nextName = n<total ? rb.chapters[n] : null;
+        return `
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+            <span style="font-size:18px;font-weight:800;color:#ea580c">${s.readingBook}</span>
+            <span style="font-size:13px;color:#64748b">${rb.grade} · 총 ${total}${u}</span>
+          </div>
+          <div class="pbar-label"><span>📖 진도</span><b>${u} ${n} / ${total} (${p}%)</b></div>
+          <div class="pbar"><div style="width:0%;background:linear-gradient(90deg,#ea580c,#fdba74)" data-w="${p}"></div></div>
+          <div style="font-size:13px;color:#475569;margin-top:8px">
+            ${curName?`최근 완료: <b>${curName}</b>`:'아직 시작 전'}
+            ${nextName?` · 다음: ${nextName}`:(p>=100?' · 🎉 완료!':'')}
+          </div>
+          ${s.readingPage?`<div style="font-size:13px;color:#475569;margin-top:4px">📄 현재 페이지: <b>p.${s.readingPage}</b></div>`:''}
+        `;
+      })()}
+    </div>
+
+    <div class="card" style="margin-top:18px">
       <h3><span class="dot"></span>서술형 교재 진도</h3>
       ${(()=>{
         const eb=essayInfo(s.essayBook);
@@ -975,33 +1062,6 @@ function renderStudent(id){
             ${nextName?` · 다음: ${u} ${n+1} ${nextName}`:(p>=100?' · 🎉 완료!':'')}
           </div>
           ${pageLine}`;
-      })()}
-    </div>
-
-    <div class="card" style="margin-top:18px">
-      <h3><span class="dot"></span>독해 교재 진도</h3>
-      ${(()=>{
-        const rb=readingInfo(s.readingBook);
-        if(!s.readingBook||!rb) return '<div style="color:#94a3b8;font-size:14px">아직 독해 교재가 지정되지 않았어요.</div>';
-        const u=rb.unit;
-        const total=rb.chapters.length;
-        const n=Math.min(s.readingCh||0, total);
-        const p=pct(n, total);
-        const curName = n>0 ? rb.chapters[n-1] : null;
-        const nextName = n<total ? rb.chapters[n] : null;
-        return `
-          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
-            <span style="font-size:18px;font-weight:800;color:#ea580c">${s.readingBook}</span>
-            <span style="font-size:13px;color:#64748b">${rb.grade} · 총 ${total}${u}</span>
-          </div>
-          <div class="pbar-label"><span>📖 진도</span><b>${u} ${n} / ${total} (${p}%)</b></div>
-          <div class="pbar"><div style="width:0%;background:linear-gradient(90deg,#ea580c,#fdba74)" data-w="${p}"></div></div>
-          <div style="font-size:13px;color:#475569;margin-top:8px">
-            ${curName?`최근 완료: <b>${curName}</b>`:'아직 시작 전'}
-            ${nextName?` · 다음: ${nextName}`:(p>=100?' · 🎉 완료!':'')}
-          </div>
-          ${s.readingPage?`<div style="font-size:13px;color:#475569;margin-top:4px">📄 현재 페이지: <b>p.${s.readingPage}</b></div>`:''}
-        `;
       })()}
     </div>
 
@@ -1328,26 +1388,75 @@ function renderTeacher(){
   else renderStudentForm(editingId);
 }
 
+function studentCardHtml(id){
+  const s=DB.students[id];
+  const wc=weekCount(s.month);
+  const dw=s.weeks.slice(0,wc).filter(w=>w.done).length;
+  return `
+    <div class="stu-card" onclick="editStudent('${id}')">
+      <div class="nm">${s.name}</div>
+      <div class="id">@${id} · ${[s.school,s.grade].filter(Boolean).join(' ')||'학교 미입력'} · ${s.month}월</div>
+      <div class="bk">📖 ${s.book||'교재 미지정'} ${s.overallLv?`<span style="background:var(--sky);color:var(--navy2);padding:2px 8px;border-radius:7px;font-size:12px;font-weight:800;margin-left:4px">${lvWithGrade(s.overallLv)}</span>`:''}</div>
+      <div class="mini">
+        <span>단어 ${s.level.word}</span><span>문법 ${s.level.grammar}</span><span>독해 ${s.level.reading}</span><span>듣기 ${s.level.listening||'-'}</span>
+      </div>
+      <div class="mini"><span style="background:#f0fdf4;color:#16a34a">목표 ${dw}/${wc} 달성</span></div>
+    </div>`;
+}
+
+function dayGroupBlockHtml(dayKey){
+  // dayKey: 'monfri' | 'tuethu'
+  const ids = Object.keys(DB.students);
+  const c1 = ids.filter(id=>studentClassKey(id)===dayKey+'1');
+  const c2 = ids.filter(id=>studentClassKey(id)===dayKey+'2');
+  const title = dayKey==='monfri' ? '월·금요일반' : '화·목요일반';
+  const colHtml = (label,time,arr)=>`
+    <div class="cls-col">
+      <div class="cls-col-head">${label} <span class="cls-time">${time}</span> <span class="cls-cnt">${arr.length}명</span></div>
+      <div class="stu-list">${arr.length? arr.map(studentCardHtml).join('') : '<div class="empty" style="padding:14px">학생 없음</div>'}</div>
+    </div>`;
+  return `
+    <div class="cls-block">
+      <div class="cls-block-title">${title}</div>
+      <div class="cls-cols">
+        ${colHtml(CLASS_GROUPS[dayKey+'1'].label, CLASS_GROUPS[dayKey+'1'].time, c1)}
+        ${colHtml(CLASS_GROUPS[dayKey+'2'].label, CLASS_GROUPS[dayKey+'2'].time, c2)}
+      </div>
+    </div>`;
+}
+
 function renderStudentList(){
   const ids=Object.keys(DB.students);
-  let html='<div class="stu-list">';
-  if(ids.length===0) html+='<div class="empty">등록된 학생이 없습니다. 상단의 ➕ 학생 추가를 눌러주세요.</div>';
-  ids.forEach(id=>{
-    const s=DB.students[id];
-    const wc=weekCount(s.month);
-    const dw=s.weeks.slice(0,wc).filter(w=>w.done).length;
-    html+=`
-      <div class="stu-card" onclick="editStudent('${id}')">
-        <div class="nm">${s.name}</div>
-        <div class="id">@${id} · ${[s.school,s.grade].filter(Boolean).join(' ')||'학교 미입력'} · ${s.month}월</div>
-        <div class="bk">📖 ${s.book||'교재 미지정'} ${s.overallLv?`<span style="background:var(--sky);color:var(--navy2);padding:2px 8px;border-radius:7px;font-size:12px;font-weight:800;margin-left:4px">${lvWithGrade(s.overallLv)}</span>`:''}</div>
-        <div class="mini">
-          <span>단어 ${s.level.word}</span><span>문법 ${s.level.grammar}</span><span>독해 ${s.level.reading}</span><span>듣기 ${s.level.listening||'-'}</span>
-        </div>
-        <div class="mini"><span style="background:#f0fdf4;color:#16a34a">목표 ${dw}/${wc} 달성</span></div>
-      </div>`;
-  });
-  html+='</div><div class="seed-note">학생 카드를 클릭하면 진도·목표를 수정하고, 학부모 카톡 요약을 생성할 수 있어요. <b style="color:#16a34a">✓ 모든 변경사항은 이 PC에 자동 저장됩니다.</b></div>';
+  let html='';
+  if(ids.length===0){
+    html+='<div class="stu-list"><div class="empty">등록된 학생이 없습니다. 상단의 ➕ 학생 추가를 눌러주세요.</div></div>';
+    document.getElementById('tcontent').innerHTML=html;
+    return;
+  }
+
+  const todayG = todayDayGroup();
+  const otherG = todayG==='monfri' ? 'tuethu' : 'monfri';
+  const otherTitle = otherG==='monfri' ? '월·금요일반' : '화·목요일반';
+
+  // 오늘 요일 그룹 먼저
+  html += dayGroupBlockHtml(todayG);
+
+  // 나머지 그룹은 버튼으로 펼치기
+  html += `<div style="margin:6px 0 14px">
+    <button class="btn btn-ghost" id="toggleOtherCls" onclick="toggleOtherClass()">▸ ${otherTitle} 보기</button>
+  </div>
+  <div id="otherClsWrap" style="display:none">${dayGroupBlockHtml(otherG)}</div>`;
+
+  // 미배정 학생
+  const unassigned = ids.filter(id=>!studentClassKey(id));
+  if(unassigned.length){
+    html += `<div class="cls-block">
+      <div class="cls-block-title" style="color:#b45309">미배정 (${unassigned.length}명)</div>
+      <div class="stu-list">${unassigned.map(studentCardHtml).join('')}</div>
+    </div>`;
+  }
+
+  html+='<div class="seed-note">학생 카드를 클릭하면 진도·목표·반을 수정하고, 학부모 카톡 요약을 생성할 수 있어요. <b style="color:#16a34a">✓ 모든 변경사항은 클라우드에 자동 저장됩니다.</b></div>';
   html+=`<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn btn-ghost" onclick="exportBackup()">💾 백업 파일 내보내기</button>
     <button class="btn btn-ghost" onclick="document.getElementById('importFile').click()">📂 백업 불러오기</button>
@@ -1355,6 +1464,15 @@ function renderStudentList(){
     <button class="btn btn-del" onclick="resetAll()">🗑 전체 초기화</button>
   </div>`;
   document.getElementById('tcontent').innerHTML=html;
+}
+
+function toggleOtherClass(){
+  const wrap=document.getElementById('otherClsWrap');
+  const btn=document.getElementById('toggleOtherCls');
+  if(!wrap||!btn) return;
+  const show = wrap.style.display==='none';
+  wrap.style.display = show ? 'block' : 'none';
+  btn.textContent = btn.textContent.replace(show?'▸':'▾', show?'▾':'▸');
 }
 
 function newStudent(){
@@ -1475,6 +1593,15 @@ function renderStudentForm(id){
         <div class="field"><label>학년</label><input id="f_grade" value="${s.grade||''}" placeholder="중2"></div>
       </div>
       <div class="frow">
+        <div class="field"><label>반 (요일·반)</label>
+          <select id="f_classGroup">
+            <option value="">— 자동/미배정 —</option>
+            ${CLASS_ORDER.map(k=>`<option value="${k}" ${ (s.classGroup||studentClassKey(id)||'')===k ?'selected':''}>${CLASS_GROUPS[k].label} (${CLASS_GROUPS[k].time})</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"></div>
+      </div>
+      <div class="frow">
         <div class="field"><label>비밀번호</label><input id="f_pw" value="${s.pw}"></div>
         <div class="field"><label>진도 기준 월</label>
           <select id="f_month" onchange="this.dataset.changed=1">${monthOpts(s.month)}</select>
@@ -1501,6 +1628,7 @@ function renderStudentForm(id){
         <div class="field"></div>
       </div>
 
+      <h3 style="margin-top:22px;font-size:15px">📚 현재 학습 교재</h3>
       <div class="frow">
         <div class="field"><label>현재 교재명</label><input id="f_book" value="${s.book}" placeholder="Reading Master 2"></div>
         <div class="field"><label>이 교재 목표 기간 (개월)</label><input id="f_bm" type="number" min="1" value="${s.bookMonths}"></div>
@@ -1523,6 +1651,7 @@ function renderStudentForm(id){
         </div>
       </div>
 
+      <h3 style="margin-top:22px;font-size:15px">📖 교재별 진도 (단어 · 문법 · 독해 · 서술형 · 어법)</h3>
       <div class="frow">
         <div class="field"><label>단어책</label>
           <select id="f_vbook">
@@ -1545,6 +1674,17 @@ function renderStudentForm(id){
       </div>
 
       <div class="frow three">
+        <div class="field"><label>독해 교재</label>
+          <select id="f_rbook">
+            <option value="">— 선택 안 함 —</option>
+            ${READING_BOOKS.map(b=>`<option value="${b.name}" ${s.readingBook===b.name?'selected':''}>${b.name} (~${b.unit}${b.chapters.length})</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>현재 진도(Section/Unit/회)</label><input id="f_rch" type="number" min="0" value="${s.readingCh||0}" placeholder="0"></div>
+        <div class="field"><label>현재 페이지(선택)</label><input id="f_rpage" type="number" min="0" value="${s.readingPage||0}" placeholder="0"></div>
+      </div>
+
+      <div class="frow three">
         <div class="field"><label>서술형 교재</label>
           <select id="f_ebook">
             <option value="">— 선택 안 함 —</option>
@@ -1564,17 +1704,6 @@ function renderStudentForm(id){
         </div>
         <div class="field"><label>현재 진도(Unit/문제 번호)</label><input id="f_uch" type="number" min="0" value="${s.usageCh||0}" placeholder="0"></div>
         <div class="field"><label>현재 페이지(선택)</label><input id="f_upage" type="number" min="0" value="${s.usagePage||0}" placeholder="0"></div>
-      </div>
-
-      <div class="frow three">
-        <div class="field"><label>독해 교재</label>
-          <select id="f_rbook">
-            <option value="">— 선택 안 함 —</option>
-            ${READING_BOOKS.map(b=>`<option value="${b.name}" ${s.readingBook===b.name?'selected':''}>${b.name} (~${b.unit}${b.chapters.length})</option>`).join('')}
-          </select>
-        </div>
-        <div class="field"><label>현재 진도(Section/Unit/회)</label><input id="f_rch" type="number" min="0" value="${s.readingCh||0}" placeholder="0"></div>
-        <div class="field"><label>현재 페이지(선택)</label><input id="f_rpage" type="number" min="0" value="${s.readingPage||0}" placeholder="0"></div>
       </div>
 
       <h3 style="margin-top:22px;font-size:15px">모의고사 기록 (응시 체크 + 점수)</h3>
@@ -1644,6 +1773,7 @@ function saveStudent(isNew){
     name,
     school: document.getElementById('f_school').value.trim(),
     grade: document.getElementById('f_grade').value.trim(),
+    classGroup: document.getElementById('f_classGroup').value || '',
     level:{
       word: document.getElementById('f_lw').value,
       grammar: document.getElementById('f_lg').value,
@@ -1771,7 +1901,7 @@ ${[s.school,s.grade].filter(Boolean).join(' ')}
 
 📖 현재 교재: 『${s.book}』
 · 오늘 학습: ${s.todayStudy}
-· 오늘 숙제: ${s.todayHw}${(()=>{const bk=bookInfo(s.vocabBook);if(!s.vocabBook||!bk)return '';const day=Math.min(s.vocabDay||0,bk.days);return `\n\n📗 단어책: ${s.vocabBook}\n· 진도 Day ${day}/${bk.days} (${pct(day,bk.days)}%)`;})()}${(()=>{const gb=grammarInfo(s.grammarBook);if(!s.grammarBook||!gb)return '';const total=gb.chapters.length;const ch=Math.min(s.grammarCh||0,total);const cn=ch>0?gb.chapters[ch-1]:'';return `\n\n📕 문법: ${s.grammarBook}\n· 진도 Ch.${ch}/${total} (${pct(ch,total)}%)${cn?' · 최근 '+cn:''}${s.grammarPage?' · p.'+s.grammarPage:''}`;})()}${(()=>{const eb=essayInfo(s.essayBook);if(!s.essayBook||!eb)return '';const total=eb.chapters.length;const u=eb.unit;const n=Math.min(s.essayCh||0,total);const cn=n>0?eb.chapters[n-1]:'';return `\n\n📘 서술형: ${s.essayBook}\n· 진도 ${u} ${n}/${total} (${pct(n,total)}%)${cn?' · 최근 '+cn:''}${s.essayPage?' · p.'+s.essayPage:''}`;})()}${(()=>{const ub=usageInfo(s.usageBook);if(!s.usageBook||!ub)return '';const total=ub.byProblem?ub.total:ub.chapters.length;const u=ub.unit;const n=Math.min(s.usageCh||0,total);const cn=(!ub.byProblem&&n>0)?ub.chapters[n-1]:'';return `\n\n📙 어법: ${s.usageBook}\n· 진도 ${u} ${n}/${total} (${pct(n,total)}%)${cn?' · 최근 '+cn:''}${s.usagePage?' · p.'+s.usagePage:''}`;})()}${(()=>{const rb=readingInfo(s.readingBook);if(!s.readingBook||!rb)return '';const total=rb.chapters.length;const u=rb.unit;const n=Math.min(s.readingCh||0,total);const cn=n>0?rb.chapters[n-1]:'';return `\n\n📖 독해: ${s.readingBook}\n· 진도 ${u} ${n}/${total} (${pct(n,total)}%)${cn?' · 최근 '+cn:''}${s.readingPage?' · p.'+s.readingPage:''}`;})()}${(()=>{const mk=s.mocks||{};let done=[];Object.keys(MOCK_SETS).forEach(gk=>{mockList(gk).forEach(m=>{const rec=(mk[gk]||{})[m.key];if(rec&&rec.done)done.push(`${gk} ${m.label}${(rec.score!==undefined&&rec.score!==null)?' '+rec.score+'점':''}`);});});if(done.length===0)return '';return `\n\n📝 모의고사 (${done.length}회)\n· ${done.join('\n· ')}`;})()}
+· 오늘 숙제: ${s.todayHw}${(()=>{const bk=bookInfo(s.vocabBook);if(!s.vocabBook||!bk)return '';const day=Math.min(s.vocabDay||0,bk.days);return `\n\n📗 단어책: ${s.vocabBook}\n· 진도 Day ${day}/${bk.days} (${pct(day,bk.days)}%)`;})()}${(()=>{const gb=grammarInfo(s.grammarBook);if(!s.grammarBook||!gb)return '';const total=gb.chapters.length;const ch=Math.min(s.grammarCh||0,total);const cn=ch>0?gb.chapters[ch-1]:'';return `\n\n📕 문법: ${s.grammarBook}\n· 진도 Ch.${ch}/${total} (${pct(ch,total)}%)${cn?' · 최근 '+cn:''}${s.grammarPage?' · p.'+s.grammarPage:''}`;})()}${(()=>{const rb=readingInfo(s.readingBook);if(!s.readingBook||!rb)return '';const total=rb.chapters.length;const u=rb.unit;const n=Math.min(s.readingCh||0,total);const cn=n>0?rb.chapters[n-1]:'';return `\n\n📖 독해: ${s.readingBook}\n· 진도 ${u} ${n}/${total} (${pct(n,total)}%)${cn?' · 최근 '+cn:''}${s.readingPage?' · p.'+s.readingPage:''}`;})()}${(()=>{const eb=essayInfo(s.essayBook);if(!s.essayBook||!eb)return '';const total=eb.chapters.length;const u=eb.unit;const n=Math.min(s.essayCh||0,total);const cn=n>0?eb.chapters[n-1]:'';return `\n\n📘 서술형: ${s.essayBook}\n· 진도 ${u} ${n}/${total} (${pct(n,total)}%)${cn?' · 최근 '+cn:''}${s.essayPage?' · p.'+s.essayPage:''}`;})()}${(()=>{const ub=usageInfo(s.usageBook);if(!s.usageBook||!ub)return '';const total=ub.byProblem?ub.total:ub.chapters.length;const u=ub.unit;const n=Math.min(s.usageCh||0,total);const cn=(!ub.byProblem&&n>0)?ub.chapters[n-1]:'';return `\n\n📙 어법: ${s.usageBook}\n· 진도 ${u} ${n}/${total} (${pct(n,total)}%)${cn?' · 최근 '+cn:''}${s.usagePage?' · p.'+s.usagePage:''}`;})()}${(()=>{const mk=s.mocks||{};let done=[];Object.keys(MOCK_SETS).forEach(gk=>{mockList(gk).forEach(m=>{const rec=(mk[gk]||{})[m.key];if(rec&&rec.done)done.push(`${gk} ${m.label}${(rec.score!==undefined&&rec.score!==null)?' '+rec.score+'점':''}`);});});if(done.length===0)return '';return `\n\n📝 모의고사 (${done.length}회)\n· ${done.join('\n· ')}`;})()}
 
 🎯 이번 달 주차별 목표 (${dw}/${wc} 달성)
 ${wkText}
