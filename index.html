@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+   <!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -169,11 +169,14 @@
   .wk-edit{ border:1.5px solid var(--line); border-radius:12px; padding:14px; margin-bottom:10px; }
   .mock-grade{ border:1.5px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:10px; }
   .mock-grade-title{ font-weight:800; color:var(--navy); margin-bottom:8px; }
-  .mock-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:6px; }
-  .mock-item{ display:flex; align-items:center; gap:6px; background:#f8fafc; border-radius:8px; padding:5px 8px; font-size:13px; }
+  .mock-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:6px; }
+  .mock-item{ display:flex; align-items:center; gap:6px; background:#f8fafc; border-radius:8px; padding:5px 8px; font-size:13px; flex-wrap:wrap; }
   .mock-item input[type=checkbox]{ width:16px; height:16px; accent-color:#6366f1; flex-shrink:0; }
   .mock-item .ml{ flex:1; }
   .mock-item .mock-score{ width:54px; padding:4px 6px; border:1px solid var(--line); border-radius:6px; font-size:12px; }
+  .mock-hw{ display:flex; gap:8px; align-items:center; padding-left:6px; border-left:1px dashed var(--line); }
+  .mock-hwchk{ display:flex; align-items:center; gap:3px; font-size:11px; color:var(--gray); cursor:pointer; white-space:nowrap; }
+  .mock-hwchk input[type=checkbox]{ width:14px; height:14px; }
   .wk-edit .head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
   .wk-edit .head b{ color:var(--navy); }
   .check-toggle{ display:flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:var(--gray); cursor:pointer; user-select:none; }
@@ -964,6 +967,10 @@ function renderStudent(id){
           <div class="pbar-label"><span>📗 진도</span><b>Day ${day} / ${bk.days} (${p}%)</b></div>
           <div class="pbar"><div class="fill-hw" style="width:0%" data-w="${p}"></div></div>
           <div style="font-size:13px;color:#475569;margin-top:8px">남은 분량 <b>${bk.days-day}일</b>${p>=100?' · 🎉 완료!':''}</div>
+          ${(s.vocabTodayStudy||s.vocabTodayHw)?`<div style="margin-top:10px;padding-top:10px;border-top:1px dashed #e2e8f0;font-size:13px;color:#475569">
+            ${s.vocabTodayStudy?`<div>📘 오늘까지 학습: <b>${s.vocabTodayStudy}</b></div>`:''}
+            ${s.vocabTodayHw?`<div style="margin-top:4px">✏️ 오늘까지 숙제: <b>${s.vocabTodayHw}</b></div>`:''}
+          </div>`:''}
         `;
       })()}
     </div>
@@ -990,6 +997,7 @@ function renderStudent(id){
             ${nextName?` · 다음: Ch.${ch+1} ${nextName}`:(p>=100?' · 🎉 완료!':'')}
           </div>
           ${s.grammarPage?`<div style="font-size:13px;color:#475569;margin-top:4px">📄 현재 페이지: <b>p.${s.grammarPage}</b></div>`:''}
+          ${s.grammarHw?`<div style="font-size:13px;color:#475569;margin-top:4px">✏️ 숙제: <b>${s.grammarHw}</b></div>`:''}
         `;
       })()}
     </div>
@@ -1017,6 +1025,7 @@ function renderStudent(id){
             ${nextName?` · 다음: ${nextName}`:(p>=100?' · 🎉 완료!':'')}
           </div>
           ${s.readingPage?`<div style="font-size:13px;color:#475569;margin-top:4px">📄 현재 페이지: <b>p.${s.readingPage}</b></div>`:''}
+          ${s.readingHw?`<div style="font-size:13px;color:#475569;margin-top:4px">✏️ 숙제: <b>${s.readingHw}</b></div>`:''}
         `;
       })()}
     </div>
@@ -1044,6 +1053,7 @@ function renderStudent(id){
             ${nextName?` · 다음: ${u} ${n+1} ${nextName}`:(p>=100?' · 🎉 완료!':'')}
           </div>
           ${s.essayPage?`<div style="font-size:13px;color:#475569;margin-top:4px">📄 현재 페이지: <b>p.${s.essayPage}</b></div>`:''}
+          ${s.essayHw?`<div style="font-size:13px;color:#475569;margin-top:4px">✏️ 숙제: <b>${s.essayHw}</b></div>`:''}
         `;
       })()}
     </div>
@@ -1057,7 +1067,8 @@ function renderStudent(id){
         const total= ub.byProblem ? ub.total : ub.chapters.length;
         const n=Math.min(s.usageCh||0, total);
         const p=pct(n, total);
-        const pageLine = s.usagePage ? `<div style="font-size:13px;color:#475569;margin-top:4px">📄 현재 페이지: <b>p.${s.usagePage}</b></div>` : '';
+        const pageLine = (s.usagePage ? `<div style="font-size:13px;color:#475569;margin-top:4px">📄 현재 페이지: <b>p.${s.usagePage}</b></div>` : '')
+          + (s.usageHw ? `<div style="font-size:13px;color:#475569;margin-top:4px">✏️ 숙제: <b>${s.usageHw}</b></div>` : '');
         if(ub.byProblem){
           return `
             <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
@@ -1091,13 +1102,37 @@ function renderStudent(id){
       ${(()=>{
         const mk=s.mocks||{};
         let done=[];
+        let hwList=[];
         Object.keys(MOCK_SETS).forEach(gk=>{
           mockList(gk).forEach(m=>{
             const rec=(mk[gk]||{})[m.key];
-            if(rec && rec.done){ done.push({gk, label:m.label, score:rec.score}); }
+            if(!rec) return;
+            if(rec.done){ done.push({gk, label:m.label, score:rec.score}); }
+            if(rec.hw || rec.hwDone){ hwList.push({gk, label:m.label, hwDone:!!rec.hwDone}); }
           });
         });
-        if(done.length===0) return '<div style="color:#94a3b8;font-size:14px">아직 기록된 모의고사가 없어요.</div>';
+        // 숙제 섹션
+        let hwHtml='';
+        if(hwList.length){
+          const hwRows = hwList.map(h=>`
+            <div style="display:flex;align-items:center;gap:8px;background:${h.hwDone?'#f0fdf4':'#fff7ed'};border-radius:8px;padding:7px 11px;margin-bottom:5px">
+              <span style="font-size:11px;font-weight:800;color:#fff;background:#6366f1;padding:2px 8px;border-radius:6px">${h.gk}</span>
+              <span style="flex:1;font-size:14px;color:var(--navy);font-weight:600">${h.label}</span>
+              ${h.hwDone
+                ? '<span style="font-size:12px;font-weight:800;color:#16a34a;background:#dcfce7;padding:3px 10px;border-radius:20px">✅ 완료</span>'
+                : '<span style="font-size:12px;font-weight:800;color:#ea580c;background:#ffedd5;padding:3px 10px;border-radius:20px">📌 숙제</span>'}
+            </div>`).join('');
+          const remain = hwList.filter(h=>!h.hwDone).length;
+          hwHtml = `<div style="margin-bottom:14px">
+            <div style="font-size:13px;font-weight:800;color:#ea580c;margin-bottom:6px">📌 모의고사 숙제 ${remain>0?`(미완료 ${remain}개)`:'(전부 완료 🎉)'}</div>
+            ${hwRows}
+          </div>`;
+        }
+
+        if(done.length===0 && hwList.length===0) return '<div style="color:#94a3b8;font-size:14px">아직 기록된 모의고사가 없어요.</div>';
+
+        if(done.length===0) return hwHtml;
+
         // 점수 평균
         const scored = done.filter(d=>d.score!==undefined && d.score!==null && d.score!=='');
         const avg = scored.length? Math.round(scored.reduce((a,b)=>a+Number(b.score),0)/scored.length) : null;
@@ -1108,6 +1143,7 @@ function renderStudent(id){
             ${(d.score!==undefined&&d.score!==null&&d.score!=='')?`<span style="font-size:14px;font-weight:800;color:#6366f1">${d.score}점</span>`:'<span style="font-size:12px;color:#94a3b8">점수 미입력</span>'}
           </div>`).join('');
         return `
+          ${hwHtml}
           <div style="display:flex;gap:14px;margin-bottom:12px">
             <div style="flex:1;background:#eef2ff;border-radius:11px;padding:12px;text-align:center">
               <div style="font-size:12px;color:#6366f1;font-weight:700">응시 횟수</div>
@@ -1649,29 +1685,6 @@ function renderStudentForm(id){
         <div class="field"></div>
       </div>
 
-      <h3 style="margin-top:22px;font-size:15px">📚 현재 학습 교재</h3>
-      <div class="frow">
-        <div class="field"><label>현재 교재명</label><input id="f_book" value="${s.book}" placeholder="Reading Master 2"></div>
-        <div class="field"><label>이 교재 목표 기간 (개월)</label><input id="f_bm" type="number" min="1" value="${s.bookMonths}"></div>
-      </div>
-      <div class="frow">
-        <div class="field"><label>교재 시작 연도</label><select id="f_sy">${yearOpts}</select></div>
-        <div class="field"><label>교재 시작 월</label><select id="f_sm">${monthOpts(s.startMonth)}</select></div>
-      </div>
-
-      <div class="frow">
-        <div class="field"><label>오늘 학습 분량</label><input id="f_ts" value="${s.todayStudy}" placeholder="Unit 7 (p.42~48)"></div>
-        <div class="field"><label>오늘 숙제 분량</label><input id="f_th" value="${s.todayHw}" placeholder="Workbook p.20~23"></div>
-      </div>
-      <div class="frow">
-        <div class="field"><label>오늘 단어 (완료 / 전체)</label>
-          <div style="display:flex;gap:8px"><input id="f_wd" type="number" min="0" value="${s.todayWordDone}"><input id="f_wt" type="number" min="0" value="${s.todayWordTotal}"></div>
-        </div>
-        <div class="field"><label>오늘 숙제 (완료 / 전체)</label>
-          <div style="display:flex;gap:8px"><input id="f_hd" type="number" min="0" value="${s.todayHwDone}"><input id="f_ht" type="number" min="0" value="${s.todayHwTotal}"></div>
-        </div>
-      </div>
-
       <h3 style="margin-top:22px;font-size:15px">📖 교재별 진도 (단어 · 문법 · 독해 · 서술형 · 어법)</h3>
       <div class="frow">
         <div class="field"><label>단어책</label>
@@ -1682,8 +1695,12 @@ function renderStudentForm(id){
         </div>
         <div class="field"><label>현재 Day (진행한 일수)</label><input id="f_vday" type="number" min="0" value="${s.vocabDay||0}" placeholder="0"></div>
       </div>
+      <div class="frow">
+        <div class="field"><label>단어책 — 오늘까지 학습</label><input id="f_vts" value="${s.vocabTodayStudy||''}" placeholder="Day 12 (p.48~52)"></div>
+        <div class="field"><label>단어책 — 오늘까지 숙제</label><input id="f_vth" value="${s.vocabTodayHw||''}" placeholder="Day 12 단어시험"></div>
+      </div>
 
-      <div class="frow three">
+      <div class="frow four">
         <div class="field"><label>문법 교재</label>
           <select id="f_gbook">
             <option value="">— 선택 안 함 —</option>
@@ -1692,9 +1709,10 @@ function renderStudentForm(id){
         </div>
         <div class="field"><label>현재 Chapter</label><input id="f_gch" type="number" min="0" value="${s.grammarCh||0}" placeholder="0"></div>
         <div class="field"><label>현재 페이지(선택)</label><input id="f_gpage" type="number" min="0" value="${s.grammarPage||0}" placeholder="0"></div>
+        <div class="field"><label>숙제</label><input id="f_ghw" value="${s.grammarHw||''}" placeholder="Ch.5 워크북 p.30~33"></div>
       </div>
 
-      <div class="frow three">
+      <div class="frow four">
         <div class="field"><label>독해 교재</label>
           <select id="f_rbook">
             <option value="">— 선택 안 함 —</option>
@@ -1703,9 +1721,10 @@ function renderStudentForm(id){
         </div>
         <div class="field"><label>현재 진도(Section/Unit/회)</label><input id="f_rch" type="number" min="0" value="${s.readingCh||0}" placeholder="0"></div>
         <div class="field"><label>현재 페이지(선택)</label><input id="f_rpage" type="number" min="0" value="${s.readingPage||0}" placeholder="0"></div>
+        <div class="field"><label>숙제</label><input id="f_rhw" value="${s.readingHw||''}" placeholder="지문 3개 분석 + 단어"></div>
       </div>
 
-      <div class="frow three">
+      <div class="frow four">
         <div class="field"><label>서술형 교재</label>
           <select id="f_ebook">
             <option value="">— 선택 안 함 —</option>
@@ -1714,9 +1733,10 @@ function renderStudentForm(id){
         </div>
         <div class="field"><label>현재 Point/Rank</label><input id="f_ech" type="number" min="0" value="${s.essayCh||0}" placeholder="0"></div>
         <div class="field"><label>현재 페이지(선택)</label><input id="f_epage" type="number" min="0" value="${s.essayPage||0}" placeholder="0"></div>
+        <div class="field"><label>숙제</label><input id="f_ehw" value="${s.essayHw||''}" placeholder="Point 4 문제 풀이"></div>
       </div>
 
-      <div class="frow three">
+      <div class="frow four">
         <div class="field"><label>어법 교재</label>
           <select id="f_ubook">
             <option value="">— 선택 안 함 —</option>
@@ -1725,10 +1745,11 @@ function renderStudentForm(id){
         </div>
         <div class="field"><label>현재 진도(Unit/문제 번호)</label><input id="f_uch" type="number" min="0" value="${s.usageCh||0}" placeholder="0"></div>
         <div class="field"><label>현재 페이지(선택)</label><input id="f_upage" type="number" min="0" value="${s.usagePage||0}" placeholder="0"></div>
+        <div class="field"><label>숙제</label><input id="f_uhw" value="${s.usageHw||''}" placeholder="Unit 6 문제 1~20"></div>
       </div>
 
       <h3 style="margin-top:22px;font-size:15px">모의고사 기록 (응시 체크 + 점수)</h3>
-      <div style="font-size:12px;color:var(--gray);margin-bottom:10px">학생이 푼 모의고사를 체크하고 점수를 입력하세요. 점수는 선택이에요.</div>
+      <div style="font-size:12px;color:var(--gray);margin-bottom:10px">응시한 모의고사를 체크하고 점수를 입력하세요. '숙제'를 체크하면 학생 화면에 숙제로 뜨고, 학생이 해오면 '완료'를 체크하세요.</div>
       ${(()=>{
         const mk=s.mocks||{};
         return Object.keys(MOCK_SETS).map(gk=>{
@@ -1739,6 +1760,7 @@ function renderStudentForm(id){
               <input type="checkbox" id="${id}_chk" ${rec.done?'checked':''}>
               <span class="ml">${m.label}</span>
               <input type="number" id="${id}_sc" class="mock-score" min="0" max="100" value="${(rec.score!==undefined&&rec.score!==null)?rec.score:''}" placeholder="점수">
+              <span class="mock-hw"><label class="mock-hwchk"><input type="checkbox" id="${id}_hw" ${rec.hw?'checked':''}>숙제</label><label class="mock-hwchk"><input type="checkbox" id="${id}_hwd" ${rec.hwDone?'checked':''}>완료</label></span>
             </label>`;
           }).join('');
           return `<div class="mock-grade">
@@ -1781,14 +1803,20 @@ function saveStudent(isNew){
       const id=`mock_${gk}_${m.key}`.replace(/-/g,'_');
       const chk=document.getElementById(id+'_chk');
       const sc=document.getElementById(id+'_sc');
-      if(chk && chk.checked){
+      const hw=document.getElementById(id+'_hw');
+      const hwd=document.getElementById(id+'_hwd');
+      const isDone = chk && chk.checked;
+      const isHw = hw && hw.checked;
+      const isHwDone = hwd && hwd.checked;
+      if(isDone || isHw || isHwDone){
         if(!mocks[gk]) mocks[gk]={};
-        const v=sc.value.trim();
-        mocks[gk][m.key]={ done:true, score: v===''?null:Number(v) };
+        const v=sc?sc.value.trim():'';
+        mocks[gk][m.key]={ done:!!isDone, score: v===''?null:Number(v), hw:!!isHw, hwDone:!!isHwDone };
       }
     });
   });
 
+  const prev = DB.students[id] || {};
   DB.students[id]={
     pw: document.getElementById('f_pw').value,
     name,
@@ -1818,32 +1846,38 @@ function saveStudent(isNew){
       reading: parseInt(document.getElementById('f_nr').value)||5,
       listening: parseInt(document.getElementById('f_nl').value)||5
     },
-    book: document.getElementById('f_book').value.trim(),
-    bookMonths: parseInt(document.getElementById('f_bm').value)||1,
-    startMonth: parseInt(document.getElementById('f_sm').value),
-    startYear: parseInt(document.getElementById('f_sy').value),
-    todayStudy: document.getElementById('f_ts').value,
-    todayHw: document.getElementById('f_th').value,
+    book: prev.book||'',
+    bookMonths: prev.bookMonths||1,
+    startMonth: prev.startMonth,
+    startYear: prev.startYear,
+    todayStudy: prev.todayStudy||'',
+    todayHw: prev.todayHw||'',
     month: parseInt(document.getElementById('f_month').value),
     vocabBook: document.getElementById('f_vbook').value,
     vocabDay: parseInt(document.getElementById('f_vday').value)||0,
+    vocabTodayStudy: (document.getElementById('f_vts')||{}).value||'',
+    vocabTodayHw: (document.getElementById('f_vth')||{}).value||'',
     grammarBook: document.getElementById('f_gbook').value,
     grammarCh: parseInt(document.getElementById('f_gch').value)||0,
     grammarPage: parseInt(document.getElementById('f_gpage').value)||0,
+    grammarHw: (document.getElementById('f_ghw')||{}).value||'',
     essayBook: document.getElementById('f_ebook').value,
     essayCh: parseInt(document.getElementById('f_ech').value)||0,
     essayPage: parseInt(document.getElementById('f_epage').value)||0,
+    essayHw: (document.getElementById('f_ehw')||{}).value||'',
     usageBook: document.getElementById('f_ubook').value,
     usageCh: parseInt(document.getElementById('f_uch').value)||0,
     usagePage: parseInt(document.getElementById('f_upage').value)||0,
+    usageHw: (document.getElementById('f_uhw')||{}).value||'',
     readingBook: document.getElementById('f_rbook').value,
     readingCh: parseInt(document.getElementById('f_rch').value)||0,
     readingPage: parseInt(document.getElementById('f_rpage').value)||0,
+    readingHw: (document.getElementById('f_rhw')||{}).value||'',
     mocks,
-    todayWordDone: parseInt(document.getElementById('f_wd').value)||0,
-    todayWordTotal: parseInt(document.getElementById('f_wt').value)||0,
-    todayHwDone: parseInt(document.getElementById('f_hd').value)||0,
-    todayHwTotal: parseInt(document.getElementById('f_ht').value)||0,
+    todayWordDone: prev.todayWordDone||0,
+    todayWordTotal: prev.todayWordTotal||0,
+    todayHwDone: prev.todayHwDone||0,
+    todayHwTotal: prev.todayHwTotal||0,
     weeks
   };
   saveDB();
