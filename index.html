@@ -997,7 +997,7 @@ function renderStudent(id){
             ${nextName?` · 다음: Ch.${ch+1} ${nextName}`:(p>=100?' · 🎉 완료!':'')}
           </div>
           ${s.grammarPage?`<div style="font-size:13px;color:#475569;margin-top:4px">📄 현재 페이지: <b>p.${s.grammarPage}</b></div>`:''}
-          ${s.grammarHw?`<div style="font-size:13px;color:#475569;margin-top:4px">✏️ 숙제: <b>${s.grammarHw}</b></div>`:''}
+          ${s.grammarHw?`<div style="font-size:13px;color:#475569;margin-top:4px">✏️ 숙제: <b>${s.grammarHw}</b>${s.grammarHwPage?` <span style="color:#94a3b8">(${s.grammarHwPage})</span>`:''}</div>`:''}
         `;
       })()}
     </div>
@@ -1025,7 +1025,7 @@ function renderStudent(id){
             ${nextName?` · 다음: ${nextName}`:(p>=100?' · 🎉 완료!':'')}
           </div>
           ${s.readingPage?`<div style="font-size:13px;color:#475569;margin-top:4px">📄 현재 페이지: <b>p.${s.readingPage}</b></div>`:''}
-          ${s.readingHw?`<div style="font-size:13px;color:#475569;margin-top:4px">✏️ 숙제: <b>${s.readingHw}</b></div>`:''}
+          ${s.readingHw?`<div style="font-size:13px;color:#475569;margin-top:4px">✏️ 숙제: <b>${s.readingHw}</b>${s.readingHwPage?` <span style="color:#94a3b8">(${s.readingHwPage})</span>`:''}</div>`:''}
         `;
       })()}
     </div>
@@ -1053,7 +1053,7 @@ function renderStudent(id){
             ${nextName?` · 다음: ${u} ${n+1} ${nextName}`:(p>=100?' · 🎉 완료!':'')}
           </div>
           ${s.essayPage?`<div style="font-size:13px;color:#475569;margin-top:4px">📄 현재 페이지: <b>p.${s.essayPage}</b></div>`:''}
-          ${s.essayHw?`<div style="font-size:13px;color:#475569;margin-top:4px">✏️ 숙제: <b>${s.essayHw}</b></div>`:''}
+          ${s.essayHw?`<div style="font-size:13px;color:#475569;margin-top:4px">✏️ 숙제: <b>${s.essayHw}</b>${s.essayHwPage?` <span style="color:#94a3b8">(${s.essayHwPage})</span>`:''}</div>`:''}
         `;
       })()}
     </div>
@@ -1068,7 +1068,7 @@ function renderStudent(id){
         const n=Math.min(s.usageCh||0, total);
         const p=pct(n, total);
         const pageLine = (s.usagePage ? `<div style="font-size:13px;color:#475569;margin-top:4px">📄 현재 페이지: <b>p.${s.usagePage}</b></div>` : '')
-          + (s.usageHw ? `<div style="font-size:13px;color:#475569;margin-top:4px">✏️ 숙제: <b>${s.usageHw}</b></div>` : '');
+          + (s.usageHw ? `<div style="font-size:13px;color:#475569;margin-top:4px">✏️ 숙제: <b>${s.usageHw}</b>${s.usageHwPage?` <span style="color:#94a3b8">(${s.usageHwPage})</span>`:''}</div>` : '');
         if(ub.byProblem){
           return `
             <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
@@ -1709,7 +1709,9 @@ function renderStudentForm(id){
         </div>
         <div class="field"><label>현재 Chapter</label><input id="f_gch" type="number" min="0" value="${s.grammarCh||0}" placeholder="0"></div>
         <div class="field"><label>현재 페이지(선택)</label><input id="f_gpage" type="number" min="0" value="${s.grammarPage||0}" placeholder="0"></div>
-        <div class="field"><label>숙제</label><input id="f_ghw" value="${s.grammarHw||''}" placeholder="Ch.5 워크북 p.30~33"></div>
+        <div class="field"><label>숙제 / 숙제 페이지(선택)</label>
+          <div style="display:flex;gap:8px"><input id="f_ghw" value="${s.grammarHw||''}" placeholder="Ch.5 워크북" style="flex:2"><input id="f_ghwp" value="${s.grammarHwPage||''}" placeholder="p.30~33" style="flex:1"></div>
+        </div>
       </div>
 
       <div class="frow four">
@@ -1721,7 +1723,9 @@ function renderStudentForm(id){
         </div>
         <div class="field"><label>현재 진도(Section/Unit/회)</label><input id="f_rch" type="number" min="0" value="${s.readingCh||0}" placeholder="0"></div>
         <div class="field"><label>현재 페이지(선택)</label><input id="f_rpage" type="number" min="0" value="${s.readingPage||0}" placeholder="0"></div>
-        <div class="field"><label>숙제</label><input id="f_rhw" value="${s.readingHw||''}" placeholder="지문 3개 분석 + 단어"></div>
+        <div class="field"><label>숙제 / 숙제 페이지(선택)</label>
+          <div style="display:flex;gap:8px"><input id="f_rhw" value="${s.readingHw||''}" placeholder="지문 3개 분석" style="flex:2"><input id="f_rhwp" value="${s.readingHwPage||''}" placeholder="p.10~14" style="flex:1"></div>
+        </div>
       </div>
 
       <div class="frow four">
@@ -1733,7 +1737,9 @@ function renderStudentForm(id){
         </div>
         <div class="field"><label>현재 Point/Rank</label><input id="f_ech" type="number" min="0" value="${s.essayCh||0}" placeholder="0"></div>
         <div class="field"><label>현재 페이지(선택)</label><input id="f_epage" type="number" min="0" value="${s.essayPage||0}" placeholder="0"></div>
-        <div class="field"><label>숙제</label><input id="f_ehw" value="${s.essayHw||''}" placeholder="Point 4 문제 풀이"></div>
+        <div class="field"><label>숙제 / 숙제 페이지(선택)</label>
+          <div style="display:flex;gap:8px"><input id="f_ehw" value="${s.essayHw||''}" placeholder="Point 4 풀이" style="flex:2"><input id="f_ehwp" value="${s.essayHwPage||''}" placeholder="p.20~24" style="flex:1"></div>
+        </div>
       </div>
 
       <div class="frow four">
@@ -1745,7 +1751,9 @@ function renderStudentForm(id){
         </div>
         <div class="field"><label>현재 진도(Unit/문제 번호)</label><input id="f_uch" type="number" min="0" value="${s.usageCh||0}" placeholder="0"></div>
         <div class="field"><label>현재 페이지(선택)</label><input id="f_upage" type="number" min="0" value="${s.usagePage||0}" placeholder="0"></div>
-        <div class="field"><label>숙제</label><input id="f_uhw" value="${s.usageHw||''}" placeholder="Unit 6 문제 1~20"></div>
+        <div class="field"><label>숙제 / 숙제 페이지(선택)</label>
+          <div style="display:flex;gap:8px"><input id="f_uhw" value="${s.usageHw||''}" placeholder="Unit 6 문제" style="flex:2"><input id="f_uhwp" value="${s.usageHwPage||''}" placeholder="p.40~45" style="flex:1"></div>
+        </div>
       </div>
 
       <h3 style="margin-top:22px;font-size:15px">모의고사 기록 (응시 체크 + 점수)</h3>
@@ -1861,18 +1869,22 @@ function saveStudent(isNew){
     grammarCh: parseInt(document.getElementById('f_gch').value)||0,
     grammarPage: parseInt(document.getElementById('f_gpage').value)||0,
     grammarHw: (document.getElementById('f_ghw')||{}).value||'',
+    grammarHwPage: (document.getElementById('f_ghwp')||{}).value||'',
     essayBook: document.getElementById('f_ebook').value,
     essayCh: parseInt(document.getElementById('f_ech').value)||0,
     essayPage: parseInt(document.getElementById('f_epage').value)||0,
     essayHw: (document.getElementById('f_ehw')||{}).value||'',
+    essayHwPage: (document.getElementById('f_ehwp')||{}).value||'',
     usageBook: document.getElementById('f_ubook').value,
     usageCh: parseInt(document.getElementById('f_uch').value)||0,
     usagePage: parseInt(document.getElementById('f_upage').value)||0,
     usageHw: (document.getElementById('f_uhw')||{}).value||'',
+    usageHwPage: (document.getElementById('f_uhwp')||{}).value||'',
     readingBook: document.getElementById('f_rbook').value,
     readingCh: parseInt(document.getElementById('f_rch').value)||0,
     readingPage: parseInt(document.getElementById('f_rpage').value)||0,
     readingHw: (document.getElementById('f_rhw')||{}).value||'',
+    readingHwPage: (document.getElementById('f_rhwp')||{}).value||'',
     mocks,
     todayWordDone: prev.todayWordDone||0,
     todayWordTotal: prev.todayWordTotal||0,
