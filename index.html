@@ -106,6 +106,24 @@
 
   /* completion ring */
   .ring-wrap{ display:flex; align-items:center; gap:20px; }
+  /* 캐릭터 */
+  .char-card .char-wrap{ display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
+  .char-art{ width:130px; height:140px; flex-shrink:0; background:linear-gradient(160deg,#eef4ff,#f8fafc); border-radius:16px; display:flex; align-items:center; justify-content:center; }
+  .char-art svg{ width:118px; height:128px; }
+  .char-info{ flex:1; min-width:200px; }
+  .char-lv{ font-size:20px; font-weight:900; color:var(--navy); }
+  .char-sub{ font-size:13px; color:#64748b; margin:2px 0 10px; }
+  .char-bar{ height:12px; background:#eef2f7; border-radius:8px; overflow:hidden; }
+  .char-bar-fill{ height:100%; background:linear-gradient(90deg,#34d399,#3b82f6); border-radius:8px; transition:width 1s cubic-bezier(.2,.8,.2,1); }
+  .char-pts{ font-size:13px; color:#16a34a; font-weight:700; margin-top:8px; }
+  .char-change{ margin-top:10px; font-size:12px; padding:6px 12px; }
+  .char-pick-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; }
+  .char-pick{ border:2px solid var(--line); border-radius:16px; padding:16px; text-align:center; cursor:pointer; transition:all .15s; }
+  .char-pick:hover{ border-color:var(--blue); transform:translateY(-3px); box-shadow:0 8px 20px rgba(47,111,237,.15); }
+  .char-pick-art{ width:140px; height:150px; margin:0 auto; background:linear-gradient(160deg,#eef4ff,#f8fafc); border-radius:16px; display:flex; align-items:center; justify-content:center; }
+  .char-pick-art svg{ width:128px; height:138px; }
+  .char-pick-name{ font-size:18px; font-weight:900; color:var(--navy); margin-top:10px; }
+  .char-pick-desc{ font-size:13px; color:#64748b; margin-top:4px; }
   .ring{ position:relative; width:120px; height:120px; }
   .ring svg{ transform:rotate(-90deg); }
   .ring .pct{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
@@ -850,6 +868,163 @@ function todayDayGroup(){
   return 'monfri';
 }
 
+/* ============================================================
+   성장 캐릭터 시스템
+   - 3종: 'monster'(몬스터 진화), 'hero'(캐릭터 레벨업), 'plant'(식물 성장)
+   - 각 12단계 (Lv.1 ~ Lv.12)
+   - growthStage(points) 로 단계 계산
+   ============================================================ */
+
+// 성장점 -> 단계(1~12). 초반은 빨리, 후반은 천천히 (오래 키우는 맛)
+const GROWTH_THRESHOLDS = [0,2,5,9,14,20,28,38,50,65,85,110]; // 12단계 누적 기준
+function growthStage(points){
+  let st=1;
+  for(let i=0;i<GROWTH_THRESHOLDS.length;i++){ if(points>=GROWTH_THRESHOLDS[i]) st=i+1; }
+  return Math.min(st,12);
+}
+function nextThreshold(points){
+  const st=growthStage(points);
+  if(st>=12) return null;
+  return GROWTH_THRESHOLDS[st];
+}
+
+// 단계별 이름
+const CHAR_NAMES = {
+  monster:['알','부화','꼬마몬','새끼몬','청년몬','전사몬','기사몬','용사몬','챔피언','드래곤','고대드래곤','전설드래곤'],
+  hero:['견습생','수련생','모험가','검사','기사','성기사','대장군','영웅','수호자','전설','신화','초월자'],
+  plant:['씨앗','싹','새싹','잎새','떨기','나무','큰나무','꽃나무','열매나무','거목','신령목','세계수']
+};
+
+/* ---------- 공통 헬퍼 ---------- */
+function aura(stage){
+  // 후반 단계에 빛나는 오라
+  if(stage<8) return '';
+  const op = (stage-7)*0.06;
+  return `<circle cx="100" cy="100" r="${70+stage*2}" fill="url(#auraG)" opacity="${op}"/>`;
+}
+function crown(stage){
+  if(stage<9) return '';
+  return `<g transform="translate(100,28)"><path d="M-22,12 L-22,-6 L-11,4 L0,-12 L11,4 L22,-6 L22,12 Z" fill="#fbbf24" stroke="#f59e0b" stroke-width="2"/><circle cx="0" cy="-12" r="3" fill="#ef4444"/><circle cx="-22" cy="-6" r="2.5" fill="#3b82f6"/><circle cx="22" cy="-6" r="2.5" fill="#3b82f6"/></g>`;
+}
+
+/* ---------- 몬스터 ---------- */
+function charMonster(stage){
+  const defs=`<defs>
+    <radialGradient id="auraG"><stop offset="0%" stop-color="#a78bfa" stop-opacity="0.9"/><stop offset="100%" stop-color="#a78bfa" stop-opacity="0"/></radialGradient>
+    <linearGradient id="monBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#34d399"/><stop offset="100%" stop-color="#059669"/></linearGradient>
+    <linearGradient id="dragonBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#818cf8"/><stop offset="100%" stop-color="#6d28d9"/></linearGradient>
+  </defs>`;
+  let body='';
+  if(stage<=1){ // 알
+    body=`<ellipse cx="100" cy="120" rx="46" ry="56" fill="#fde68a" stroke="#f59e0b" stroke-width="3"/>
+      <path d="M62,110 q12,-10 22,2 q12,-12 24,0 q10,-8 22,4" fill="none" stroke="#f59e0b" stroke-width="3"/>
+      <circle cx="85" cy="100" r="4" fill="#f59e0b"/><circle cx="118" cy="115" r="3" fill="#f59e0b"/>`;
+  } else if(stage<=2){ // 부화(금이 간 알 + 눈)
+    body=`<ellipse cx="100" cy="120" rx="46" ry="56" fill="#fde68a" stroke="#f59e0b" stroke-width="3"/>
+      <path d="M70,95 L85,108 L78,118 L95,128" fill="none" stroke="#b45309" stroke-width="2.5"/>
+      <circle cx="88" cy="118" r="7" fill="#fff"/><circle cx="90" cy="119" r="3.5" fill="#1e293b"/>
+      <circle cx="115" cy="118" r="7" fill="#fff"/><circle cx="117" cy="119" r="3.5" fill="#1e293b"/>`;
+  } else {
+    const big = stage>=10;
+    const fill = big?'url(#dragonBody)':'url(#monBody)';
+    const size = 0.7 + Math.min(stage,12)*0.045; // 점점 커짐
+    const wing = stage>=7 ? `<path d="M52,95 q-30,-15 -34,15 q18,-2 30,8 Z" fill="${big?'#a78bfa':'#6ee7b7'}" opacity="0.9"/>
+      <path d="M148,95 q30,-15 34,15 q-18,-2 -30,8 Z" fill="${big?'#a78bfa':'#6ee7b7'}" opacity="0.9"/>`:'';
+    const horn = stage>=5 ? `<path d="M80,62 L74,42 L88,58 Z" fill="#fbbf24"/><path d="M120,62 L126,42 L112,58 Z" fill="#fbbf24"/>`:'';
+    const spike = stage>=6 ? `<path d="M100,55 L94,70 L106,70 Z" fill="#f59e0b"/>`:'';
+    body=`<g transform="translate(100,118) scale(${size}) translate(-100,-118)">
+      ${wing}
+      <ellipse cx="100" cy="120" rx="48" ry="50" fill="${fill}"/>
+      <ellipse cx="100" cy="150" rx="40" ry="22" fill="${fill}"/>
+      ${horn}${spike}
+      <circle cx="84" cy="112" r="9" fill="#fff"/><circle cx="86" cy="113" r="5" fill="#1e293b"/>
+      <circle cx="116" cy="112" r="9" fill="#fff"/><circle cx="118" cy="113" r="5" fill="#1e293b"/>
+      <path d="M88,135 q12,10 24,0" fill="none" stroke="#064e3b" stroke-width="3" stroke-linecap="round"/>
+      ${stage>=4?'<path d="M76,128 l8,4 M124,128 l-8,4" stroke="#064e3b" stroke-width="2"/>':''}
+    </g>`;
+  }
+  return `<svg viewBox="0 0 200 210" xmlns="http://www.w3.org/2000/svg">${defs}${aura(stage)}${body}${crown(stage)}</svg>`;
+}
+
+/* ---------- 히어로(레벨업) ---------- */
+function charHero(stage){
+  const defs=`<defs>
+    <radialGradient id="auraG"><stop offset="0%" stop-color="#f9a8d4" stop-opacity="0.9"/><stop offset="100%" stop-color="#f9a8d4" stop-opacity="0"/></radialGradient>
+    <linearGradient id="heroRobe" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f472b6"/><stop offset="100%" stop-color="#db2777"/></linearGradient>
+    <linearGradient id="heroRobe2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c084fc"/><stop offset="100%" stop-color="#7c3aed"/></linearGradient>
+  </defs>`;
+  const robe = stage>=9?'url(#heroRobe2)':'url(#heroRobe)';
+  const cape = stage>=6 ? `<path d="M70,95 q-18,40 -8,70 l20,-8 Z" fill="${stage>=9?'#7c3aed':'#be185d'}" opacity="0.85"/>
+    <path d="M130,95 q18,40 8,70 l-20,-8 Z" fill="${stage>=9?'#7c3aed':'#be185d'}" opacity="0.85"/>`:'';
+  const staff = stage>=4 ? `<line x1="140" y1="70" x2="140" y2="175" stroke="#92400e" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="140" cy="66" r="${stage>=8?11:8}" fill="#60a5fa"/>${stage>=8?'<circle cx="140" cy="66" r="16" fill="#60a5fa" opacity="0.3"/>':''}`:'';
+  const sword = (stage>=3 && stage<8) ? `<line x1="60" y1="90" x2="60" y2="150" stroke="#94a3b8" stroke-width="4"/><line x1="50" y1="95" x2="70" y2="95" stroke="#64748b" stroke-width="4"/>`:'';
+  const armor = stage>=5 ? `<path d="M80,100 h40 v8 h-40 Z" fill="#fbbf24"/>`:'';
+  const halo = stage>=10 ? `<ellipse cx="100" cy="44" rx="26" ry="7" fill="none" stroke="#fbbf24" stroke-width="3" opacity="0.9"/>`:'';
+  const size=0.72+Math.min(stage,12)*0.035;
+  return `<svg viewBox="0 0 200 210" xmlns="http://www.w3.org/2000/svg">${defs}${aura(stage)}
+    ${halo}
+    <g transform="translate(100,120) scale(${size}) translate(-100,-120)">
+      ${cape}${staff}${sword}
+      <path d="M72,175 q28,-${30+stage*3} 56,0 Z" fill="${robe}"/>
+      <rect x="80" y="92" width="40" height="50" rx="16" fill="${robe}"/>
+      ${armor}
+      <circle cx="100" cy="70" r="22" fill="#fde9d3"/>
+      <path d="M78,64 q22,-26 44,0 q-6,-12 -22,-12 q-16,0 -22,12" fill="#7c2d12"/>
+      <circle cx="92" cy="70" r="2.6" fill="#1e293b"/><circle cx="108" cy="70" r="2.6" fill="#1e293b"/>
+      <path d="M94,80 q6,5 12,0" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round"/>
+    </g>${crown(stage)}</svg>`;
+}
+
+/* ---------- 식물 ---------- */
+function charPlant(stage){
+  const defs=`<defs>
+    <radialGradient id="auraG"><stop offset="0%" stop-color="#86efac" stop-opacity="0.9"/><stop offset="100%" stop-color="#86efac" stop-opacity="0"/></radialGradient>
+    <linearGradient id="pot" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fb923c"/><stop offset="100%" stop-color="#c2410c"/></linearGradient>
+    <linearGradient id="trunk" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#a16207"/><stop offset="100%" stop-color="#713f12"/></linearGradient>
+    <radialGradient id="leaf"><stop offset="0%" stop-color="#4ade80"/><stop offset="100%" stop-color="#16a34a"/></radialGradient>
+  </defs>`;
+  const pot=`<path d="M70,168 L130,168 L124,200 L76,200 Z" fill="url(#pot)"/><rect x="66" y="160" width="68" height="12" rx="4" fill="#ea580c"/><ellipse cx="100" cy="166" rx="30" ry="5" fill="#7c2d12"/>`;
+  let plant='';
+  if(stage<=1){ plant=`<ellipse cx="100" cy="158" rx="7" ry="9" fill="#a16207"/>`; }
+  else if(stage<=2){ plant=`<path d="M100,160 q0,-18 0,-26" stroke="#16a34a" stroke-width="4" fill="none"/><ellipse cx="100" cy="130" rx="6" ry="9" fill="url(#leaf)"/>`; }
+  else if(stage<=3){ plant=`<path d="M100,160 L100,118" stroke="#16a34a" stroke-width="5"/><ellipse cx="88" cy="124" rx="11" ry="7" fill="url(#leaf)" transform="rotate(-30 88 124)"/><ellipse cx="112" cy="124" rx="11" ry="7" fill="url(#leaf)" transform="rotate(30 112 124)"/>`; }
+  else {
+    const trunkH = 60 + Math.min(stage,12)*6;
+    const crownR = 24 + Math.min(stage,12)*4;
+    const cy = 160 - trunkH;
+    const flowers = stage>=8 ? Array.from({length:5}).map((_,i)=>{const a=i/5*6.28; return `<circle cx="${100+Math.cos(a)*crownR*0.6}" cy="${cy+Math.sin(a)*crownR*0.6}" r="6" fill="#f9a8d4"/>`}).join(''):'';
+    const fruits = stage>=9 ? Array.from({length:4}).map((_,i)=>{const a=i/4*6.28+0.5; return `<circle cx="${100+Math.cos(a)*crownR*0.5}" cy="${cy+Math.sin(a)*crownR*0.5}" r="5" fill="#ef4444"/>`}).join(''):'';
+    plant=`<path d="M100,160 L100,${cy}" stroke="url(#trunk)" stroke-width="${8+Math.min(stage,12)}"/>
+      ${stage>=5?`<path d="M100,${cy+30} q-20,-6 -30,-18 M100,${cy+44} q22,-6 32,-16" stroke="url(#trunk)" stroke-width="5" fill="none"/>`:''}
+      <circle cx="100" cy="${cy}" r="${crownR}" fill="url(#leaf)"/>
+      <circle cx="${100-crownR*0.6}" cy="${cy+6}" r="${crownR*0.6}" fill="url(#leaf)"/>
+      <circle cx="${100+crownR*0.6}" cy="${cy+6}" r="${crownR*0.6}" fill="url(#leaf)"/>
+      <circle cx="100" cy="${cy-crownR*0.5}" r="${crownR*0.55}" fill="#4ade80"/>
+      ${flowers}${fruits}`;
+  }
+  return `<svg viewBox="0 0 200 210" xmlns="http://www.w3.org/2000/svg">${defs}${aura(stage)}${plant}${pot}${crown(stage)}</svg>`;
+}
+
+const CHAR_RENDER = { monster:charMonster, hero:charHero, plant:charPlant };
+function renderChar(type, stage){ return (CHAR_RENDER[type]||charMonster)(stage); }
+
+/* 성장점 계산: 교재 숙제완료 + 모의고사 숙제완료 + 누적 + 수동 보너스 */
+function studentGrowthPoints(s){
+  let pts = 0;
+  // 모의고사 숙제 완료 개수
+  const mk = s.mocks||{};
+  Object.keys(mk).forEach(gk=>{
+    Object.keys(mk[gk]||{}).forEach(k=>{ if(mk[gk][k] && mk[gk][k].hwDone) pts++; });
+  });
+  // 선생님이 '숙제 확인'을 누를 때마다 누적되는 값 (체크 풀어도 안 줄어듦)
+  pts += (s.hwDoneCount||0);
+  // 수동 보너스
+  pts += (s.growthBonus||0);
+  return pts;
+}
+
+
 function lvWithGrade(lv){
   if(!lv) return lv||'';
   const map={ "Lv.2":"초3-4","Lv.3":"초5-6","Lv.4":"중1","Lv.5":"중2","Lv.6":"중3","Lv.7":"고1","Lv.8":"고2","Lv.9":"고3" };
@@ -872,6 +1047,51 @@ function finishDate(s){
 /* ============================================================
    STUDENT DASHBOARD
    ============================================================ */
+function renderCharPick(id){
+  const s = DB.students[id];
+  const opts = [
+    {key:'monster', name:'몬스터', desc:'알에서 부화해 전설의 드래곤으로!', stage:7},
+    {key:'hero', name:'히어로', desc:'견습생에서 전설의 영웅으로!', stage:7},
+    {key:'plant', name:'정령목', desc:'작은 씨앗에서 거대한 세계수로!', stage:8},
+  ];
+  document.getElementById('content').innerHTML = `
+    <div class="hero"><div>
+      <div style="font-size:13px;opacity:.85">환영해요!</div>
+      <h2>${s.name} 학생, 함께 키울 캐릭터를 골라요 🎮</h2>
+    </div></div>
+    <div class="card" style="margin-top:18px">
+      <h3><span class="dot"></span>캐릭터 선택</h3>
+      <div style="font-size:14px;color:#475569;margin-bottom:16px">숙제를 해올 때마다 성장점이 쌓여서 캐릭터가 자라요. 마음에 드는 친구를 골라보세요! (나중에 바꿀 수도 있어요)</div>
+      <div class="char-pick-grid">
+        ${opts.map(o=>`
+          <div class="char-pick" onclick="pickChar('${id}','${o.key}')">
+            <div class="char-pick-art">${renderChar(o.key, o.stage)}</div>
+            <div class="char-pick-name">${o.name}</div>
+            <div class="char-pick-desc">${o.desc}</div>
+            <button class="btn btn-save" style="margin-top:8px;width:100%">이 캐릭터로 시작!</button>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+function pickChar(id, type){
+  DB.students[id].charType = type;
+  saveDB();
+  renderStudent(id);
+}
+function adjustGrowth(id, delta){
+  const s = DB.students[id];
+  s.growthBonus = Math.max(0, (s.growthBonus||0) + delta);
+  saveDB();
+  editingId = id; teacherTab='new'; renderTeacher();
+}
+function changeChar(id){
+  if(confirm('캐릭터를 바꿀까요? 성장점(레벨)은 그대로 유지돼요.')){
+    DB.students[id].charType = '';
+    saveDB();
+    renderCharPick(id);
+  }
+}
+
 function renderStudent(id){
   const s = DB.students[id];
   const wc = weekCount(s.month);
@@ -880,6 +1100,13 @@ function renderStudent(id){
   const doneWeeks = s.weeks.slice(0,wc).filter(w=>w.done).length;
   const monthPct = pct(doneWeeks,wc);
   const fd = finishDate(s);
+
+  // 캐릭터 선택을 안 했으면 선택 화면부터
+  if(!s.charType){ renderCharPick(id); return; }
+  const gPts = studentGrowthPoints(s);
+  const gStage = growthStage(gPts);
+  const gNext = nextThreshold(gPts);
+  const gName = CHAR_NAMES[s.charType] ? CHAR_NAMES[s.charType][gStage-1] : '';
 
   const ringC = 2*Math.PI*52;
   const ringOffset = ringC*(1-monthPct/100);
@@ -915,39 +1142,18 @@ function renderStudent(id){
       </div>
     </div>
 
-    <div class="grid">
-      <div class="card">
-        <h3><span class="dot"></span>오늘의 학습</h3>
-        <div class="today-row"><span>현재 교재</span><span class="book-name">${s.book}</span></div>
-        <div class="today-row"><span>오늘 학습 분량</span><b>${s.todayStudy}</b></div>
-        <div class="today-row"><span>오늘 숙제</span><b>${s.todayHw}</b></div>
-
-        <div class="pbar-wrap">
-          <div class="pbar-label"><span>📘 오늘 단어</span><b>${s.todayWordDone} / ${s.todayWordTotal} (${wordPct}%)</b></div>
-          <div class="pbar"><div class="fill-word" style="width:0%" data-w="${wordPct}"></div></div>
-        </div>
-        <div class="pbar-wrap">
-          <div class="pbar-label"><span>✏️ 오늘 숙제</span><b>${s.todayHwDone} / ${s.todayHwTotal} (${hwPct}%)</b></div>
-          <div class="pbar"><div class="fill-hw" style="width:0%" data-w="${hwPct}"></div></div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h3><span class="dot"></span>이번 달 목표 달성률</h3>
-        <div class="ring-wrap">
-          <div class="ring">
-            <svg width="120" height="120">
-              <circle cx="60" cy="60" r="52" fill="none" stroke="#eef2f7" stroke-width="12"/>
-              <circle id="ringFg" cx="60" cy="60" r="52" fill="none" stroke="#2f6fed" stroke-width="12"
-                stroke-linecap="round" stroke-dasharray="${ringC}" stroke-dashoffset="${ringC}"/>
-            </svg>
-            <div class="pct"><div class="n">${monthPct}%</div><div class="l">${doneWeeks}/${wc}주 달성</div></div>
+    <div class="card char-card" style="margin-top:18px">
+      <h3><span class="dot"></span>나의 학습 캐릭터</h3>
+      <div class="char-wrap">
+        <div class="char-art">${renderChar(s.charType, gStage)}</div>
+        <div class="char-info">
+          <div class="char-lv">Lv.${gStage} · ${gName}</div>
+          <div class="char-sub">숙제를 해올 때마다 캐릭터가 성장해요!</div>
+          <div class="char-bar">
+            <div class="char-bar-fill" style="width:0%" data-w="${gNext?pct(gPts-(GROWTH_THRESHOLDS[gStage-1]||0), gNext-(GROWTH_THRESHOLDS[gStage-1]||0)):100}"></div>
           </div>
-          <div style="font-size:14px;color:#475569">
-            이번 달은 <b>${wc}주차</b>로 구성돼 있어요.<br>
-            지금까지 <b style="color:#16a34a">${doneWeeks}개 목표</b>를 달성했어요!<br>
-            ${monthPct>=100?'🎉 이번 달 목표 완료!':'끝까지 화이팅 💪'}
-          </div>
+          <div class="char-pts">${gNext?`다음 단계까지 ${gNext-gPts}개 더! (현재 성장점 ${gPts})`:`🎉 최고 단계 달성! (성장점 ${gPts})`}</div>
+          <button class="btn btn-ghost char-change" onclick="changeChar('${id}')">캐릭터 바꾸기</button>
         </div>
       </div>
     </div>
@@ -1161,6 +1367,22 @@ function renderStudent(id){
     <div class="card" style="margin-top:18px">
       <h3><span class="dot"></span>주차별 목표 보드</h3>
       <div class="weeks">${weeksHtml}</div>
+      <div class="ring-wrap" style="margin-top:18px;border-top:1px dashed #e2e8f0;padding-top:18px">
+        <div class="ring">
+          <svg width="120" height="120">
+            <circle cx="60" cy="60" r="52" fill="none" stroke="#eef2f7" stroke-width="12"/>
+            <circle id="ringFg" cx="60" cy="60" r="52" fill="none" stroke="#2f6fed" stroke-width="12"
+              stroke-linecap="round" stroke-dasharray="${ringC}" stroke-dashoffset="${ringC}"/>
+          </svg>
+          <div class="pct"><div class="n">${monthPct}%</div><div class="l">${doneWeeks}/${wc}주 달성</div></div>
+        </div>
+        <div style="font-size:14px;color:#475569">
+          <b>이번 달 목표 달성률</b><br>
+          이번 달은 <b>${wc}주차</b>로 구성돼 있어요.<br>
+          지금까지 <b style="color:#16a34a">${doneWeeks}개 목표</b>를 달성했어요!<br>
+          ${monthPct>=100?'🎉 이번 달 목표 완료!':'끝까지 화이팅 💪'}
+        </div>
+      </div>
     </div>
 
     <div class="card" style="margin-top:18px">
@@ -1191,6 +1413,7 @@ function renderStudent(id){
   requestAnimationFrame(()=>{
     document.querySelectorAll('.pbar > div').forEach(el=>{ el.style.width=el.dataset.w+'%'; });
     document.querySelectorAll('.vbar > div').forEach(el=>{ el.style.width=el.dataset.w+'%'; });
+    document.querySelectorAll('.char-bar-fill').forEach(el=>{ el.style.width=el.dataset.w+'%'; });
     const fg=document.getElementById('ringFg');
     if(fg){ fg.style.transition="stroke-dashoffset 1.1s cubic-bezier(.2,.8,.2,1)"; setTimeout(()=>{fg.style.strokeDashoffset=ringOffset;},80); }
     drawCharts(s);
@@ -1778,6 +2001,28 @@ function renderStudentForm(id){
         }).join('');
       })()}
 
+      <h3 style="margin-top:22px;font-size:15px">🎮 캐릭터 성장 관리</h3>
+      ${(()=>{
+        if(isNew) return '<div style="font-size:13px;color:var(--gray)">학생 저장 후 캐릭터 성장점을 관리할 수 있어요.</div>';
+        const gPts = studentGrowthPoints(s);
+        const gStage = growthStage(gPts);
+        const ctName = {monster:'몬스터',hero:'히어로',plant:'정령목'}[s.charType]||'미선택';
+        return `<div style="background:#f8fafc;border-radius:12px;padding:14px">
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+            <div style="width:64px;height:68px;background:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center">${s.charType?renderChar(s.charType,gStage):'<span style="font-size:12px;color:#94a3b8">미선택</span>'}</div>
+            <div style="flex:1;min-width:160px">
+              <div style="font-weight:800;color:var(--navy)">${ctName} · Lv.${gStage}</div>
+              <div style="font-size:13px;color:#64748b">현재 성장점 ${gPts}점 (모의고사 숙제 + 누적 + 보너스 ${s.growthBonus||0})</div>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <button type="button" class="btn btn-ghost" style="padding:6px 12px" onclick="adjustGrowth('${id}',1)">＋ 성장 +1</button>
+              <button type="button" class="btn btn-ghost" style="padding:6px 12px" onclick="adjustGrowth('${id}',-1)">－</button>
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--gray);margin-top:8px">숙제 '완료'를 체크하면 자동으로 성장하고, 잘했을 때 '성장 +1'로 보너스를 줄 수 있어요.</div>
+        </div>`;
+      })()}
+
       <h3 style="margin-top:22px;font-size:15px">주차별 목표 · 달성</h3>
       ${weekEdit}
 
@@ -1890,6 +2135,9 @@ function saveStudent(isNew){
     todayWordTotal: prev.todayWordTotal||0,
     todayHwDone: prev.todayHwDone||0,
     todayHwTotal: prev.todayHwTotal||0,
+    charType: prev.charType||'',
+    growthBonus: prev.growthBonus||0,
+    hwDoneCount: prev.hwDoneCount||0,
     weeks
   };
   saveDB();
