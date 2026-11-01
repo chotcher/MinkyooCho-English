@@ -671,7 +671,7 @@ let U=null, VIEW={tab:0};
 function newUser(id,pw){return{id,pw,book:BOOKS[0].id,nick:'',av:null,xp:0,sets:{},daily:{date:'',xp:0,runs:{}},streak:{last:'',n:0},wrong:{},total:{sessions:0,words:0},last:'',created:today()}}
 function save(){if(U&&U.id!=='teacher'&&(ROLE==='student'||ROLE==='demo'))Store.saveUser(U)}
 /* ================= 문법 키우기 연결 (v16) ================= */
-const GBOOKS=[['hk1','해커스 중학영문법 1학년','중1'],['hk2','해커스 중학영문법 2학년','중2'],['hk3','해커스 중학영문법 3학년','중3']];
+const GBOOKS=[['hk1','해커스 중학영문법 1학년','중1'],['hk2','해커스 중학영문법 2학년','중2'],['hk3','해커스 중학영문법 3학년','중3'],['hof','해커스 어법 제대로','어법 제대로'],['eos','어법끝 START','어법끝 START']];
 let GLV=null;
 window.GRAM={
   load:bk=>(U&&U.gram&&U.gram[bk])?JSON.parse(JSON.stringify(U.gram[bk])):null,
@@ -1032,7 +1032,7 @@ function teacher(msg=''){
   const nob=list.filter(({u})=>!u.bookBy).length;
   const gramSel=u=>{const g=u.gram&&u.gbook&&u.gram[u.gbook]&&u.gram[u.gbook].prog;return `<select class="gsel" data-guid="${esc(u.id)}" aria-label="${esc(u.id)} 문법 교재"><option value="">—</option>${GBOOKS.map(b=>`<option value="${b[0]}" ${u.gbook===b[0]?'selected':''}>${b[2]}</option>`).join('')}</select>${g?`<div class="memo">${g.done}/${g.total} 통과</div>`:''}`};
   $('#app').innerHTML=`${topbar('<button class="btn" id="tout">로그아웃</button>')}
-  <h2 style="font-size:24px">선생님 화면</h2><p class="muted" style="margin:2px 0 12px">학생 아이디마다 단어책 단계와 문법 교재(중1·중2·중3)를 정해 주세요. 학생은 배정된 책만 볼 수 있어요. 학생 명단·이름·반은 학생 대시보드에서 가져오고, 대시보드에서 단어책이나 Day를 바꾸면 여기 들어올 때 함께 바뀝니다.</p>
+  <h2 style="font-size:24px">선생님 화면</h2><p class="muted" style="margin:2px 0 12px">학생 아이디마다 단어책 단계와 문법 교재(해커스 중1·중2·중3, 어법 제대로, 어법끝 START)를 정해 주세요. 학생은 배정된 책만 볼 수 있어요. 학생 명단·이름·반은 학생 대시보드에서 가져오고, 대시보드에서 단어책이나 Day를 바꾸면 여기 들어올 때 함께 바뀝니다.</p>
   <form class="panel addst" id="addf" autocomplete="off">
     <b>학생 아이디 추가</b>
     <div class="row"><input id="nid" placeholder="아이디 이름 (예: cmk701 홍길동)" autocapitalize="off" spellcheck="false" aria-label="학생 아이디">${bookSel('',BOOKS[0].id).replace('class="bsel" data-uid=""','id="nbook"')}<button class="btn primary" type="submit">추가</button></div>
