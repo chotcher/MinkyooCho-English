@@ -670,6 +670,29 @@ function pwChange(first){
 let U=null, VIEW={tab:0};
 function newUser(id,pw){return{id,pw,book:BOOKS[0].id,nick:'',av:null,xp:0,sets:{},daily:{date:'',xp:0,runs:{}},streak:{last:'',n:0},wrong:{},total:{sessions:0,words:0},last:'',created:today()}}
 function save(){if(U&&U.id!=='teacher'&&(ROLE==='student'||ROLE==='demo'))Store.saveUser(U)}
+/* ================= 문법 키우기 연결 (v16) ================= */
+const GBOOKS=[['hk1','해커스 중학영문법 1학년','중1'],['hk2','해커스 중학영문법 2학년','중2'],['hk3','해커스 중학영문법 3학년','중3']];
+let GLV=null;
+window.GRAM={
+  load:bk=>(U&&U.gram&&U.gram[bk])?JSON.parse(JSON.stringify(U.gram[bk])):null,
+  save:(bk,st)=>{if(!U||!(ROLE==='student'||ROLE==='demo'))return;U.gram=U.gram||{};U.gram[bk]=st;save()},
+  xp:(n,label)=>gramXP(n,label),
+  who:()=>U?(U.nick||U.name||U.id):''
+};
+function gramXP(n,label){if(!U||!(ROLE==='student'||ROLE==='demo'))return;dailyReset();
+  const gain=Math.max(0,Math.min(n,DAILY_CAP-U.daily.xp));if(!gain){toast('오늘 받을 수 있는 경험치를 다 받았어요');return}
+  const before=lvInfo(U.xp);U.xp+=gain;U.daily.xp+=gain;addWeek(gain,0);const after=lvInfo(U.xp);
+  if(after.lv>before.lv&&U.av){const un=[];for(let l=before.lv+1;l<=after.lv;l++){const it=progAt(U.av.job,l);if(it)un.push(it)}GLV=GLV?[GLV[0],after.lv,GLV[2].concat(un)]:[before.lv,after.lv,un]}
+  U.last=new Date().toISOString();save();toast(`${label} +${gain} XP`)}
+function gramCard(){if(!U||!U.gbook)return '';const g=GBOOKS.find(b=>b[0]===U.gbook);if(!g)return '';
+  const p=(U.gram&&U.gram[U.gbook]&&U.gram[U.gbook].prog)||null;
+  return `<div class="mybook gramcard"><span class="bn">문법 · 선생님이 정한 교재</span><b>${esc(g[1])}</b><span class="bp">${p?`${p.done}/${p.total} 단계 통과`:'아직 시작 전이에요'}</span><div class="xpbar" style="height:8px"><i style="width:${p&&p.total?Math.round(p.done/p.total*100):0}%"></i></div><button class="btn primary" id="gramGo" type="button" style="margin-top:8px;justify-self:start">문법 공부하기 →</button></div>`}
+function bindGram(){const b=document.getElementById('gramGo');if(b)b.onclick=gramView}
+function gramView(){if(!U||!U.gbook)return;
+  $('#app').innerHTML=`${topbar('<button class="btn" id="gback">← 단어 홈</button>')}<iframe id="gframe" src="gram_${U.gbook}.html" title="문법 학습" style="width:100%;height:calc(100vh - 96px);min-height:520px;border:0;border-radius:14px;background:#fff;display:block;margin-top:8px"></iframe>`;
+  bindCommon();$('#gback').onclick=gramBack}
+function gramBack(){save();home();if(GLV){const p=GLV;GLV=null;setTimeout(()=>levelUp(p[0],p[1],p[2]),300)}}
+
 function migrate(u){if(!u)return u;const s=u.sets||{};Object.keys(s).forEach(k=>{if(/^\d+$/.test(k)){s['mhard:'+k]=s[k];delete s[k]}});if(!u.book)u.book=Object.keys(s).length?'mhard':BOOKS[0].id;return u}
 function enter(){useBook(U.book);if(U.day)VIEW.tab=Math.floor((U.day-1)/10);home()}
 function dailyReset(){if(U.daily.date!==today())U.daily={date:today(),xp:0,runs:{}}}
@@ -711,7 +734,7 @@ function login(msg=''){
     if(pw===id+'0000')return pwChange(true);
     if(!U.av)return pick();save();enter()};
   $('#cred').onclick=credits;
-  $('#demo').onclick=()=>{ROLE='demo';let u=Store.loadUser('demo');if(!u){u=newUser('demo','0000');u.nick='체험기사';u.av={...DEMO_AV,hide:{}};u.bookBy='teacher';u.xp=cum(47)+300;u.streak={last:yesterday(),n:4};u.sets={'mhard:0':{card:1,recall:95,spell:88,match:42,test:100},'mhard:1':{card:1,recall:90},'mhard:3':{card:1}};u.book='mhard';u.bookBy='teacher';u.total={sessions:31,words:612}}U=migrate(u);save();enter()};
+  $('#demo').onclick=()=>{ROLE='demo';let u=Store.loadUser('demo');if(!u){u=newUser('demo','0000');u.nick='체험기사';u.av={...DEMO_AV,hide:{}};u.bookBy='teacher';u.xp=cum(47)+300;u.streak={last:yesterday(),n:4};u.sets={'mhard:0':{card:1,recall:95,spell:88,match:42,test:100},'mhard:1':{card:1,recall:90},'mhard:3':{card:1}};u.book='mhard';u.bookBy='teacher';u.gbook='hk1';u.total={sessions:31,words:612}}U=migrate(u);save();enter()};
 }
 
 const DEMO_AV={job:'warrior',body:'male',skin:'light',hair:'hair_messy1',hc:'dark_brown',cloth:'blue',cape:'red',hide:{}};
@@ -767,7 +790,7 @@ function heroHTML(){
 
 function home(){
   if(!U)return login();
-  if(!U.bookBy){$('#app').innerHTML=`${topbar()}${heroHTML()}${questHTML()}${weekHTML()}<div class="panel waitbook"><h3 style="font-size:20px">아직 단어책이 정해지지 않았어요</h3><p class="muted" style="margin:6px 0 0">선생님이 내 아이디에 단어책을 배정하면 여기에 Day 목록이 나와요. 선생님께 말해 주세요. 오답 노트와 장비 화면은 지금도 볼 수 있어요.</p></div>`;bindCommon();bindQuests();bindWeek();$('#room').onclick=room;$('#dexBtn').onclick=()=>{room();const d=document.getElementById('dex');if(d)d.scrollIntoView()};$('#wrongBtn').onclick=()=>setView('W');$('#out').onclick=logout;return}
+  if(!U.bookBy){$('#app').innerHTML=`${topbar()}${heroHTML()}${questHTML()}${weekHTML()}${gramCard()}<div class="panel waitbook"><h3 style="font-size:20px">아직 단어책이 정해지지 않았어요</h3><p class="muted" style="margin:6px 0 0">선생님이 내 아이디에 단어책을 배정하면 여기에 Day 목록이 나와요. 선생님께 말해 주세요. 오답 노트와 장비 화면은 지금도 볼 수 있어요.</p></div>`;bindCommon();bindQuests();bindWeek();bindGram();$('#room').onclick=room;$('#dexBtn').onclick=()=>{room();const d=document.getElementById('dex');if(d)d.scrollIntoView()};$('#wrongBtn').onclick=()=>setView('W');$('#out').onclick=logout;return}
   if(DATA.id!==U.book)useBook(U.book);
   if(!DATA.tabs.some(t=>t[0]===VIEW.tab))VIEW.tab=DATA.tabs[0][0];
   const R=Object.fromEntries(DATA.tabs);
@@ -777,7 +800,7 @@ function home(){
   const setRow=s=>`<button class="setbtn" data-set="${s.i}"><span class="nm">${esc(s.d?s.t:s.k==='cum'?s.t.replace(/Day\d+-\d+ · /,''):s.k==='app'?s.t:s.t.replace('④ 형태변화 ',''))}</span><span class="cnt">${s.w.length}</span>${setDots(s.i)}</button>`;
   const dayPct=d=>{const ss=sets.filter(s=>s.d===d);const done=ss.reduce((a,s)=>a+MODES.filter(([m])=>(U.sets[sk(s.i)]||{})[m]!=null).length,0);return Math.round(done/(ss.length*5)*100)};
   const bi=BOOKS.findIndex(b=>b.id===DATA.id),bookDone=Object.keys(U.sets).filter(k=>k.startsWith(DATA.id+':')).length;
-  $('#app').innerHTML=`${topbar()}${heroHTML()}${questHTML()}${weekHTML()}
+  $('#app').innerHTML=`${topbar()}${heroHTML()}${questHTML()}${weekHTML()}${gramCard()}
   <div class="mybook"><span class="bn">${bi+1}단계 · 선생님이 정한 단어책</span><b>${esc(DATA.name)}</b><span class="bp">${U.day?`지금 위치 Day ${pad(U.day)} · `:''}${bookDone}/${DATA.sets.length} 세트 학습</span><div class="xpbar" style="height:8px"><i style="width:${Math.round(bookDone/DATA.sets.length*100)}%"></i></div></div>
   <div class="tabs" role="tablist">${DATA.tabs.map(([r,l])=>`<button class="tab ${r===VIEW.tab?'on':''}" data-tab="${r}" role="tab" aria-selected="${r===VIEW.tab}">${l}</button>`).join('')}</div>
   <div class="days">${days.map(d=>`<div class="day ${U.day===d?'here':''}"><h3>Day ${pad(d)}${U.day===d?'<span class="herebadge">지금 여기</span>':''}<span class="pct">${dayPct(d)}%</span></h3>${sets.filter(s=>s.d===d).map(setRow).join('')}</div>`).join('')}</div>
@@ -787,7 +810,7 @@ function home(){
   bindCommon();
   document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{VIEW.tab=+b.dataset.tab;home()});
   document.querySelectorAll('[data-set]').forEach(b=>b.onclick=()=>setView(+b.dataset.set));
-  bindQuests();bindWeek();$('#room').onclick=room;$('#dexBtn').onclick=()=>{room();const d=document.getElementById('dex');if(d)d.scrollIntoView()};$('#wrongBtn').onclick=()=>setView('W');$('#out').onclick=logout;
+  bindQuests();bindWeek();bindGram();$('#room').onclick=room;$('#dexBtn').onclick=()=>{room();const d=document.getElementById('dex');if(d)d.scrollIntoView()};$('#wrongBtn').onclick=()=>setView('W');$('#out').onclick=logout;
 }
 
 function setView(i){
@@ -1007,19 +1030,20 @@ function teacher(msg=''){
   const list=ids.map(id=>migrate(getUser(id))).filter(Boolean).map(u=>({u,L:lvInfo(u.xp)})).sort((a,b)=>CO.indexOf(a.u.cls||'')-CO.indexOf(b.u.cls||'')||(a.u.name||a.u.id).localeCompare(b.u.name||b.u.id));
   const bookSel=(id,cur)=>`<select class="bsel" data-uid="${esc(id)}" aria-label="${esc(id)} 단어책"><option value="">— 배정 안 함 —</option>${BOOKS.map((b,n)=>`<option value="${b.id}" ${cur===b.id?'selected':''}>${n+1}단계 ${esc(b.short)}</option>`).join('')}</select>`;
   const nob=list.filter(({u})=>!u.bookBy).length;
+  const gramSel=u=>{const g=u.gram&&u.gbook&&u.gram[u.gbook]&&u.gram[u.gbook].prog;return `<select class="gsel" data-guid="${esc(u.id)}" aria-label="${esc(u.id)} 문법 교재"><option value="">—</option>${GBOOKS.map(b=>`<option value="${b[0]}" ${u.gbook===b[0]?'selected':''}>${b[2]}</option>`).join('')}</select>${g?`<div class="memo">${g.done}/${g.total} 통과</div>`:''}`};
   $('#app').innerHTML=`${topbar('<button class="btn" id="tout">로그아웃</button>')}
-  <h2 style="font-size:24px">선생님 화면</h2><p class="muted" style="margin:2px 0 12px">학생 아이디마다 단어책 단계를 정해 주세요. 학생은 배정된 책만 볼 수 있어요. 학생 명단·이름·반은 학생 대시보드에서 가져오고, 대시보드에서 단어책이나 Day를 바꾸면 여기 들어올 때 함께 바뀝니다.</p>
+  <h2 style="font-size:24px">선생님 화면</h2><p class="muted" style="margin:2px 0 12px">학생 아이디마다 단어책 단계와 문법 교재(중1·중2·중3)를 정해 주세요. 학생은 배정된 책만 볼 수 있어요. 학생 명단·이름·반은 학생 대시보드에서 가져오고, 대시보드에서 단어책이나 Day를 바꾸면 여기 들어올 때 함께 바뀝니다.</p>
   <form class="panel addst" id="addf" autocomplete="off">
     <b>학생 아이디 추가</b>
     <div class="row"><input id="nid" placeholder="아이디 이름 (예: cmk701 홍길동)" autocapitalize="off" spellcheck="false" aria-label="학생 아이디">${bookSel('',BOOKS[0].id).replace('class="bsel" data-uid=""','id="nbook"')}<button class="btn primary" type="submit">추가</button></div>
     <div class="muted" style="font-size:13px">새 학생은 학생 대시보드에 먼저 넣고 🔑 학생 계정 만들기를 눌러 주세요 (처음 비밀번호 = 아이디+0000). 여기서 추가하면 보카 키우기 기록만 생겨요. 여러 명은 쉼표로 이어서 넣을 수 있어요.</div>
     <div class="err" id="aerr" style="color:var(--good)">${esc(msg)}</div>
   </form>
-  <div class="panel addst" style="margin-top:12px"><b>반 전체에 한 번에 배정</b><div class="row"><select id="clsSel" aria-label="반">${Object.entries(CLASSES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select>${bookSel('',BOOKS[0].id).replace('class="bsel" data-uid=""','id="clsBook"')}<label style="font-size:13px;display:flex;gap:4px;align-items:center"><input type="checkbox" id="onlyNo" checked> 아직 배정 안 된 학생만</label><button class="btn" id="clsGo" type="button">배정</button></div></div>
+  <div class="panel addst" style="margin-top:12px"><b>반 전체에 한 번에 배정</b><div class="row"><select id="clsSel" aria-label="반">${Object.entries(CLASSES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select>${bookSel('',BOOKS[0].id).replace('class="bsel" data-uid=""','id="clsBook"')}<label style="font-size:13px;display:flex;gap:4px;align-items:center"><input type="checkbox" id="onlyNo" checked> 아직 배정 안 된 학생만</label><button class="btn" id="clsGo" type="button">배정</button></div><div class="row" style="margin-top:6px"><span style="font-size:13px;font-weight:600">문법 교재</span><select id="clsGram" aria-label="반 전체 문법 교재">${GBOOKS.map(b=>`<option value="${b[0]}">${esc(b[1])}</option>`).join('')}</select><button class="btn" id="clsGramGo" type="button">위에서 고른 반에 문법 배정</button></div></div>
   ${nob?`<div class="next" style="margin-top:12px">단어책이 아직 배정되지 않은 학생이 <b>${nob}명</b> 있어요.</div>`:''}
-  <div class="panel scroll" style="margin-top:12px">${list.length?`<table class="tbl"><thead><tr><th>반</th><th>이름</th><th>아이디</th><th>단어책 배정</th><th>지금 Day</th><th>캐릭터</th><th>레벨</th><th class="num">총 XP</th><th class="num">이번 주</th><th class="num">오늘 XP</th><th class="num">연속</th><th class="num">이 책 세트</th><th class="num">오답</th><th>마지막 학습</th></tr></thead><tbody>
-    ${list.map(({u,L})=>`<tr class="${u.bookBy?'':'nobook'}"><td>${esc(CLASSES[u.cls]||'-')}</td><td>${esc(u.name||'')}${u.school?` <span class="muted">${esc(u.school)} ${esc(u.grade||'')}</span>`:''}</td><td>${esc(u.id)}${u.id==='demo'?' <span class="muted">(체험)</span>':''}</td><td>${bookSel(u.id,u.bookBy?u.book:'')}${u.memo?`<div class="memo">${esc(u.memo)}</div>`:''}</td><td><input class="dayin" type="number" min="1" max="60" value="${u.day||''}" data-day="${esc(u.id)}" aria-label="${esc(u.id)} 지금 Day" placeholder="-"></td><td>${u.av?`${esc(u.nick)} · ${JOBS[u.av.job].nm}`:'<span class="muted">아직 안 들어옴</span>'}</td><td>Lv.${L.lv} ${u.av?titleOf(u.av.job,L.lv):''}</td><td class="num">${fmt(u.xp)}</td><td class="num">${fmt(wkOf(u).xp)}</td><td class="num">${u.daily&&u.daily.date===today()?fmt(u.daily.xp):0}</td><td class="num">${u.streak.n}일</td><td class="num">${Object.keys(u.sets).filter(k=>k.startsWith(u.book+':')).length}</td><td class="num">${Object.keys(u.wrong).length}</td><td>${u.last?u.last.slice(0,10):'-'}</td></tr>`).join('')}</tbody></table>`:'<p style="margin:0">아직 학생이 없어요. 위에서 학생 아이디를 추가하세요.</p>'}</div>
-  <div class="panel" style="margin-top:12px;font-size:14px"><b>경험치 규칙</b><div class="muted" style="margin-top:4px">암기 카드 단어당 1 · 리콜 한 번에 맞힌 단어당 2 (+완료 5) · 스펠 한 번에 3, 힌트로 1 (+완료 5) · 매칭 10~25 · 테스트 100점 40, 90점 이상 30, 70점 이상 15 · 세트 첫 100점 +30 · 매일 첫 학습 연속일 × 5 (최대 50) · 같은 날 같은 학습 2번째 ×0.5, 3번째부터 ×0.2 · 하루 최대 ${DAILY_CAP} XP. 경험치와 캐릭터는 책을 바꿔도 그대로 이어지고, 책마다 세트 기록은 따로 남아요.</div></div>`;
+  <div class="panel scroll" style="margin-top:12px">${list.length?`<table class="tbl"><thead><tr><th>반</th><th>이름</th><th>아이디</th><th>단어책 배정</th><th>지금 Day</th><th>문법</th><th>캐릭터</th><th>레벨</th><th class="num">총 XP</th><th class="num">이번 주</th><th class="num">오늘 XP</th><th class="num">연속</th><th class="num">이 책 세트</th><th class="num">오답</th><th>마지막 학습</th></tr></thead><tbody>
+    ${list.map(({u,L})=>`<tr class="${u.bookBy?'':'nobook'}"><td>${esc(CLASSES[u.cls]||'-')}</td><td>${esc(u.name||'')}${u.school?` <span class="muted">${esc(u.school)} ${esc(u.grade||'')}</span>`:''}</td><td>${esc(u.id)}${u.id==='demo'?' <span class="muted">(체험)</span>':''}</td><td>${bookSel(u.id,u.bookBy?u.book:'')}${u.memo?`<div class="memo">${esc(u.memo)}</div>`:''}</td><td><input class="dayin" type="number" min="1" max="60" value="${u.day||''}" data-day="${esc(u.id)}" aria-label="${esc(u.id)} 지금 Day" placeholder="-"></td><td>${gramSel(u)}</td><td>${u.av?`${esc(u.nick)} · ${JOBS[u.av.job].nm}`:'<span class="muted">아직 안 들어옴</span>'}</td><td>Lv.${L.lv} ${u.av?titleOf(u.av.job,L.lv):''}</td><td class="num">${fmt(u.xp)}</td><td class="num">${fmt(wkOf(u).xp)}</td><td class="num">${u.daily&&u.daily.date===today()?fmt(u.daily.xp):0}</td><td class="num">${u.streak.n}일</td><td class="num">${Object.keys(u.sets).filter(k=>k.startsWith(u.book+':')).length}</td><td class="num">${Object.keys(u.wrong).length}</td><td>${u.last?u.last.slice(0,10):'-'}</td></tr>`).join('')}</tbody></table>`:'<p style="margin:0">아직 학생이 없어요. 위에서 학생 아이디를 추가하세요.</p>'}</div>
+  <div class="panel" style="margin-top:12px;font-size:14px"><b>경험치 규칙</b><div class="muted" style="margin-top:4px">암기 카드 단어당 1 · 리콜 한 번에 맞힌 단어당 2 (+완료 5) · 스펠 한 번에 3, 힌트로 1 (+완료 5) · 매칭 10~25 · 테스트 100점 40, 90점 이상 30, 70점 이상 15 · 세트 첫 100점 +30 · 매일 첫 학습 연속일 × 5 (최대 50) · 같은 날 같은 학습 2번째 ×0.5, 3번째부터 ×0.2 · 하루 최대 ${DAILY_CAP} XP. 문법(처음 통과할 때만): 개념톡 5 · 워크북·연습 A 20 · 연습 B 25 · 최종 누적학습 30 · 서술형 40 · 실전 50 (하루 최대에 함께 포함). 경험치와 캐릭터는 책을 바꿔도 그대로 이어지고, 책마다 세트 기록은 따로 남아요.</div></div>`;
   bindCommon();$('#tout').onclick=logout;
   $('#addf').onsubmit=e=>{e.preventDefault();const raw=$('#nid').value,book=$('#nbook').value;
     const pairs=raw.split(/[\n,]+/).map(x=>x.trim()).filter(Boolean).map(x=>{const [a,...n]=x.split(/\s+/);return [a.toLowerCase(),n.join(' ')]});const names=Object.fromEntries(pairs);
@@ -1031,6 +1055,8 @@ function teacher(msg=''){
   $('#clsGo').onclick=()=>{const c=$('#clsSel').value,bk=$('#clsBook').value,only=$('#onlyNo').checked;let n=0;
     list.forEach(({u})=>{if(u.cls!==c||(only&&u.bookBy))return;u.book=bk;u.bookBy='teacher';Store.saveUser(u);n++});
     teacher(`${CLASSES[c]} ${n}명에게 ${BOOKS.find(b=>b.id===bk).short}을(를) 배정했어요`)};
+  $('#clsGramGo').onclick=()=>{const c=$('#clsSel').value,g=$('#clsGram').value,only=$('#onlyNo').checked;let n=0;list.forEach(({u})=>{if(u.cls!==c||(only&&u.gbook))return;u.gbook=g;Store.saveUser(u);n++});teacher(`${CLASSES[c]} ${n}명에게 문법 ${GBOOKS.find(b=>b[0]===g)[2]}을(를) 배정했어요`)};
+  document.querySelectorAll('select.gsel').forEach(sel=>sel.onchange=()=>{const u=migrate(getUser(sel.dataset.guid));if(!u)return;if(sel.value)u.gbook=sel.value;else delete u.gbook;Store.saveUser(u);toast(sel.value?`${u.name||u.id} → 문법 ${GBOOKS.find(b=>b[0]===sel.value)[2]} 배정했어요`:`${u.name||u.id} 문법 배정을 뺐어요`)});
   document.querySelectorAll('input.dayin').forEach(inp=>inp.onchange=()=>{const u=migrate(getUser(inp.dataset.day));const v=parseInt(inp.value,10);if(v>0)u.day=v;else delete u.day;Store.saveUser(u);toast(`${u.name||u.id} 지금 위치 ${v>0?'Day '+v:'지움'}`)});
   document.querySelectorAll('select.bsel').forEach(sel=>sel.onchange=()=>{const u=migrate(getUser(sel.dataset.uid));if(!u)return;
     if(sel.value){u.book=sel.value;u.bookBy='teacher'}else{delete u.bookBy}Store.saveUser(u);
