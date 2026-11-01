@@ -1,1 +1,2005 @@
-<!-- 삭제된 예전 버전 (학생 정보 보호를 위해 내용을 지웠습니다) -->
+   <!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>조민규영어 개별진도 학습 대시보드</title>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, updatePassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyDkGme_JgfqobGVFls4thiELStufkxm7zc",
+    authDomain: "minkyoocho-english.firebaseapp.com",
+    projectId: "minkyoocho-english",
+    storageBucket: "minkyoocho-english.firebasestorage.app",
+    messagingSenderId: "359496666211",
+    appId: "1:359496666211:web:53d3226c19c067292a7c56"
+  };
+  const fbApp = initializeApp(firebaseConfig);
+  const db = getFirestore(fbApp);
+  const auth = getAuth(fbApp);
+  // 선생님이 학생 계정을 만들 때 쓰는 보조 연결 (선생님 로그인은 그대로 유지)
+  const auth2 = getAuth(initializeApp(firebaseConfig, "account-maker"));
+  const createUser = async (email, pw) => { const c = await createUserWithEmailAndPassword(auth2, email, pw); await signOut(auth2); return c; };
+  // 전역에 노출
+  window.FB = { db, doc, getDoc, setDoc, deleteDoc, onSnapshot, auth, signInWithEmailAndPassword, signOut, updatePassword, createUser };
+  window.dispatchEvent(new Event('fb-ready'));
+</script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{
+    --navy:#10243f; --navy2:#1b3a63; --blue:#2f6fed; --sky:#e8f1ff;
+    --green:#16a34a; --amber:#f59e0b; --gray:#64748b; --line:#e2e8f0;
+    --bg:#f4f7fb; --card:#fff;
+  }
+  body{ font-family:'Pretendard','Malgun Gothic',sans-serif; background:var(--bg); color:#1e293b; line-height:1.5; }
+  .hidden{ display:none !important; }
+  button{ font-family:inherit; cursor:pointer; }
+
+  /* ===== Login ===== */
+  #login{ min-height:100vh; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#10243f,#2f6fed); }
+  .login-box{ background:#fff; border-radius:20px; padding:40px; width:380px; box-shadow:0 20px 60px rgba(0,0,0,.3); text-align:center; }
+  .login-box h1{ color:var(--navy); font-size:24px; margin-bottom:4px; }
+  .login-box .sub{ color:var(--gray); font-size:13px; margin-bottom:24px; }
+  .login-box input{ width:100%; padding:13px 15px; border:1.5px solid var(--line); border-radius:11px; font-size:15px; margin-bottom:12px; }
+  .login-box input:focus{ outline:none; border-color:var(--blue); }
+  .btn-primary{ width:100%; padding:13px; background:var(--blue); color:#fff; border:none; border-radius:11px; font-size:15px; font-weight:700; }
+  .btn-primary:hover{ background:#1d5bd6; }
+  .login-hint{ margin-top:18px; font-size:12px; color:var(--gray); background:var(--sky); padding:10px; border-radius:9px; }
+  .err{ color:#dc2626; font-size:13px; margin-bottom:10px; min-height:18px; }
+
+  /* ===== Top bar ===== */
+  .topbar{ background:var(--navy); color:#fff; padding:14px 22px; display:flex; align-items:center; justify-content:space-between; }
+  .topbar .brand{ font-weight:800; font-size:17px; letter-spacing:.3px; }
+  .topbar .brand span{ color:#7eb0ff; }
+  .topbar .right{ display:flex; align-items:center; gap:14px; font-size:14px; }
+  .topbar button{ background:rgba(255,255,255,.15); color:#fff; border:none; padding:7px 14px; border-radius:8px; font-size:13px; }
+  .topbar button:hover{ background:rgba(255,255,255,.28); }
+
+  .wrap{ max-width:1080px; margin:0 auto; padding:24px 20px 60px; }
+
+  /* ===== Student dashboard ===== */
+  .hero{ background:linear-gradient(135deg,var(--navy2),var(--blue)); border-radius:20px; padding:26px 28px; color:#fff; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; }
+  .hero h2{ font-size:26px; }
+  .hero .lvls{ display:flex; gap:10px; flex-wrap:wrap; }
+  .lvl-chip{ background:rgba(255,255,255,.16); border-radius:13px; padding:10px 16px; text-align:center; min-width:84px; }
+  .lvl-chip .t{ font-size:11px; opacity:.85; }
+  .lvl-chip .v{ font-size:18px; font-weight:800; margin-top:2px; }
+  .lvl-chip .r{ font-size:10px; opacity:.8; margin-top:3px; }
+  .vocab-chip{ background:rgba(255,255,255,.18); border:1.5px solid rgba(255,255,255,.35); border-radius:14px; padding:12px 18px; min-width:230px; }
+  .vocab-chip .t{ font-size:12px; opacity:.9; font-weight:700; letter-spacing:.3px; }
+  .vocab-chip .v{ font-size:15px; margin-top:3px; }
+  .vocab-chip .v b{ font-size:30px; font-weight:900; }
+  .vocab-chip .v .goal{ font-size:13px; opacity:.85; }
+  .vocab-chip .vbar{ height:9px; background:rgba(255,255,255,.25); border-radius:6px; overflow:hidden; margin-top:9px; }
+  .vocab-chip .vbar > div{ height:100%; background:linear-gradient(90deg,#ffe177,#ffb547); border-radius:6px; transition:width 1s cubic-bezier(.2,.8,.2,1); }
+  .vocab-chip .vsub{ font-size:11px; opacity:.85; margin-top:6px; }
+
+  .grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:18px; margin-top:20px; }
+  @media(max-width:760px){ .grid{ grid-template-columns:1fr; } .hero{ flex-direction:column; align-items:flex-start; } }
+  .card{ background:var(--card); border-radius:16px; padding:20px 22px; box-shadow:0 2px 10px rgba(20,40,80,.05); }
+  .card h3{ font-size:15px; color:var(--navy); margin-bottom:14px; display:flex; align-items:center; gap:7px; }
+  .card h3 .dot{ width:8px; height:8px; border-radius:50%; background:var(--blue); }
+
+  .today-row{ display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px dashed var(--line); font-size:14px; }
+  .today-row:last-child{ border:none; }
+  .today-row b{ color:var(--navy); }
+  .book-name{ font-size:18px; font-weight:800; color:var(--blue); }
+
+  /* progress bars */
+  .pbar-wrap{ margin:14px 0; }
+  .pbar-label{ display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px; }
+  .pbar{ height:16px; background:#eef2ف7; background:#eef2f7; border-radius:10px; overflow:hidden; }
+  .pbar > div{ height:100%; border-radius:10px; transition:width .9s cubic-bezier(.2,.8,.2,1); }
+  .fill-word{ background:linear-gradient(90deg,#2f6fed,#7eb0ff); }
+  .fill-hw{ background:linear-gradient(90deg,#16a34a,#5fd98a); }
+
+  /* week goals */
+  .weeks{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
+  .week-box{ border:1.5px solid var(--line); border-radius:13px; padding:13px; position:relative; }
+  .week-box.done{ border-color:var(--green); background:#f0fdf4; }
+  .week-box .wk{ font-size:12px; font-weight:800; color:var(--gray); }
+  .week-box.done .wk{ color:var(--green); }
+  .week-box .goal{ font-size:13px; margin-top:6px; min-height:34px; }
+  .week-box .badge{ position:absolute; top:11px; right:11px; font-size:11px; padding:3px 8px; border-radius:20px; background:#f1f5f9; color:var(--gray); font-weight:700; }
+  .week-box.done .badge{ background:var(--green); color:#fff; }
+
+  .predict{ background:linear-gradient(135deg,#fff7ed,#fef3c7); border:1.5px solid #fcd34d; border-radius:14px; padding:18px 20px; margin-top:18px; font-size:15px; }
+  .predict b{ color:#b45309; }
+  .predict .big{ font-size:22px; font-weight:800; color:#92400e; }
+
+  /* completion ring */
+  .ring-wrap{ display:flex; align-items:center; gap:20px; }
+  /* 캐릭터 */
+  .char-card .char-wrap{ display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
+  .char-art{ width:130px; height:140px; flex-shrink:0; background:linear-gradient(160deg,#eef4ff,#f8fafc); border-radius:16px; display:flex; align-items:center; justify-content:center; }
+  .char-art svg{ width:118px; height:128px; }
+  .char-info{ flex:1; min-width:200px; }
+  .char-lv{ font-size:20px; font-weight:900; color:var(--navy); }
+  .char-sub{ font-size:13px; color:#64748b; margin:2px 0 10px; }
+  .char-bar{ height:12px; background:#eef2f7; border-radius:8px; overflow:hidden; }
+  .char-bar-fill{ height:100%; background:linear-gradient(90deg,#34d399,#3b82f6); border-radius:8px; transition:width 1s cubic-bezier(.2,.8,.2,1); }
+  .char-pts{ font-size:13px; color:#16a34a; font-weight:700; margin-top:8px; }
+  .char-change{ margin-top:10px; font-size:12px; padding:6px 12px; }
+  .char-pick-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; }
+  .char-pick{ border:2px solid var(--line); border-radius:16px; padding:16px; text-align:center; cursor:pointer; transition:all .15s; }
+  .char-pick:hover{ border-color:var(--blue); transform:translateY(-3px); box-shadow:0 8px 20px rgba(47,111,237,.15); }
+  .char-pick-art{ width:140px; height:150px; margin:0 auto; background:linear-gradient(160deg,#eef4ff,#f8fafc); border-radius:16px; display:flex; align-items:center; justify-content:center; }
+  .char-pick-art svg{ width:128px; height:138px; }
+  .char-pick-name{ font-size:18px; font-weight:900; color:var(--navy); margin-top:10px; }
+  .char-pick-desc{ font-size:13px; color:#64748b; margin-top:4px; }
+  .ring{ position:relative; width:120px; height:120px; }
+  .ring svg{ transform:rotate(-90deg); }
+  .ring .pct{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .ring .pct .n{ font-size:26px; font-weight:800; color:var(--navy); }
+  .ring .pct .l{ font-size:11px; color:var(--gray); }
+
+  .empty{ text-align:center; color:var(--gray); padding:50px 20px; }
+
+  /* ===== Teacher panel ===== */
+  .tabs{ display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+
+  /* notice board */
+  .notice-board{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px; }
+  @media(max-width:760px){ .notice-board{ grid-template-columns:1fr; } }
+  .notice-card{ border-radius:16px; padding:18px 20px; }
+  .notice-card.summary{ background:linear-gradient(135deg,#eef4ff,#e0ecff); border:1.5px solid #c7dbff; }
+  .notice-card.overdue{ background:linear-gradient(135deg,#fff7ed,#ffedd5); border:1.5px solid #fed7aa; }
+  .notice-card .nt{ font-size:15px; font-weight:800; color:var(--navy); display:flex; align-items:center; gap:7px; margin-bottom:0; cursor:pointer; list-style:none; user-select:none; }
+  .notice-card summary.nt::-webkit-details-marker{ display:none; }
+  .notice-card summary.nt::before{ content:'▸'; color:#94a3b8; transition:transform .2s; }
+  .notice-card[open] summary.nt::before{ transform:rotate(90deg); }
+  details.notice-card[open] .nt{ margin-bottom:0; }
+  .notice-card .nt .cnt{ margin-left:auto; font-size:12px; font-weight:700; background:#fff; padding:3px 10px; border-radius:20px; color:#475569; }
+  .notice-card .nbody{ font-size:13px; color:#334155; line-height:1.6; }
+  .notice-card .nbody > div{ margin-bottom:3px; }
+  .overdue-row{ display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.6); border-radius:9px; padding:7px 10px; margin-bottom:5px !important; }
+  .overdue-row .rank{ width:20px; height:20px; background:#f97316; color:#fff; border-radius:50%; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .overdue-row .nm{ font-weight:700; color:var(--navy); flex:1; }
+  .overdue-row .dt{ font-size:12px; color:#64748b; }
+  .overdue-row .mo{ font-size:11px; font-weight:700; color:#c2410c; background:#ffedd5; padding:2px 8px; border-radius:20px; }
+  .tab{ padding:9px 18px; border-radius:10px; background:#fff; border:1.5px solid var(--line); font-size:14px; font-weight:600; color:var(--gray); }
+  .tab.active{ background:var(--navy); color:#fff; border-color:var(--navy); }
+
+  .cls-block{ margin-bottom:22px; }
+  .cls-block-title{ font-size:18px; font-weight:900; color:var(--navy); margin:0 0 12px; padding-left:10px; border-left:4px solid var(--blue); }
+  .cls-cols{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .cls-col-head{ font-size:14px; font-weight:800; color:var(--navy2); margin-bottom:10px; }
+  .cls-col-head .cls-time{ font-size:11px; color:var(--gray); font-weight:600; margin-left:4px; }
+  .cls-col-head .cls-cnt{ font-size:11px; background:var(--sky); color:var(--blue); padding:2px 8px; border-radius:7px; font-weight:800; margin-left:4px; }
+  .cls-col .stu-list{ grid-template-columns:1fr; gap:10px; }
+  @media(max-width:720px){ .cls-cols{ grid-template-columns:1fr; } }
+  .stu-list{ display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:14px; }
+  .stu-card{ background:#fff; border-radius:14px; padding:16px; border:1.5px solid var(--line); cursor:pointer; transition:.15s; }
+  .stu-card:hover{ border-color:var(--blue); transform:translateY(-2px); box-shadow:0 6px 18px rgba(47,111,237,.12); }
+  .stu-card .nm{ font-size:17px; font-weight:800; color:var(--navy); }
+  .stu-card .id{ font-size:12px; color:var(--gray); }
+  .stu-card .bk{ font-size:13px; margin-top:8px; color:var(--blue); font-weight:600; }
+  .stu-card .mini{ display:flex; gap:6px; margin-top:9px; }
+  .stu-card .mini span{ font-size:11px; background:var(--sky); color:var(--navy2); padding:3px 8px; border-radius:7px; font-weight:700; }
+
+  .form-card{ background:#fff; border-radius:16px; padding:24px; box-shadow:0 2px 10px rgba(20,40,80,.05); }
+  .form-card h3{ color:var(--navy); margin-bottom:18px; font-size:18px; }
+  .frow{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-bottom:14px; }
+  .frow.three{ grid-template-columns:repeat(3,1fr); }
+  .frow.four{ grid-template-columns:repeat(4,1fr); }
+  @media(max-width:680px){ .frow,.frow.three,.frow.four{ grid-template-columns:1fr; } }
+  .field label{ display:block; font-size:12px; font-weight:700; color:var(--gray); margin-bottom:5px; }
+  .field input,.field select{ width:100%; padding:10px 12px; border:1.5px solid var(--line); border-radius:9px; font-size:14px; }
+  .field input:focus,.field select:focus{ outline:none; border-color:var(--blue); }
+
+  .wk-edit{ border:1.5px solid var(--line); border-radius:12px; padding:14px; margin-bottom:10px; }
+  .mock-grade{ border:1.5px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:10px; }
+  .mock-grade-title{ font-weight:800; color:var(--navy); margin-bottom:8px; }
+  .mock-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:6px; }
+  .mock-item{ display:flex; align-items:center; gap:6px; background:#f8fafc; border-radius:8px; padding:5px 8px; font-size:13px; flex-wrap:wrap; }
+  .mock-item input[type=checkbox]{ width:16px; height:16px; accent-color:#6366f1; flex-shrink:0; }
+  .mock-item .ml{ flex:1; }
+  .mock-item .mock-score{ width:54px; padding:4px 6px; border:1px solid var(--line); border-radius:6px; font-size:12px; }
+  .mock-hw{ display:flex; gap:8px; align-items:center; padding-left:6px; border-left:1px dashed var(--line); }
+  .mock-hwchk{ display:flex; align-items:center; gap:3px; font-size:11px; color:var(--gray); cursor:pointer; white-space:nowrap; }
+  .mock-hwchk input[type=checkbox]{ width:14px; height:14px; }
+  .wk-edit .head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .wk-edit .head b{ color:var(--navy); }
+  .check-toggle{ display:flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:var(--gray); cursor:pointer; user-select:none; }
+  .check-toggle input{ width:18px; height:18px; accent-color:var(--green); }
+
+  .actions{ display:flex; gap:10px; margin-top:20px; flex-wrap:wrap; }
+  .btn{ padding:11px 20px; border-radius:10px; border:none; font-size:14px; font-weight:700; }
+  .btn-save{ background:var(--blue); color:#fff; }
+  .btn-save:hover{ background:#1d5bd6; }
+  .btn-kakao{ background:#fae100; color:#3a1d1d; }
+  .btn-kakao:hover{ background:#f2d800; }
+  .btn-del{ background:#fee2e2; color:#dc2626; }
+  .btn-ghost{ background:#f1f5f9; color:var(--gray); }
+
+  .month-pick{ display:flex; align-items:center; gap:8px; }
+
+  /* kakao modal */
+  .modal-bg{ position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:50; padding:20px; }
+  .modal{ background:#fff; border-radius:18px; padding:26px; width:480px; max-width:100%; max-height:85vh; overflow:auto; }
+  .modal h3{ color:var(--navy); margin-bottom:6px; }
+  .modal .sub{ font-size:12px; color:var(--gray); margin-bottom:14px; }
+  .modal textarea{ width:100%; min-height:280px; border:1.5px solid var(--line); border-radius:11px; padding:14px; font-size:13px; line-height:1.7; font-family:inherit; resize:vertical; }
+  .toast{ position:fixed; bottom:26px; left:50%; transform:translateX(-50%); background:var(--navy); color:#fff; padding:12px 22px; border-radius:30px; font-size:14px; z-index:60; box-shadow:0 8px 24px rgba(0,0,0,.25); }
+  .seed-note{ font-size:12px; color:var(--gray); margin-top:8px; }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="login">
+  <div class="login-box">
+    <h1>조민규영어 <span style="color:#2f6fed">학습 대시보드</span></h1>
+    <div class="sub">학원 아이디로 로그인하세요 · 보카 키우기와 같은 비밀번호예요</div>
+    <div class="err" id="loginErr"></div>
+    <input type="text" id="loginId" placeholder="아이디 (예: cmk101 / teacher)" autocomplete="off" autocapitalize="off">
+    <input type="password" id="loginPw" placeholder="비밀번호">
+    <button class="btn-primary" onclick="doLogin()">로그인</button>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" class="hidden">
+  <div class="topbar">
+    <div class="brand">조민규영어 <span>대시보드</span></div>
+    <div class="right">
+      <span id="cloudStatus" style="font-size:12px;opacity:.8">☁️ 연결 중…</span>
+      <span id="who"></span>
+      <button onclick="logout()">로그아웃</button>
+    </div>
+  </div>
+  <div class="wrap" id="content"></div>
+</div>
+
+<script>
+/* ============================================================
+   DATA LAYER  (in-memory; persists across session via JS object)
+   ============================================================ */
+const MONTH_WEEKS = {1:4,2:4,3:5,4:4,5:4,6:5,7:4,8:4,9:5,10:4,11:4,12:5}; // 월별 주차 수
+const todayMonth = new Date().getMonth()+1;
+
+/* 단어책 목록 (이름 / 대상학년 / 총 Day) */
+const VOCAB_BOOKS = [
+  {name:"능률중등기본", grade:"초6-중1", days:50},
+  {name:"능률중등필수", grade:"중1-2", days:50},
+  {name:"능률중등어원", grade:"중2", days:30},
+  {name:"능률중등고난도", grade:"중2-3", days:40},
+  {name:"능률고등기본", grade:"중3-고1", days:40},
+  {name:"능률고등어원", grade:"중3-고1", days:60},
+  {name:"어원2023", grade:"중3-고1", days:60},
+  {name:"고교필수2000", grade:"고1", days:70},
+  {name:"능률수능필수", grade:"고1", days:60},
+  {name:"블랙라벨 1등급", grade:"고2", days:50},
+  {name:"5개년 EBS 수능 영단어", grade:"고2-3", days:50}
+];
+function bookInfo(name){ return VOCAB_BOOKS.find(b=>b.name===name); }
+
+/* 문법 교재 (이름 / 대상학년 / 챕터목록) */
+const GRAMMAR_BOOKS = [
+  {name:"해커스중학영문법 1학년", grade:"중1", chapters:[
+    "be동사","일반동사","시제","조동사","문장의 형식","다양한 문장의 종류","to부정사","동명사",
+    "명사와 관사","대명사","형용사","부사","비교구문","전치사","접속사"]},
+  {name:"해커스중학영문법 2학년", grade:"중2", chapters:[
+    "문장의 형식","다양한 문장의 종류","시제","조동사","수동태","부정사","동명사","분사",
+    "명사와 관사","대명사","형용사","부사","비교구문","전치사","접속사","관계사","가정법","일치·화법·도치"]},
+  {name:"해커스중학영문법 3학년", grade:"중3", chapters:[
+    "문장의 형식","시제","조동사","수동태","부정사","동명사","분사","명사와 대명사",
+    "형용사와 부사","비교구문","전치사","접속사","관계사","가정법","일치와 화법","특수구문"]},
+  {name:"해커스고등영문법", grade:"고1", chapters:[
+    "문장의 형식","시제","조동사","수동태","명사/관사/대명사","형용사와 부사","전치사","부정사",
+    "동명사","분사","관계사","접속사","비교구문","가정법","일치와 화법","특수구문"]}
+];
+function grammarInfo(name){ return GRAMMAR_BOOKS.find(b=>b.name===name); }
+
+/* 서술형 교재 (이름 / 대상학년 / 단원목록) */
+const RANK77 = [
+  "주어-동사의 수일치 Ⅰ","주어-동사의 수일치 Ⅱ","능동 vs. 수동_단순시제 Ⅰ","능동 vs. 수동_단순시제 Ⅱ",
+  "현재분사 vs. 과거분사_명사 수식","분사구문","동사+목적어+보어 Ⅰ","동사+목적어+보어 Ⅱ",
+  "등위접속사의 병렬구조","상관접속사의 병렬구조","동사의 목적어가 되는 to-v, v-ing",
+  "if+가정법","to부정사의 부사적 역할","가주어-진주어(to부정사)","주어로 쓰이는 동명사",
+  "진행·완료시제의 능동 vs. 수동","의문사가 이끄는 명사절의 어순","부정어구 강조+의문문 어순",
+  "if절을 대신하는 여러 표현","주의해야 할 분사구문","주의해야 할 시제 Ⅰ","주의해야 할 시제 Ⅱ",
+  "명사절을 이끄는 that","동사 자리 vs. 준동사 자리","주격 관계대명사 who, which, that","관계대명사 what",
+  "목적격 관계대명사 who(m), which, that","콤마(,)+관계대명사_계속적 용법","전치사+관계대명사",
+  "관계부사 when, where, why, how","the+비교급~, the+비교급...","가목적어-진목적어","대명사의 수일치",
+  "목적·결과의 부사절","시간·조건의 부사절","양보·대조의 부사절","형용사 자리 vs. 부사 자리",
+  "주어+동사+보어(2문형)","to부정사와 동명사의 태","to부정사와 동명사의 완료형","비교급+than~",
+  "원급을 이용한 비교 표현","최상급을 나타내는 여러 표현","4문형·5문형 수동태",
+  "it be ~ that... 강조구문","to부정사의 명사 수식","자동사로 오해하기 쉬운 타동사","S+wish/as if 가정법",
+  "used to / be used to-v / be used to v-ing","with+명사+v-ing/p.p.","주의해야 할 부정구문",
+  "동격을 나타내는 구문","가주어-진주어(명사절)","감정을 나타내는 분사","인칭대명사, 재귀대명사",
+  "소유격 관계대명사 whose, of which","관계대명사의 선행사에 수일치","3문형↔4문형 전환","조동사+have p.p.",
+  "부사구 강조 도치 / 기타 도치","여러 가지 조동사 표현","전치사를 동반하는 동사 쓰임 Ⅰ","전치사를 동반하는 동사 쓰임 Ⅱ",
+  "의문사+to부정사","원인·이유의 부사절","양태의 부사절","do 동사의 쓰임","생략구문","보어로 쓰이는 to부정사",
+  "that절이 목적어인 문장의 수동태","전치사의 의미와 쓰임","전치사+동명사","당위성 동사+that+S'+(should+)동사원형",
+  "혼동하기 쉬운 동사","명사와 수식어의 수일치","There+V+S","명사절을 이끄는 복합관계대명사"];
+const ESSAY_BOOKS = [
+  {name:"어법끝 서술형", grade:"고등", unit:"Point", chapters:[
+    "주어와 수일치 I","주어와 수일치 II","동사의 태 I","동사의 태 II","시제","조동사","SVO문형","SVOC문형",
+    "to부정사","분사","분사구문","동사 자리 vs. 준동사 자리","등위접속사와 병렬관계","명사절 접속사","부사절 접속사",
+    "가정법","관계대명사","콤마(,) + 관계대명사","<전치사 + 관계대명사> · 관계부사","What / Which / That",
+    "비교구문 I","비교구문 II","도치구문","It을 활용한 구문"]},
+  {name:"RANK 77 고등 영어 서술형", grade:"고등", unit:"Rank", chapters:RANK77},
+  {name:"고등 영어 서술형 RANK 77 실전문제 700제", grade:"고등", unit:"Rank", chapters:RANK77}
+];
+function essayInfo(name){ return ESSAY_BOOKS.find(b=>b.name===name); }
+
+/* 수능·내신 어법 교재 */
+const USAGE_BOOKS = [
+  {name:"어법끝 Start 실력다지기", grade:"수능·내신", unit:"UNIT", chapters:[
+    "[네모]주어와 동사의 수일치","[네모]명사/대명사의 일치","[네모]동사의 시제","[네모]조동사와 법",
+    "[네모]능동태 vs. 수동태","[네모]분사의 능동 vs. 수동","[네모]동사와 준동사","[네모]병렬구조와 비교구문",
+    "[네모]쓰임상의 구별 Ⅰ","[네모]쓰임상의 구별 Ⅱ","[밑줄]동사","[밑줄]명사/대명사","[밑줄]형용사/부사",
+    "[밑줄]비교구문","[밑줄]v-ing/p.p.","[밑줄]부정사","[밑줄]전치사/접속사","[밑줄]wh-/that",
+    "실전 모의고사 01~05회","실전 모의고사 06~10회","실전 모의고사 11~15회"]},
+  {name:"해커스 수능 어법 (실력편)", grade:"수능", unit:"CH", chapters:[
+    "동사 vs 준동사","동명사/to부정사/분사","주어-동사 수일치","동사의 능동태/수동태",
+    "시제/가정법/조동사","전치사/접속사/관계사","명사/대명사/한정사","형용사/부사/비교구문",
+    "실전 모의고사 01~04","실전 모의고사 05~08"]},
+  {name:"어법끝 실전 모의고사", grade:"수능", unit:"문제", byProblem:true, total:288},
+  {name:"EBS 수능 기출의 미래 영어 어법·어휘", grade:"수능", unit:"UNIT", chapters:[
+    "[어법]문장의 구성","[어법]동사의 활용","[어법]수식어와 준동사의 활용","[어법]연결어의 활용",
+    "[어법]구문의 활용","[어휘]밑줄 어휘","[어휘]네모 어휘"]}
+];
+function usageInfo(name){ return USAGE_BOOKS.find(b=>b.name===name); }
+
+/* 독해 교재 */
+function rangeUnits(prefix, n){ return Array.from({length:n},(_,i)=>`${prefix} ${i+1}`); }
+const MINIMOGO = [
+  ...rangeUnits("미니 모의고사", 12).map((x,i)=>`${String(i+1).padStart(2,'0')}회 미니 모의고사`),
+  "01회 실전 모의고사","02회 실전 모의고사"
+];
+const READING_BOOKS = [
+  {name:"리딩튜터 주니어 Level 1", grade:"중등", unit:"Sec", chapters:rangeUnits("Section",10)},
+  {name:"리딩튜터 주니어 Level 2", grade:"중등", unit:"Sec", chapters:rangeUnits("Section",10)},
+  {name:"리딩튜터 주니어 Level 3", grade:"중등", unit:"Sec", chapters:rangeUnits("Section",10)},
+  {name:"리딩튜터 주니어 Level 4", grade:"중등", unit:"Sec", chapters:rangeUnits("Section",10)},
+  {name:"리딩튜터 챌린저 1", grade:"중·고", unit:"Sec", chapters:rangeUnits("Section",10)},
+  {name:"리딩튜터 챌린저 2", grade:"중·고", unit:"Sec", chapters:rangeUnits("Section",10)},
+  {name:"수능 딥독 Level 3", grade:"고등", unit:"Unit", chapters:rangeUnits("Unit",10)},
+  {name:"해커스 미니모고 기본", grade:"고등", unit:"회", chapters:MINIMOGO},
+  {name:"해커스 미니모고 필수", grade:"고등", unit:"회", chapters:MINIMOGO},
+  {name:"해커스 미니모고 완성", grade:"고등", unit:"회", chapters:MINIMOGO},
+  {name:"쎄듀 수능 영어 절대유형 2024", grade:"수능", unit:"회",
+    chapters:rangeUnits("모의고사",25).map((x,i)=>`2024 모의고사 ${String(i+1).padStart(2,'0')}회`)},
+  {name:"쎄듀 수능 영어 절대유형 3142", grade:"수능", unit:"회",
+    chapters:rangeUnits("모의고사",12).map((x,i)=>`3142 모의고사 ${String(i+1).padStart(2,'0')}회`)},
+  {name:"쎄듀 빈순삽함 전략편", grade:"수능", unit:"단계", chapters:[
+    "[빈칸]Point1 초반 빈칸","[빈칸]Point2 중반 빈칸","[빈칸]Point3 후반 빈칸","[빈칸]Point4 마지막 빈칸",
+    "[빈칸]Actual Test 1","[빈칸]Actual Test 2",
+    "[순서]Point1 문법적 단서","[순서]Point2 연결어 단서","[순서]Point3 내용 흐름",
+    "[순서]Actual Test 1","[순서]Actual Test 2",
+    "[삽입]Point1 문법적 단서","[삽입]Point2 연결어 단서","[삽입]Point3 내용 흐름",
+    "[삽입]Actual Test 1","[삽입]Actual Test 2",
+    "[함의]Point1 앞뒤 맥락","[함의]Point2 글의 주제",
+    "[함의]Actual Test 1","[함의]Actual Test 2",
+    "Final Check 1","Final Check 2","Final Check 3"]},
+  {name:"쎄듀 빈순삽함 실전편", grade:"수능", unit:"회",
+    chapters:rangeUnits("모의고사",15).map((x,i)=>`빈순삽함 모의고사 ${String(i+1).padStart(2,'0')}회`)}
+];
+function readingInfo(name){ return READING_BOOKS.find(b=>b.name===name); }
+
+/* 모의고사 세트 (학년별 연도×월) */
+const MOCK_SETS = {
+  "고1": { years:[2022,2023,2024,2025,2026], months:[3,6,9] },
+  "고2": { years:[2022,2023,2024,2025,2026], months:[3,6,9] },
+  "고3": { years:[2023,2024,2025,2026,2027], months:[3,6,9] }
+};
+function mockList(gradeKey){
+  const set=MOCK_SETS[gradeKey]; if(!set) return [];
+  const arr=[];
+  set.years.forEach(y=>set.months.forEach(m=>arr.push({key:`${y}-${m}`, label:`${y}년 ${m}월`})));
+  return arr;
+}
+
+let DB = { students: {} }; // 학생 자료는 로그인 후 Firebase에서 불러옵니다 (페이지 파일에는 학생 정보를 두지 않음)
+
+let session = null; // {role:'teacher'|'student', id}
+let editingId = null;
+
+/* ============================================================
+   PERSISTENCE  (Firebase Firestore 클라우드 저장)
+   ============================================================ */
+const DOMAIN = "@cmkvoca.app";          // Firebase 로그인 아이디 뒤에 붙는 주소 (보카 키우기와 같은 계정)
+const initialPw = id => id + "0000";     // 선생님이 만든 학생 계정의 처음 비밀번호
+const DOC_REF_PATH = ["appdata","main"];
+let cloudReady = false, unsub = null;
+const lastStudentJson = {};               // 학생용 사본: 바뀐 학생만 올리기 위한 기억
+
+function cloudDoc(){ return window.FB.doc(window.FB.db, DOC_REF_PATH[0], DOC_REF_PATH[1]); }
+function stripPw(o){ const c = JSON.parse(JSON.stringify(o)); if(c.teacher) delete c.teacher; Object.values(c.students||{}).forEach(x=>delete x.pw); return c; }
+
+async function saveDB(){
+  if(!cloudReady || !window.FB || !session || session.role!=='teacher') return;
+  try{
+    const clean = stripPw(DB);
+    await window.FB.setDoc(cloudDoc(), { payload: JSON.stringify(clean), updated: new Date().toISOString() });
+    // 학생이 자기 대시보드를 볼 수 있도록 학생별 사본(본인만 읽기) 저장
+    for(const [id, st] of Object.entries(clean.students)){
+      const j = JSON.stringify(st);
+      if(lastStudentJson[id] === j) continue;
+      await window.FB.setDoc(window.FB.doc(window.FB.db, "dash_students", id), { payload: j, updated: new Date().toISOString() });
+      lastStudentJson[id] = j;
+    }
+  }catch(e){ console.warn("클라우드 저장 실패", e); showToast && showToast("⚠ 저장에 실패했어요. 인터넷 연결을 확인해 주세요"); }
+}
+
+function applyCloudPayload(raw){
+  try{ const data = JSON.parse(raw); if(data && data.students){ DB = data; return true; } }catch(e){}
+  return false;
+}
+
+async function initCloud(){
+  cloudReady = true;
+  const snap = await window.FB.getDoc(cloudDoc());
+  if(snap.exists() && snap.data().payload){
+    applyCloudPayload(snap.data().payload);
+    let migrated = false;   // 예전 자료에 남아 있던 비밀번호·선생님 정보 정리
+    if(DB.teacher){ delete DB.teacher; migrated = true; }
+    Object.values(DB.students).forEach(x=>{ if('pw' in x){ delete x.pw; migrated = true; } });
+    if(migrated) await saveDB();
+  }else{
+    DB = { students: {} };
+  }
+  // 이 컴퓨터에 남아 있던 예전 자료(학생 정보 포함) 지우기
+  try{ localStorage.removeItem("jomingyu_dashboard_v1"); }catch(e){}
+  try{
+    if(unsub) unsub();
+    unsub = window.FB.onSnapshot(cloudDoc(), (snap)=>{
+      if(snap.exists() && snap.data().payload){
+        const before = JSON.stringify(DB);
+        applyCloudPayload(snap.data().payload);
+        if(JSON.stringify(DB)!==before && session && session.role==='teacher') renderTeacher();
+      }
+    });
+  }catch(e){}
+  const st=document.getElementById('cloudStatus');
+  if(st){ st.textContent="☁️ 클라우드 연결됨"; st.style.color="#7eecb0"; }
+}
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+async function doLogin(){
+  const id = document.getElementById('loginId').value.trim().toLowerCase();
+  const pw = document.getElementById('loginPw').value;
+  const err = document.getElementById('loginErr');
+  err.textContent = "";
+  if(!id || !pw){ err.textContent = "아이디와 비밀번호를 입력하세요."; return; }
+  if(!window.FB){ err.textContent = "서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요."; return; }
+  err.textContent = "로그인 중…";
+  try{
+    await window.FB.signInWithEmailAndPassword(window.FB.auth, id + DOMAIN, pw);
+  }catch(e){
+    err.textContent = "아이디 또는 비밀번호가 올바르지 않습니다."; return;
+  }
+  try{
+    if(id === "teacher"){
+      session = { role:'teacher' };
+      await initCloud();
+      err.textContent = ""; enterApp(); return;
+    }
+    const snap = await window.FB.getDoc(window.FB.doc(window.FB.db, "dash_students", id));
+    if(!snap.exists()){ err.textContent = "아직 내 대시보드가 준비되지 않았어요. 선생님께 말해 주세요."; await window.FB.signOut(window.FB.auth); return; }
+    DB = { students: { [id]: JSON.parse(snap.data().payload) } };
+    session = { role:'student', id };
+    err.textContent = "";
+    enterApp();
+    if(pw === initialPw(id)) setTimeout(()=>changeMyPw(true), 400);
+  }catch(e){
+    console.warn(e); err.textContent = "자료를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.";
+  }
+}
+async function changeMyPw(first){
+  const np = prompt((first ? "처음 비밀번호를 그대로 쓰고 있어요. " : "") + "새 비밀번호를 입력하세요 (6자 이상)");
+  if(!np) return;
+  if(np.length < 6){ alert("비밀번호는 6자 이상이어야 해요."); return; }
+  try{ await window.FB.updatePassword(window.FB.auth.currentUser, np); alert("비밀번호를 바꿨어요. 다음부터 새 비밀번호로 로그인하세요."); }
+  catch(e){ alert("비밀번호를 바꾸지 못했어요. 로그아웃 후 다시 로그인해서 시도해 주세요."); }
+}
+document.getElementById('loginPw').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+
+function enterApp(){
+  document.getElementById('login').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  if(session.role==='teacher'){
+    document.getElementById('who').textContent = "👩‍🏫 선생님";
+    renderTeacher();
+  }else{
+    document.getElementById('who').innerHTML = "🎒 "+DB.students[session.id].name+' <button onclick="changeMyPw(false)" style="margin-left:6px">비밀번호 바꾸기</button>';
+    renderStudent(session.id);
+  }
+}
+function logout(){
+  session=null; editingId=null; cloudReady=false; DB={students:{}};
+  try{ if(unsub){ unsub(); unsub=null; } window.FB && window.FB.signOut(window.FB.auth); }catch(e){}
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('login').classList.remove('hidden');
+  document.getElementById('loginId').value=""; document.getElementById('loginPw').value="";
+}
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function pct(done,total){ if(!total) return 0; return Math.min(100,Math.round(done/total*100)); }
+function weekCount(m){ return MONTH_WEEKS[m]||4; }
+
+/* ============================================================
+   반(Class) 배정
+   - day: 'monfri'(월금) | 'tuethu'(화목)
+   - cls: 1 | 2
+   ============================================================ */
+const CLASS_GROUPS = {
+  monfri1: { day:'monfri', cls:1, label:'월금 Class1', time:'6:30-9:20' },
+  monfri2: { day:'monfri', cls:2, label:'월금 Class2', time:'5:00-7:50' },
+  tuethu1: { day:'tuethu', cls:1, label:'화목 Class1', time:'6:30-9:20' },
+  tuethu2: { day:'tuethu', cls:2, label:'화목 Class2', time:'5:00-7:50' },
+};
+const CLASS_ORDER = ['monfri1','monfri2','tuethu1','tuethu2'];
+
+// 학생 ID -> 반 키 매핑 (실제 등록 ID 기준)
+// 반은 학생마다 classGroup 값으로 저장합니다 (예전 아이디·이름 매핑은 개인정보 보호를 위해 삭제)
+const CLASS_ASSIGN = {};
+const CLASS_ASSIGN_BY_NAME = {};
+
+// 학생의 반 키 얻기 (개별 student.classGroup이 있으면 우선, 없으면 ID매핑, 그래도 없으면 이름매핑)
+function studentClassKey(id){
+  const s = DB.students[id];
+  if(s && s.classGroup && CLASS_GROUPS[s.classGroup]) return s.classGroup;
+  if(CLASS_ASSIGN[id]) return CLASS_ASSIGN[id];
+  if(s && s.name){
+    const nm = s.name.replace(/\s+/g,'').trim();
+    if(CLASS_ASSIGN_BY_NAME[nm]) return CLASS_ASSIGN_BY_NAME[nm];
+  }
+  return null;
+}
+function classLabel(id){
+  const k = studentClassKey(id);
+  return k ? CLASS_GROUPS[k].label : '미배정';
+}
+// 오늘 요일 기준 우선 노출할 day 그룹: 월(1)금(5)->monfri, 화(2)목(4)->tuethu, 그 외->monfri
+function todayDayGroup(){
+  const d = new Date().getDay(); // 0일 1월 2화 3수 4목 5금 6토
+  if(d===2 || d===4) return 'tuethu';
+  return 'monfri';
+}
+
+/* ============================================================
+   성장 캐릭터 시스템
+   - 3종: 'monster'(몬스터 진화), 'hero'(캐릭터 레벨업), 'plant'(식물 성장)
+   - 각 12단계 (Lv.1 ~ Lv.12)
+   - growthStage(points) 로 단계 계산
+   ============================================================ */
+
+// 성장점 -> 단계(1~12). 초반은 빨리, 후반은 천천히 (오래 키우는 맛)
+const GROWTH_THRESHOLDS = [0,2,5,9,14,20,28,38,50,65,85,110]; // 12단계 누적 기준
+function growthStage(points){
+  let st=1;
+  for(let i=0;i<GROWTH_THRESHOLDS.length;i++){ if(points>=GROWTH_THRESHOLDS[i]) st=i+1; }
+  return Math.min(st,12);
+}
+function nextThreshold(points){
+  const st=growthStage(points);
+  if(st>=12) return null;
+  return GROWTH_THRESHOLDS[st];
+}
+
+// 단계별 이름
+const CHAR_NAMES = {
+  monster:['알','부화','꼬마몬','새끼몬','청년몬','전사몬','기사몬','용사몬','챔피언','드래곤','고대드래곤','전설드래곤'],
+  hero:['견습생','수련생','모험가','검사','기사','성기사','대장군','영웅','수호자','전설','신화','초월자'],
+  plant:['씨앗','싹','새싹','잎새','떨기','나무','큰나무','꽃나무','열매나무','거목','신령목','세계수']
+};
+
+/* ---------- 공통 헬퍼 ---------- */
+function aura(stage){
+  // 후반 단계에 빛나는 오라
+  if(stage<8) return '';
+  const op = (stage-7)*0.06;
+  return `<circle cx="100" cy="100" r="${70+stage*2}" fill="url(#auraG)" opacity="${op}"/>`;
+}
+function crown(stage){
+  if(stage<9) return '';
+  return `<g transform="translate(100,28)"><path d="M-22,12 L-22,-6 L-11,4 L0,-12 L11,4 L22,-6 L22,12 Z" fill="#fbbf24" stroke="#f59e0b" stroke-width="2"/><circle cx="0" cy="-12" r="3" fill="#ef4444"/><circle cx="-22" cy="-6" r="2.5" fill="#3b82f6"/><circle cx="22" cy="-6" r="2.5" fill="#3b82f6"/></g>`;
+}
+
+/* ---------- 몬스터 ---------- */
+function charMonster(stage){
+  const defs=`<defs>
+    <radialGradient id="auraG"><stop offset="0%" stop-color="#a78bfa" stop-opacity="0.9"/><stop offset="100%" stop-color="#a78bfa" stop-opacity="0"/></radialGradient>
+    <linearGradient id="monBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#34d399"/><stop offset="100%" stop-color="#059669"/></linearGradient>
+    <linearGradient id="dragonBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#818cf8"/><stop offset="100%" stop-color="#6d28d9"/></linearGradient>
+  </defs>`;
+  let body='';
+  if(stage<=1){ // 알
+    body=`<ellipse cx="100" cy="120" rx="46" ry="56" fill="#fde68a" stroke="#f59e0b" stroke-width="3"/>
+      <path d="M62,110 q12,-10 22,2 q12,-12 24,0 q10,-8 22,4" fill="none" stroke="#f59e0b" stroke-width="3"/>
+      <circle cx="85" cy="100" r="4" fill="#f59e0b"/><circle cx="118" cy="115" r="3" fill="#f59e0b"/>`;
+  } else if(stage<=2){ // 부화(금이 간 알 + 눈)
+    body=`<ellipse cx="100" cy="120" rx="46" ry="56" fill="#fde68a" stroke="#f59e0b" stroke-width="3"/>
+      <path d="M70,95 L85,108 L78,118 L95,128" fill="none" stroke="#b45309" stroke-width="2.5"/>
+      <circle cx="88" cy="118" r="7" fill="#fff"/><circle cx="90" cy="119" r="3.5" fill="#1e293b"/>
+      <circle cx="115" cy="118" r="7" fill="#fff"/><circle cx="117" cy="119" r="3.5" fill="#1e293b"/>`;
+  } else {
+    const big = stage>=10;
+    const fill = big?'url(#dragonBody)':'url(#monBody)';
+    const size = 0.7 + Math.min(stage,12)*0.045; // 점점 커짐
+    const wing = stage>=7 ? `<path d="M52,95 q-30,-15 -34,15 q18,-2 30,8 Z" fill="${big?'#a78bfa':'#6ee7b7'}" opacity="0.9"/>
+      <path d="M148,95 q30,-15 34,15 q-18,-2 -30,8 Z" fill="${big?'#a78bfa':'#6ee7b7'}" opacity="0.9"/>`:'';
+    const horn = stage>=5 ? `<path d="M80,62 L74,42 L88,58 Z" fill="#fbbf24"/><path d="M120,62 L126,42 L112,58 Z" fill="#fbbf24"/>`:'';
+    const spike = stage>=6 ? `<path d="M100,55 L94,70 L106,70 Z" fill="#f59e0b"/>`:'';
+    body=`<g transform="translate(100,118) scale(${size}) translate(-100,-118)">
+      ${wing}
+      <ellipse cx="100" cy="120" rx="48" ry="50" fill="${fill}"/>
+      <ellipse cx="100" cy="150" rx="40" ry="22" fill="${fill}"/>
+      ${horn}${spike}
+      <circle cx="84" cy="112" r="9" fill="#fff"/><circle cx="86" cy="113" r="5" fill="#1e293b"/>
+      <circle cx="116" cy="112" r="9" fill="#fff"/><circle cx="118" cy="113" r="5" fill="#1e293b"/>
+      <path d="M88,135 q12,10 24,0" fill="none" stroke="#064e3b" stroke-width="3" stroke-linecap="round"/>
+      ${stage>=4?'<path d="M76,128 l8,4 M124,128 l-8,4" stroke="#064e3b" stroke-width="2"/>':''}
+    </g>`;
+  }
+  return `<svg viewBox="0 0 200 210" xmlns="http://www.w3.org/2000/svg">${defs}${aura(stage)}${body}${crown(stage)}</svg>`;
+}
+
+/* ---------- 히어로(레벨업) ---------- */
+function charHero(stage){
+  const defs=`<defs>
+    <radialGradient id="auraG"><stop offset="0%" stop-color="#f9a8d4" stop-opacity="0.9"/><stop offset="100%" stop-color="#f9a8d4" stop-opacity="0"/></radialGradient>
+    <linearGradient id="heroRobe" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f472b6"/><stop offset="100%" stop-color="#db2777"/></linearGradient>
+    <linearGradient id="heroRobe2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c084fc"/><stop offset="100%" stop-color="#7c3aed"/></linearGradient>
+  </defs>`;
+  const robe = stage>=9?'url(#heroRobe2)':'url(#heroRobe)';
+  const cape = stage>=6 ? `<path d="M70,95 q-18,40 -8,70 l20,-8 Z" fill="${stage>=9?'#7c3aed':'#be185d'}" opacity="0.85"/>
+    <path d="M130,95 q18,40 8,70 l-20,-8 Z" fill="${stage>=9?'#7c3aed':'#be185d'}" opacity="0.85"/>`:'';
+  const staff = stage>=4 ? `<line x1="140" y1="70" x2="140" y2="175" stroke="#92400e" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="140" cy="66" r="${stage>=8?11:8}" fill="#60a5fa"/>${stage>=8?'<circle cx="140" cy="66" r="16" fill="#60a5fa" opacity="0.3"/>':''}`:'';
+  const sword = (stage>=3 && stage<8) ? `<line x1="60" y1="90" x2="60" y2="150" stroke="#94a3b8" stroke-width="4"/><line x1="50" y1="95" x2="70" y2="95" stroke="#64748b" stroke-width="4"/>`:'';
+  const armor = stage>=5 ? `<path d="M80,100 h40 v8 h-40 Z" fill="#fbbf24"/>`:'';
+  const halo = stage>=10 ? `<ellipse cx="100" cy="44" rx="26" ry="7" fill="none" stroke="#fbbf24" stroke-width="3" opacity="0.9"/>`:'';
+  const size=0.72+Math.min(stage,12)*0.035;
+  return `<svg viewBox="0 0 200 210" xmlns="http://www.w3.org/2000/svg">${defs}${aura(stage)}
+    ${halo}
+    <g transform="translate(100,120) scale(${size}) translate(-100,-120)">
+      ${cape}${staff}${sword}
+      <path d="M72,175 q28,-${30+stage*3} 56,0 Z" fill="${robe}"/>
+      <rect x="80" y="92" width="40" height="50" rx="16" fill="${robe}"/>
+      ${armor}
+      <circle cx="100" cy="70" r="22" fill="#fde9d3"/>
+      <path d="M78,64 q22,-26 44,0 q-6,-12 -22,-12 q-16,0 -22,12" fill="#7c2d12"/>
+      <circle cx="92" cy="70" r="2.6" fill="#1e293b"/><circle cx="108" cy="70" r="2.6" fill="#1e293b"/>
+      <path d="M94,80 q6,5 12,0" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round"/>
+    </g>${crown(stage)}</svg>`;
+}
+
+/* ---------- 식물 ---------- */
+function charPlant(stage){
+  const defs=`<defs>
+    <radialGradient id="auraG"><stop offset="0%" stop-color="#86efac" stop-opacity="0.9"/><stop offset="100%" stop-color="#86efac" stop-opacity="0"/></radialGradient>
+    <linearGradient id="pot" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fb923c"/><stop offset="100%" stop-color="#c2410c"/></linearGradient>
+    <linearGradient id="trunk" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#a16207"/><stop offset="100%" stop-color="#713f12"/></linearGradient>
+    <radialGradient id="leaf"><stop offset="0%" stop-color="#4ade80"/><stop offset="100%" stop-color="#16a34a"/></radialGradient>
+  </defs>`;
+  const pot=`<path d="M70,168 L130,168 L124,200 L76,200 Z" fill="url(#pot)"/><rect x="66" y="160" width="68" height="12" rx="4" fill="#ea580c"/><ellipse cx="100" cy="166" rx="30" ry="5" fill="#7c2d12"/>`;
+  let plant='';
+  if(stage<=1){ plant=`<ellipse cx="100" cy="158" rx="7" ry="9" fill="#a16207"/>`; }
+  else if(stage<=2){ plant=`<path d="M100,160 q0,-18 0,-26" stroke="#16a34a" stroke-width="4" fill="none"/><ellipse cx="100" cy="130" rx="6" ry="9" fill="url(#leaf)"/>`; }
+  else if(stage<=3){ plant=`<path d="M100,160 L100,118" stroke="#16a34a" stroke-width="5"/><ellipse cx="88" cy="124" rx="11" ry="7" fill="url(#leaf)" transform="rotate(-30 88 124)"/><ellipse cx="112" cy="124" rx="11" ry="7" fill="url(#leaf)" transform="rotate(30 112 124)"/>`; }
+  else {
+    const trunkH = 60 + Math.min(stage,12)*6;
+    const crownR = 24 + Math.min(stage,12)*4;
+    const cy = 160 - trunkH;
+    const flowers = stage>=8 ? Array.from({length:5}).map((_,i)=>{const a=i/5*6.28; return `<circle cx="${100+Math.cos(a)*crownR*0.6}" cy="${cy+Math.sin(a)*crownR*0.6}" r="6" fill="#f9a8d4"/>`}).join(''):'';
+    const fruits = stage>=9 ? Array.from({length:4}).map((_,i)=>{const a=i/4*6.28+0.5; return `<circle cx="${100+Math.cos(a)*crownR*0.5}" cy="${cy+Math.sin(a)*crownR*0.5}" r="5" fill="#ef4444"/>`}).join(''):'';
+    plant=`<path d="M100,160 L100,${cy}" stroke="url(#trunk)" stroke-width="${8+Math.min(stage,12)}"/>
+      ${stage>=5?`<path d="M100,${cy+30} q-20,-6 -30,-18 M100,${cy+44} q22,-6 32,-16" stroke="url(#trunk)" stroke-width="5" fill="none"/>`:''}
+      <circle cx="100" cy="${cy}" r="${crownR}" fill="url(#leaf)"/>
+      <circle cx="${100-crownR*0.6}" cy="${cy+6}" r="${crownR*0.6}" fill="url(#leaf)"/>
+      <circle cx="${100+crownR*0.6}" cy="${cy+6}" r="${crownR*0.6}" fill="url(#leaf)"/>
+      <circle cx="100" cy="${cy-crownR*0.5}" r="${crownR*0.55}" fill="#4ade80"/>
+      ${flowers}${fruits}`;
+  }
+  return `<svg viewBox="0 0 200 210" xmlns="http://www.w3.org/2000/svg">${defs}${aura(stage)}${plant}${pot}${crown(stage)}</svg>`;
+}
+
+const CHAR_RENDER = { monster:charMonster, hero:charHero, plant:charPlant };
+function renderChar(type, stage){ return (CHAR_RENDER[type]||charMonster)(stage); }
+
+/* 성장점 계산: 교재 숙제완료 + 모의고사 숙제완료 + 누적 + 수동 보너스 */
+function studentGrowthPoints(s){
+  let pts = 0;
+  // 모의고사 숙제 완료 개수
+  const mk = s.mocks||{};
+  Object.keys(mk).forEach(gk=>{
+    Object.keys(mk[gk]||{}).forEach(k=>{ if(mk[gk][k] && mk[gk][k].hwDone) pts++; });
+  });
+  // 선생님이 '숙제 확인'을 누를 때마다 누적되는 값 (체크 풀어도 안 줄어듦)
+  pts += (s.hwDoneCount||0);
+  // 수동 보너스
+  pts += (s.growthBonus||0);
+  return pts;
+}
+
+
+function lvWithGrade(lv){
+  if(!lv) return lv||'';
+  const map={ "Lv.2":"초3-4","Lv.3":"초5-6","Lv.4":"중1","Lv.5":"중2","Lv.6":"중3","Lv.7":"고1","Lv.8":"고2","Lv.9":"고3" };
+  const g = map[lv];
+  return g ? `${lv}(${g})` : lv;
+}
+function lnOpts(sel){
+  const names=["L1 유치~초2","L2 초3~4","L3 초5~6","L4 중1","L5 중2","L6 중3","L7 고1","L8 고2","L9 고3"];
+  return names.map((nm,i)=>`<option value="${i+1}" ${sel==(i+1)?'selected':''}>${nm}</option>`).join('');
+}
+
+function finishDate(s){
+  // startYear/startMonth + bookMonths -> 종료 시점
+  let y=s.startYear, m=s.startMonth + (s.bookMonths-1);
+  y += Math.floor((m-1)/12);
+  m = ((m-1)%12)+1;
+  return {y,m};
+}
+
+/* ============================================================
+   STUDENT DASHBOARD
+   ============================================================ */
+function renderCharPick(id){
+  const s = DB.students[id];
+  const opts = [
+    {key:'monster', name:'몬스터', desc:'알에서 부화해 전설의 드래곤으로!', stage:7},
+    {key:'hero', name:'히어로', desc:'견습생에서 전설의 영웅으로!', stage:7},
+    {key:'plant', name:'정령목', desc:'작은 씨앗에서 거대한 세계수로!', stage:8},
+  ];
+  document.getElementById('content').innerHTML = `
+    <div class="hero"><div>
+      <div style="font-size:13px;opacity:.85">환영해요!</div>
+      <h2>${s.name} 학생, 함께 키울 캐릭터를 골라요 🎮</h2>
+    </div></div>
+    <div class="card" style="margin-top:18px">
+      <h3><span class="dot"></span>캐릭터 선택</h3>
+      <div style="font-size:14px;color:#475569;margin-bottom:16px">숙제를 해올 때마다 성장점이 쌓여서 캐릭터가 자라요. 마음에 드는 친구를 골라보세요! (나중에 바꿀 수도 있어요)</div>
+      <div class="char-pick-grid">
+        ${opts.map(o=>`
+          <div class="char-pick" onclick="pickChar('${id}','${o.key}')">
+            <div class="char-pick-art">${renderChar(o.key, o.stage)}</div>
+            <div class="char-pick-name">${o.name}</div>
+            <div class="char-pick-desc">${o.desc}</div>
+            <button class="btn btn-save" style="margin-top:8px;width:100%">이 캐릭터로 시작!</button>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+function pickChar(id, type){
+  DB.students[id].charType = type;
+  saveDB();
+  renderStudent(id);
+}
+function adjustGrowth(id, delta){
+  const s = DB.students[id];
+  s.growthBonus = Math.max(0, (s.growthBonus||0) + delta);
+  saveDB();
+  editingId = id; teacherTab='new'; renderTeacher();
+}
+function changeChar(id){
+  if(confirm('캐릭터를 바꿀까요? 성장점(레벨)은 그대로 유지돼요.')){
+    DB.students[id].charType = '';
+    saveDB();
+    renderCharPick(id);
+  }
+}
+
+function renderStudent(id){
+  const s = DB.students[id];
+  const wc = weekCount(s.month);
+  const wordPct = pct(s.todayWordDone,s.todayWordTotal);
+  const hwPct = pct(s.todayHwDone,s.todayHwTotal);
+  const doneWeeks = s.weeks.slice(0,wc).filter(w=>w.done).length;
+  const monthPct = pct(doneWeeks,wc);
+  const fd = finishDate(s);
+
+  // 캐릭터 선택을 안 했으면 선택 화면부터
+  if(!s.charType){ renderCharPick(id); return; }
+  const gPts = studentGrowthPoints(s);
+  const gStage = growthStage(gPts);
+  const gNext = nextThreshold(gPts);
+  const gName = CHAR_NAMES[s.charType] ? CHAR_NAMES[s.charType][gStage-1] : '';
+
+  const ringC = 2*Math.PI*52;
+  const ringOffset = ringC*(1-monthPct/100);
+
+  let weeksHtml="";
+  for(let i=0;i<wc;i++){
+    const w=s.weeks[i]||{goal:"",done:false};
+    weeksHtml+=`
+      <div class="week-box ${w.done?'done':''}">
+        <div class="wk">${i+1}주차 목표</div>
+        <div class="goal">${w.goal||'<span style="color:#cbd5e1">미설정</span>'}</div>
+        <div class="badge">${w.done?'✓ 달성':'진행중'}</div>
+      </div>`;
+  }
+
+  document.getElementById('content').innerHTML = `
+    <div class="hero">
+      <div>
+        <div style="font-size:13px;opacity:.85">${s.month}월 개별진도${(s.school||s.grade)?' · '+[s.school,s.grade].filter(Boolean).join(' '):''}${studentClassKey(id)?' · '+classLabel(id):''}</div>
+        <h2>${s.name} 학생 ${s.overallLv?`<span style="font-size:15px;background:rgba(255,255,255,.22);padding:4px 12px;border-radius:20px;vertical-align:middle">종합 ${lvWithGrade(s.overallLv)}${s.overallRank?' · '+s.overallRank:''}</span>`:''}</h2>
+      </div>
+      <div class="lvls">
+        <div class="lvl-chip"><div class="t">단어</div><div class="v">${s.level.word}</div>${(s.rank&&s.rank.word)?`<div class="r">${s.rank.word}</div>`:''}</div>
+        <div class="lvl-chip"><div class="t">문법</div><div class="v">${s.level.grammar}</div>${(s.rank&&s.rank.grammar)?`<div class="r">${s.rank.grammar}</div>`:''}</div>
+        <div class="lvl-chip"><div class="t">독해</div><div class="v">${s.level.reading}</div>${(s.rank&&s.rank.reading)?`<div class="r">${s.rank.reading}</div>`:''}</div>
+        <div class="lvl-chip"><div class="t">듣기</div><div class="v">${s.level.listening||'-'}</div>${(s.rank&&s.rank.listening)?`<div class="r">${s.rank.listening}</div>`:''}</div>
+        <div class="vocab-chip">
+          <div class="t">Vocabulary Size</div>
+          <div class="v"><b>${(s.vocabSize||0).toLocaleString()}</b> <span class="goal">/ 6,000 단어</span></div>
+          <div class="vbar"><div style="width:0%" data-w="${pct(s.vocabSize||0,6000)}"></div></div>
+          <div class="vsub">현재 어휘량 · 목표 고3(6,000단어) ${pct(s.vocabSize||0,6000)}%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card char-card" style="margin-top:18px">
+      <h3><span class="dot"></span>나의 학습 캐릭터</h3>
+      <div class="char-wrap">
+        <div class="char-art">${renderChar(s.charType, gStage)}</div>
+        <div class="char-info">
+          <div class="char-lv">Lv.${gStage} · ${gName}</div>
+          <div class="char-sub">숙제를 해올 때마다 캐릭터가 성장해요!</div>
+          <div class="char-bar">
+            <div class="char-bar-fill" style="width:0%" data-w="${gNext?pct(gPts-(GROWTH_THRESHOLDS[gStage-1]||0), gNext-(GROWTH_THRESHOLDS[gStage-1]||0)):100}"></div>
+          </div>
+          <div class="char-pts">${gNext?`다음 단계까지 ${gNext-gPts}개 더! (현재 성장점 ${gPts})`:`🎉 최고 단계 달성! (성장점 ${gPts})`}</div>
+          <button class="btn btn-ghost char-change" onclick="changeChar('${id}')">캐릭터 바꾸기</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h3><span class="dot"></span>단어책 진도</h3>
+      ${(()=>{
+        const bk=bookInfo(s.vocabBook);
+        if(!s.vocabBook||!bk) return '<div style="color:#94a3b8;font-size:14px">아직 단어책이 지정되지 않았어요.</div>';
+        const day=Math.min(s.vocabDay||0, bk.days);
+        const p=pct(day, bk.days);
+        return `
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+            <span style="font-size:18px;font-weight:800;color:var(--blue)">${s.vocabBook}</span>
+            <span style="font-size:13px;color:#64748b">${bk.grade} · 총 ${bk.days}일</span>
+          </div>
+          <div class="pbar-label"><span>📗 진도</span><b>Day ${day} / ${bk.days} (${p}%)</b></div>
+          <div class="pbar"><div class="fill-hw" style="width:0%" data-w="${p}"></div></div>
+          <div style="font-size:13px;color:#475569;margin-top:8px">남은 분량 <b>${bk.days-day}일</b>${p>=100?' · 🎉 완료!':''}</div>
+          ${(s.vocabTodayStudy||s.vocabTodayHw)?`<div style="margin-top:10px;padding-top:10px;border-top:1px dashed #e2e8f0;font-size:13px;color:#475569">
+            ${s.vocabTodayStudy?`<div>📘 오늘까지 학습: <b>${s.vocabTodayStudy}</b></div>`:''}
+            ${s.vocabTodayHw?`<div style="margin-top:4px">✏️ 오늘까지 숙제: <b>${s.vocabTodayHw}</b></div>`:''}
+          </div>`:''}
+        `;
+      })()}
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h3><span class="dot"></span>문법 교재 진도</h3>
+      ${(()=>{
+        const gb=grammarInfo(s.grammarBook);
+        if(!s.grammarBook||!gb) return '<div style="color:#94a3b8;font-size:14px">아직 문법 교재가 지정되지 않았어요.</div>';
+        const total=gb.chapters.length;
+        const ch=Math.min(s.grammarCh||0, total);
+        const p=pct(ch, total);
+        const curName = ch>0 ? gb.chapters[ch-1] : null;
+        const nextName = ch<total ? gb.chapters[ch] : null;
+        return `
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+            <span style="font-size:18px;font-weight:800;color:#8b5cf6">${s.grammarBook}</span>
+            <span style="font-size:13px;color:#64748b">${gb.grade} · 총 ${total}챕터</span>
+          </div>
+          <div class="pbar-label"><span>📕 진도</span><b>Ch.${ch} / ${total} (${p}%)</b></div>
+          <div class="pbar"><div style="width:0%;background:linear-gradient(90deg,#8b5cf6,#c4b5fd)" data-w="${p}"></div></div>
+          <div style="font-size:13px;color:#475569;margin-top:8px">
+            ${curName?`최근 완료: <b>Ch.${ch} ${curName}</b>`:'아직 시작 전'}
+            ${nextName?` · 다음: Ch.${ch+1} ${nextName}`:(p>=100?' · 🎉 완료!':'')}
+          </div>
+          ${s.grammarPage?`<div style="font-size:13px;color:#475569;margin-top:4px">📄 현재 페이지: <b>p.${s.grammarPage}</b></div>`:''}
+          ${s.grammarHw?`<div style="font-size:13px;color:#475569;margin-top:4px">✏️ 숙제: <b>${s.grammarHw}</b>${s.grammarHwPage?` <span style="color:#94a3b8">(${s.grammarHwPage})</span>`:''}</div>`:''}
+        `;
+      })()}
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h3><span class="dot"></span>독해 교재 진도</h3>
+      ${(()=>{
+        const rb=readingInfo(s.readingBook);
+        if(!s.readingBook||!rb) return '<div style="color:#94a3b8;font-size:14px">아직 독해 교재가 지정되지 않았어요.</div>';
+        const u=rb.unit;
+        const total=rb.chapters.length;
+        const n=Math.min(s.readingCh||0, total);
+        const p=pct(n, total);
+        const curName = n>0 ? rb.chapters[n-1] : null;
+        const nextName = n<total ? rb.chapters[n] : null;
+        return `
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+            <span style="font-size:18px;font-weight:800;color:#ea580c">${s.readingBook}</span>
+            <span style="font-size:13px;color:#64748b">${rb.grade} · 총 ${total}${u}</span>
+          </div>
+          <div class="pbar-label"><span>📖 진도</span><b>${u} ${n} / ${total} (${p}%)</b></div>
+          <div class="pbar"><div style="width:0%;background:linear-gradient(90deg,#ea580c,#fdba74)" data-w="${p}"></div></div>
+          <div style="font-size:13px;color:#475569;margin-top:8px">
+            ${curName?`최근 완료: <b>${curName}</b>`:'아직 시작 전'}
+            ${nextName?` · 다음: ${nextName}`:(p>=100?' · 🎉 완료!':'')}
+          </div>
+          ${s.readingPage?`<div style="font-size:13px;color:#475569;margin-top:4px">📄 현재 페이지: <b>p.${s.readingPage}</b></div>`:''}
+          ${s.readingHw?`<div style="font-size:13px;color:#475569;margin-top:4px">✏️ 숙제: <b>${s.readingHw}</b>${s.readingHwPage?` <span style="color:#94a3b8">(${s.readingHwPage})</span>`:''}</div>`:''}
+        `;
+      })()}
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h3><span class="dot"></span>서술형 교재 진도</h3>
+      ${(()=>{
+        const eb=essayInfo(s.essayBook);
+        if(!s.essayBook||!eb) return '<div style="color:#94a3b8;font-size:14px">아직 서술형 교재가 지정되지 않았어요.</div>';
+        const total=eb.chapters.length;
+        const u=eb.unit;
+        const n=Math.min(s.essayCh||0, total);
+        const p=pct(n, total);
+        const curName = n>0 ? eb.chapters[n-1] : null;
+        const nextName = n<total ? eb.chapters[n] : null;
+        return `
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+            <span style="font-size:18px;font-weight:800;color:#0d9488">${s.essayBook}</span>
+            <span style="font-size:13px;color:#64748b">${eb.grade} · 총 ${total}${u}</span>
+          </div>
+          <div class="pbar-label"><span>📘 진도</span><b>${u} ${n} / ${total} (${p}%)</b></div>
+          <div class="pbar"><div style="width:0%;background:linear-gradient(90deg,#0d9488,#5eead4)" data-w="${p}"></div></div>
+          <div style="font-size:13px;color:#475569;margin-top:8px">
+            ${curName?`최근 완료: <b>${u} ${n} ${curName}</b>`:'아직 시작 전'}
+            ${nextName?` · 다음: ${u} ${n+1} ${nextName}`:(p>=100?' · 🎉 완료!':'')}
+          </div>
+          ${s.essayPage?`<div style="font-size:13px;color:#475569;margin-top:4px">📄 현재 페이지: <b>p.${s.essayPage}</b></div>`:''}
+          ${s.essayHw?`<div style="font-size:13px;color:#475569;margin-top:4px">✏️ 숙제: <b>${s.essayHw}</b>${s.essayHwPage?` <span style="color:#94a3b8">(${s.essayHwPage})</span>`:''}</div>`:''}
+        `;
+      })()}
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h3><span class="dot"></span>어법 교재 진도</h3>
+      ${(()=>{
+        const ub=usageInfo(s.usageBook);
+        if(!s.usageBook||!ub) return '<div style="color:#94a3b8;font-size:14px">아직 어법 교재가 지정되지 않았어요.</div>';
+        const u=ub.unit;
+        const total= ub.byProblem ? ub.total : ub.chapters.length;
+        const n=Math.min(s.usageCh||0, total);
+        const p=pct(n, total);
+        const pageLine = (s.usagePage ? `<div style="font-size:13px;color:#475569;margin-top:4px">📄 현재 페이지: <b>p.${s.usagePage}</b></div>` : '')
+          + (s.usageHw ? `<div style="font-size:13px;color:#475569;margin-top:4px">✏️ 숙제: <b>${s.usageHw}</b>${s.usageHwPage?` <span style="color:#94a3b8">(${s.usageHwPage})</span>`:''}</div>` : '');
+        if(ub.byProblem){
+          return `
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+              <span style="font-size:18px;font-weight:800;color:#e11d48">${s.usageBook}</span>
+              <span style="font-size:13px;color:#64748b">${ub.grade} · 총 ${total}${u}</span>
+            </div>
+            <div class="pbar-label"><span>📙 진도</span><b>${n} / ${total}${u} (${p}%)</b></div>
+            <div class="pbar"><div style="width:0%;background:linear-gradient(90deg,#e11d48,#fda4af)" data-w="${p}"></div></div>
+            <div style="font-size:13px;color:#475569;margin-top:8px">남은 문제 <b>${total-n}${u}</b>${p>=100?' · 🎉 완료!':''}</div>
+            ${pageLine}`;
+        }
+        const curName = n>0 ? ub.chapters[n-1] : null;
+        const nextName = n<total ? ub.chapters[n] : null;
+        return `
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+            <span style="font-size:18px;font-weight:800;color:#e11d48">${s.usageBook}</span>
+            <span style="font-size:13px;color:#64748b">${ub.grade} · 총 ${total}${u}</span>
+          </div>
+          <div class="pbar-label"><span>📙 진도</span><b>${u} ${n} / ${total} (${p}%)</b></div>
+          <div class="pbar"><div style="width:0%;background:linear-gradient(90deg,#e11d48,#fda4af)" data-w="${p}"></div></div>
+          <div style="font-size:13px;color:#475569;margin-top:8px">
+            ${curName?`최근 완료: <b>${u} ${n} ${curName}</b>`:'아직 시작 전'}
+            ${nextName?` · 다음: ${u} ${n+1} ${nextName}`:(p>=100?' · 🎉 완료!':'')}
+          </div>
+          ${pageLine}`;
+      })()}
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h3><span class="dot"></span>모의고사 기록</h3>
+      ${(()=>{
+        const mk=s.mocks||{};
+        let done=[];
+        let hwList=[];
+        Object.keys(MOCK_SETS).forEach(gk=>{
+          mockList(gk).forEach(m=>{
+            const rec=(mk[gk]||{})[m.key];
+            if(!rec) return;
+            if(rec.done){ done.push({gk, label:m.label, score:rec.score}); }
+            if(rec.hw || rec.hwDone){ hwList.push({gk, label:m.label, hwDone:!!rec.hwDone}); }
+          });
+        });
+        // 숙제 섹션
+        let hwHtml='';
+        if(hwList.length){
+          const hwRows = hwList.map(h=>`
+            <div style="display:flex;align-items:center;gap:8px;background:${h.hwDone?'#f0fdf4':'#fff7ed'};border-radius:8px;padding:7px 11px;margin-bottom:5px">
+              <span style="font-size:11px;font-weight:800;color:#fff;background:#6366f1;padding:2px 8px;border-radius:6px">${h.gk}</span>
+              <span style="flex:1;font-size:14px;color:var(--navy);font-weight:600">${h.label}</span>
+              ${h.hwDone
+                ? '<span style="font-size:12px;font-weight:800;color:#16a34a;background:#dcfce7;padding:3px 10px;border-radius:20px">✅ 완료</span>'
+                : '<span style="font-size:12px;font-weight:800;color:#ea580c;background:#ffedd5;padding:3px 10px;border-radius:20px">📌 숙제</span>'}
+            </div>`).join('');
+          const remain = hwList.filter(h=>!h.hwDone).length;
+          hwHtml = `<div style="margin-bottom:14px">
+            <div style="font-size:13px;font-weight:800;color:#ea580c;margin-bottom:6px">📌 모의고사 숙제 ${remain>0?`(미완료 ${remain}개)`:'(전부 완료 🎉)'}</div>
+            ${hwRows}
+          </div>`;
+        }
+
+        if(done.length===0 && hwList.length===0) return '<div style="color:#94a3b8;font-size:14px">아직 기록된 모의고사가 없어요.</div>';
+
+        if(done.length===0) return hwHtml;
+
+        // 점수 평균
+        const scored = done.filter(d=>d.score!==undefined && d.score!==null && d.score!=='');
+        const avg = scored.length? Math.round(scored.reduce((a,b)=>a+Number(b.score),0)/scored.length) : null;
+        let rows = done.map(d=>`
+          <div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border-radius:8px;padding:7px 11px;margin-bottom:5px">
+            <span style="font-size:11px;font-weight:800;color:#fff;background:#6366f1;padding:2px 8px;border-radius:6px">${d.gk}</span>
+            <span style="flex:1;font-size:14px;color:var(--navy);font-weight:600">${d.label}</span>
+            ${(d.score!==undefined&&d.score!==null&&d.score!=='')?`<span style="font-size:14px;font-weight:800;color:#6366f1">${d.score}점</span>`:'<span style="font-size:12px;color:#94a3b8">점수 미입력</span>'}
+          </div>`).join('');
+        return `
+          ${hwHtml}
+          <div style="display:flex;gap:14px;margin-bottom:12px">
+            <div style="flex:1;background:#eef2ff;border-radius:11px;padding:12px;text-align:center">
+              <div style="font-size:12px;color:#6366f1;font-weight:700">응시 횟수</div>
+              <div style="font-size:24px;font-weight:900;color:var(--navy)">${done.length}회</div>
+            </div>
+            <div style="flex:1;background:#eef2ff;border-radius:11px;padding:12px;text-align:center">
+              <div style="font-size:12px;color:#6366f1;font-weight:700">평균 점수</div>
+              <div style="font-size:24px;font-weight:900;color:var(--navy)">${avg!==null?avg+'점':'-'}</div>
+            </div>
+          </div>
+          ${rows}`;
+      })()}
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h3><span class="dot"></span>주차별 목표 보드</h3>
+      <div class="weeks">${weeksHtml}</div>
+      <div class="ring-wrap" style="margin-top:18px;border-top:1px dashed #e2e8f0;padding-top:18px">
+        <div class="ring">
+          <svg width="120" height="120">
+            <circle cx="60" cy="60" r="52" fill="none" stroke="#eef2f7" stroke-width="12"/>
+            <circle id="ringFg" cx="60" cy="60" r="52" fill="none" stroke="#2f6fed" stroke-width="12"
+              stroke-linecap="round" stroke-dasharray="${ringC}" stroke-dashoffset="${ringC}"/>
+          </svg>
+          <div class="pct"><div class="n">${monthPct}%</div><div class="l">${doneWeeks}/${wc}주 달성</div></div>
+        </div>
+        <div style="font-size:14px;color:#475569">
+          <b>이번 달 목표 달성률</b><br>
+          이번 달은 <b>${wc}주차</b>로 구성돼 있어요.<br>
+          지금까지 <b style="color:#16a34a">${doneWeeks}개 목표</b>를 달성했어요!<br>
+          ${monthPct>=100?'🎉 이번 달 목표 완료!':'끝까지 화이팅 💪'}
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h3><span class="dot"></span>NELT 종합 수준 (4영역 레이더)
+        ${s.testDate?`<span style="margin-left:auto;font-size:11px;font-weight:700;color:#16a34a;background:#f0fdf4;padding:3px 10px;border-radius:20px">📅 ${s.testDate} 최신 기준</span>`:`<span style="margin-left:auto;font-size:11px;color:#94a3b8">응시일 미입력</span>`}
+      </h3>
+      <div id="radarBox" style="display:flex;justify-content:center"></div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h3><span class="dot"></span>종합 위치 · 고3(L9)까지 목표</h3>
+      <div style="font-size:13px;color:#475569;margin-bottom:8px">중3까지 <b style="color:#2f6fed">L9(고3)</b> 도달이 목표예요. 현재 위치를 표시했어요.</div>
+      <div id="overallCurveBox"></div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h3><span class="dot"></span>영역별 세부 위치</h3>
+      <div id="areaCurvesBox" style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px"></div>
+    </div>
+
+    <div class="predict">
+      현재 학습하고 있는 <b>『${s.book}』</b> 교재는<br>
+      이 속도면 <span class="big">${fd.y}년 ${fd.m}월</span> 까지 끝납니다. 📚
+    </div>
+  `;
+
+  // animate bars + ring
+  requestAnimationFrame(()=>{
+    document.querySelectorAll('.pbar > div').forEach(el=>{ el.style.width=el.dataset.w+'%'; });
+    document.querySelectorAll('.vbar > div').forEach(el=>{ el.style.width=el.dataset.w+'%'; });
+    document.querySelectorAll('.char-bar-fill').forEach(el=>{ el.style.width=el.dataset.w+'%'; });
+    const fg=document.getElementById('ringFg');
+    if(fg){ fg.style.transition="stroke-dashoffset 1.1s cubic-bezier(.2,.8,.2,1)"; setTimeout(()=>{fg.style.strokeDashoffset=ringOffset;},80); }
+    drawCharts(s);
+  });
+}
+
+/* ============================================================
+   CHARTS (NELT)
+   ============================================================ */
+const L_LABELS = ["L1\n유치~초2","L2\n초3~4","L3\n초5~6","L4\n중1","L5\n중2","L6\n중3","L7\n고1","L8\n고2","L9\n고3"];
+
+function drawCharts(s){
+  const ln = s.levelNum || {word:5,grammar:5,reading:5,listening:5};
+  drawRadar(s, ln);
+  // 종합 위치 곡선
+  const on = s.overallNum || Math.round((ln.word+ln.grammar+ln.reading+ln.listening)/4);
+  document.getElementById('overallCurveBox').innerHTML = curveSVG(on, "#2f6fed", true);
+  // 영역별
+  const areas=[["어휘",ln.word,"#f59e0b"],["문법",ln.grammar,"#8b5cf6"],["듣기",ln.listening,"#16a34a"],["독해",ln.reading,"#2f6fed"]];
+  let html="";
+  areas.forEach(([nm,v,col])=>{
+    html+=`<div><div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:4px">${nm} <span style="color:${col}">${L_LABELS[(v||1)-1].split("\\n")[0]}</span></div>${curveSVG(v,col,false)}</div>`;
+  });
+  document.getElementById('areaCurvesBox').innerHTML = html;
+}
+
+/* 종 모양 분포 곡선 + 현재 위치 + L9 목표 */
+function curveSVG(level, color, big){
+  const W = big?640:300, H = big?180:130, padL=24, padR=24, padB=big?34:26, padT=14;
+  const n=9, plot=W-padL-padR;
+  const x = i => padL + plot*(i/(n-1));
+  // 종 모양(가운데가 높은 분포) y값 0~1
+  const peak=4; // L5 부근 최빈
+  const bell = i => Math.exp(-Math.pow((i-peak)/2.0,2));
+  const yTop=padT, yBot=H-padB, h=yBot-yTop;
+  const y = v => yBot - v*h*0.82;
+
+  let path="";
+  for(let i=0;i<n;i++){ path += (i===0?"M":"L") + x(i).toFixed(1) + " " + y(bell(i)).toFixed(1) + " "; }
+
+  const curIdx=(level||1)-1, goalIdx=8;
+  // x labels
+  let labels="";
+  for(let i=0;i<n;i++){
+    const parts=L_LABELS[i].split("\\n");
+    labels+=`<text x="${x(i)}" y="${H-padB+13}" font-size="${big?10:8}" fill="#94a3b8" text-anchor="middle">${parts[0]}</text>`;
+    if(big) labels+=`<text x="${x(i)}" y="${H-padB+25}" font-size="8" fill="#cbd5e1" text-anchor="middle">${parts[1]}</text>`;
+  }
+  // 목표 라인 (L9)
+  const goalLine=`<line x1="${x(goalIdx)}" y1="${yTop}" x2="${x(goalIdx)}" y2="${yBot}" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <text x="${x(goalIdx)}" y="${yTop+4}" font-size="${big?10:8}" fill="#16a34a" text-anchor="end" font-weight="700">🎯목표</text>`;
+  // 현재 위치
+  const cx=x(curIdx), cy=y(bell(curIdx));
+  const cur=`<line x1="${cx}" y1="${cy}" x2="${cx}" y2="${yBot}" stroke="${color}" stroke-width="2"/>
+    <circle cx="${cx}" cy="${cy}" r="${big?7:5}" fill="${color}" stroke="#fff" stroke-width="2"/>
+    <text x="${cx}" y="${cy-10}" font-size="${big?11:9}" fill="${color}" text-anchor="middle" font-weight="800">현재</text>`;
+  // 현재→목표 화살표 (big만)
+  let arrow="";
+  if(big && curIdx<goalIdx){
+    const ay=yBot-6;
+    arrow=`<line x1="${cx+8}" y1="${ay}" x2="${x(goalIdx)-8}" y2="${ay}" stroke="#22c55e" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="${(cx+x(goalIdx))/2}" y="${ay-5}" font-size="10" fill="#16a34a" text-anchor="middle" font-weight="700">앞으로 ${goalIdx-curIdx}단계</text>`;
+  }
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#22c55e"/></marker>
+    <linearGradient id="g${color.replace('#','')}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity="0.18"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
+    <path d="${path} L${x(n-1)} ${yBot} L${x(0)} ${yBot} Z" fill="url(#g${color.replace('#','')})"/>
+    <path d="${path}" fill="none" stroke="#cbd5e1" stroke-width="2"/>
+    ${goalLine}${arrow}${cur}${labels}
+  </svg>`;
+}
+
+/* 레이더(오각형이 아닌 4각) */
+function drawRadar(s, ln){
+  const size=300, c=size/2, R=105, max=9;
+  const axes=[["어휘",ln.word],["문법",ln.grammar],["독해",ln.reading],["듣기",ln.listening]];
+  const ang=i => (Math.PI/2) + i*(2*Math.PI/4) * -1; // start top, clockwise
+  const pt=(i,r)=>[c+r*Math.cos(ang(i)), c-r*Math.sin(ang(i))];
+
+  let grid="";
+  for(let g=1;g<=3;g++){
+    const rr=R*g/3;
+    let pts="";
+    for(let i=0;i<4;i++){ const[px,py]=pt(i,rr); pts+=`${px.toFixed(1)},${py.toFixed(1)} `; }
+    grid+=`<polygon points="${pts}" fill="none" stroke="#e2e8f0" stroke-width="1"/>`;
+  }
+  // 목표(L9) 외곽
+  let goalPts="";
+  for(let i=0;i<4;i++){ const[px,py]=pt(i,R); goalPts+=`${px.toFixed(1)},${py.toFixed(1)} `; }
+
+  let axisLines="", labels="", dataPts="";
+  axes.forEach(([nm,v],i)=>{
+    const[ex,ey]=pt(i,R); axisLines+=`<line x1="${c}" y1="${c}" x2="${ex}" y2="${ey}" stroke="#e2e8f0" stroke-width="1"/>`;
+    const[lx,ly]=pt(i,R+20); labels+=`<text x="${lx}" y="${ly}" font-size="13" font-weight="700" fill="#1e293b" text-anchor="middle" dominant-baseline="middle">${nm} ${v||0}</text>`;
+    const[dx,dy]=pt(i, R*(v||0)/max); dataPts+=`${dx.toFixed(1)},${dy.toFixed(1)} `;
+  });
+
+  document.getElementById('radarBox').innerHTML=`
+    <svg viewBox="0 0 ${size} ${size}" width="${size}" xmlns="http://www.w3.org/2000/svg">
+      ${grid}
+      <polygon points="${goalPts}" fill="none" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="4 3"/>
+      ${axisLines}
+      <polygon points="${dataPts}" fill="rgba(47,111,237,.22)" stroke="#2f6fed" stroke-width="2.5"/>
+      ${axes.map((a,i)=>{const[dx,dy]=pt(i,R*(a[1]||0)/max);return `<circle cx="${dx}" cy="${dy}" r="4" fill="#2f6fed" stroke="#fff" stroke-width="1.5"/>`}).join("")}
+      ${labels}
+      <text x="${c}" y="${c-R-2}" font-size="9" fill="#16a34a" text-anchor="middle">- - 외곽=L9(고3) 목표</text>
+    </svg>`;
+}
+
+/* ============================================================
+   TEACHER PANEL
+   ============================================================ */
+let teacherTab='list';
+
+/* ---- 공지창: 총평 + 정기평가 미응시 명단 ---- */
+const NOW = new Date(); // 오늘 날짜 기준
+function parseTestDate(str){
+  if(!str) return null;
+  const m=str.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
+  if(!m) return null;
+  return new Date(+m[1], +m[2]-1, +m[3]);
+}
+function monthsSince(d){
+  if(!d) return null;
+  return (NOW - d) / (1000*60*60*24*30.44);
+}
+function buildNotices(){
+  const ids=Object.keys(DB.students);
+  const n=ids.length;
+  if(n===0) return '';
+
+  // ---- 총평 통계 ----
+  const lvCount={};
+  const weakGrammar=[], weakReading=[], weakVocab=[];
+  const gradeVocab={}; // 학년별 어휘량 합계/인원
+  ids.forEach(id=>{
+    const s=DB.students[id];
+    const lv=s.overallLv||'-'; lvCount[lv]=(lvCount[lv]||0)+1;
+    // 학년별 어휘량
+    if(s.vocabSize){
+      const g=s.grade||'기타';
+      if(!gradeVocab[g]) gradeVocab[g]={sum:0,cnt:0};
+      gradeVocab[g].sum+=s.vocabSize; gradeVocab[g].cnt++;
+    }
+    const ln=s.levelNum||{};
+    const vals=[ln.word,ln.grammar,ln.reading,ln.listening].filter(v=>v);
+    if(vals.length){
+      const avg=vals.reduce((a,b)=>a+b,0)/vals.length;
+      if(ln.grammar && ln.grammar<=avg-1.5) weakGrammar.push(s.name);
+      if(ln.reading && ln.reading<=avg-1.5) weakReading.push(s.name);
+      if(ln.word && ln.word<=avg-1.5) weakVocab.push(s.name);
+    }
+  });
+
+  // 학년별 평균 어휘량 (정렬: 초6, 중1, 중2, 중3, 그 외)
+  const gradeOrder=["초6","중1","중2","중3","고1","고2","고3"];
+  const gKeys=Object.keys(gradeVocab).sort((a,b)=>{
+    const ia=gradeOrder.indexOf(a), ib=gradeOrder.indexOf(b);
+    return (ia<0?99:ia)-(ib<0?99:ib);
+  });
+  let vocabByGrade = gKeys.map(g=>{
+    const avg=Math.round(gradeVocab[g].sum/gradeVocab[g].cnt);
+    return `<div style="flex:1;min-width:90px;background:#fff;border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:12px;color:#6366f1;font-weight:700">${g}</div>
+      <div style="font-size:20px;font-weight:900;color:var(--navy)">${avg.toLocaleString()}</div>
+      <div style="font-size:10px;color:#94a3b8">단어 · ${gradeVocab[g].cnt}명</div>
+    </div>`;
+  }).join('');
+  if(!vocabByGrade) vocabByGrade='<div style="color:#94a3b8;font-size:13px">어휘량 데이터 없음</div>';
+
+  // 종합레벨 분포 막대그래프 (Lv.2~Lv.9 순)
+  const lvOrder=["Lv.2","Lv.3","Lv.4","Lv.5","Lv.6","Lv.7","Lv.8","Lv.9"];
+  const maxLv=Math.max(1,...Object.values(lvCount));
+  let lvBars = lvOrder.filter(k=>lvCount[k]).map(k=>{
+    const c=lvCount[k];
+    const h=Math.round(c/maxLv*90)+10;
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+      <div style="font-size:12px;font-weight:800;color:var(--navy)">${c}</div>
+      <div style="width:100%;max-width:38px;height:${h}px;background:linear-gradient(180deg,#2f6fed,#7eb0ff);border-radius:6px 6px 0 0"></div>
+      <div style="font-size:10px;color:#64748b;text-align:center;line-height:1.2">${lvWithGrade(k)}</div>
+    </div>`;
+  }).join('');
+  if(!lvBars) lvBars='<div style="color:#94a3b8;font-size:13px">레벨 데이터 없음</div>';
+
+  let weakLines='';
+  if(weakGrammar.length) weakLines+=`<div>📕 <b>문법</b>이 상대적 약점: ${weakGrammar.join(', ')}</div>`;
+  if(weakReading.length) weakLines+=`<div>📗 <b>독해</b>가 상대적 약점: ${weakReading.join(', ')}</div>`;
+  if(weakVocab.length) weakLines+=`<div>📘 <b>어휘</b>가 상대적 약점: ${weakVocab.join(', ')}</div>`;
+  if(!weakLines) weakLines='<div>영역별로 크게 치우친 학생은 없어요.</div>';
+
+  // ---- 6개월 미응시 ----
+  const overdue=[];
+  ids.forEach(id=>{
+    const s=DB.students[id];
+    const d=parseTestDate(s.testDate);
+    const mo=monthsSince(d);
+    if(mo===null || mo>=6){ overdue.push({id, name:s.name, grade:s.grade, date:s.testDate||'미응시', d, mo}); }
+  });
+  overdue.sort((a,b)=>{
+    if(!a.d && !b.d) return 0;
+    if(!a.d) return -1;
+    if(!b.d) return 1;
+    return a.d - b.d;
+  });
+  let overdueRows = overdue.length===0
+    ? '<div style="color:#16a34a;font-size:13px">🎉 최근 6개월 내 모든 학생이 정기평가에 응시했어요!</div>'
+    : overdue.map((o,i)=>{
+        const moTxt = o.mo===null? '응시 기록 없음' : `${Math.floor(o.mo)}개월 경과`;
+        return `<div class="overdue-row">
+          <span class="rank">${i+1}</span>
+          <span class="nm">${o.name} <span style="color:#94a3b8;font-size:12px">${o.grade||''}</span></span>
+          <span class="dt">${o.date}</span>
+          <span class="mo">${moTxt}</span>
+        </div>`;
+      }).join('');
+
+  return `
+    <div class="notice-board">
+      <details class="notice-card summary">
+        <summary class="nt"><span>📣</span> 전체 총평 <span class="cnt">학생 ${n}명</span></summary>
+        <div class="nbody" style="margin-top:12px">
+          <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:6px">📘 학년별 평균 어휘량</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">${vocabByGrade}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:6px">📊 종합레벨 분포</div>
+          <div style="display:flex;align-items:flex-end;gap:6px;height:130px;background:#fff;border-radius:10px;padding:12px 10px;margin-bottom:14px">${lvBars}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px">⚠ 영역별 약점</div>
+          ${weakLines}
+        </div>
+      </details>
+      <details class="notice-card overdue">
+        <summary class="nt"><span>⏰</span> 정기평가 미응시 (6개월+) <span class="cnt">${overdue.length}명</span></summary>
+        <div class="nbody" style="margin-top:12px">
+          <div style="font-size:12px;color:#94a3b8;margin-bottom:8px">가장 오래 안 본 학생부터 · 기준일 2026.06.13</div>
+          ${overdueRows}
+        </div>
+      </details>
+    </div>`;
+}
+
+function renderTeacher(){
+  const c=document.getElementById('content');
+  c.innerHTML=`
+    ${teacherTab==='list'?buildNotices():''}
+    <div class="tabs">
+      <div class="tab ${teacherTab==='list'?'active':''}" onclick="teacherTab='list';renderTeacher()">📋 학생 목록</div>
+      <div class="tab ${teacherTab==='new'?'active':''}" onclick="newStudent()">➕ 학생 추가</div>
+      <div class="tab ${teacherTab==='bulk'?'active':''}" onclick="teacherTab='bulk';editingId=null;renderTeacher()">📥 일괄 등록</div>
+    </div>
+    <div id="tcontent"></div>`;
+  if(teacherTab==='list') renderStudentList();
+  else if(teacherTab==='bulk') renderBulk();
+  else renderStudentForm(editingId);
+}
+
+function studentCardHtml(id){
+  const s=DB.students[id];
+  const wc=weekCount(s.month);
+  const dw=s.weeks.slice(0,wc).filter(w=>w.done).length;
+  return `
+    <div class="stu-card" onclick="editStudent('${id}')">
+      <div class="nm">${s.name}</div>
+      <div class="id">@${id} · ${[s.school,s.grade].filter(Boolean).join(' ')||'학교 미입력'} · ${s.month}월</div>
+      <div class="bk">📖 ${s.book||'교재 미지정'} ${s.overallLv?`<span style="background:var(--sky);color:var(--navy2);padding:2px 8px;border-radius:7px;font-size:12px;font-weight:800;margin-left:4px">${lvWithGrade(s.overallLv)}</span>`:''}</div>
+      <div class="mini">
+        <span>단어 ${s.level.word}</span><span>문법 ${s.level.grammar}</span><span>독해 ${s.level.reading}</span><span>듣기 ${s.level.listening||'-'}</span>
+      </div>
+      <div class="mini"><span style="background:#f0fdf4;color:#16a34a">목표 ${dw}/${wc} 달성</span></div>
+    </div>`;
+}
+
+function dayGroupBlockHtml(dayKey){
+  // dayKey: 'monfri' | 'tuethu'
+  const ids = Object.keys(DB.students);
+  const c1 = ids.filter(id=>studentClassKey(id)===dayKey+'1');
+  const c2 = ids.filter(id=>studentClassKey(id)===dayKey+'2');
+  const title = dayKey==='monfri' ? '월·금요일반' : '화·목요일반';
+  const colHtml = (label,time,arr)=>`
+    <div class="cls-col">
+      <div class="cls-col-head">${label} <span class="cls-time">${time}</span> <span class="cls-cnt">${arr.length}명</span></div>
+      <div class="stu-list">${arr.length? arr.map(studentCardHtml).join('') : '<div class="empty" style="padding:14px">학생 없음</div>'}</div>
+    </div>`;
+  return `
+    <div class="cls-block">
+      <div class="cls-block-title">${title}</div>
+      <div class="cls-cols">
+        ${colHtml(CLASS_GROUPS[dayKey+'1'].label, CLASS_GROUPS[dayKey+'1'].time, c1)}
+        ${colHtml(CLASS_GROUPS[dayKey+'2'].label, CLASS_GROUPS[dayKey+'2'].time, c2)}
+      </div>
+    </div>`;
+}
+
+function toolsHTML(){ return `<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn btn-ghost" onclick="exportBackup()">💾 백업 파일 내보내기</button>
+    <button class="btn btn-ghost" onclick="document.getElementById('importFile').click()">📂 백업 불러오기</button>
+    <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importBackup(event)">
+    <button class="btn btn-del" onclick="resetAll()">🗑 전체 초기화</button>
+  </div>
+  <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <button class="btn btn-save" onclick="document.getElementById('updFile').click()">📋 명단 반영 파일 적용</button>
+    <input type="file" id="updFile" accept="application/json" style="display:none" onchange="applyUpdateFile(event)">
+    <button class="btn btn-save" onclick="makeAccounts()">🔑 학생 로그인 계정 만들기</button>
+    <span style="font-size:12px;color:var(--gray)">계정이 없는 학생만 만들어요 · 처음 비밀번호는 <b>아이디+0000</b> (예: cmk101 → cmk1010000), 학생이 처음 들어오면 바꾸게 해요 · 비밀번호를 잊은 학생은 Firebase 콘솔 → Authentication에서 계정을 지운 뒤 다시 만들어 주세요</span>
+  </div>`; }
+function renderStudentList(){
+  const ids=Object.keys(DB.students);
+  let html='';
+  if(ids.length===0){
+    html+='<div class="stu-list"><div class="empty">등록된 학생이 없습니다. 아래 \'명단 반영 파일 적용\'으로 학원 명단을 넣거나, 상단의 ➕ 학생 추가를 눌러주세요.</div></div>'+toolsHTML();
+    document.getElementById('tcontent').innerHTML=html;
+    return;
+  }
+
+  const todayG = todayDayGroup();
+  const otherG = todayG==='monfri' ? 'tuethu' : 'monfri';
+  const otherTitle = otherG==='monfri' ? '월·금요일반' : '화·목요일반';
+
+  // 오늘 요일 그룹 먼저
+  html += dayGroupBlockHtml(todayG);
+
+  // 나머지 그룹은 버튼으로 펼치기
+  html += `<div style="margin:6px 0 14px">
+    <button class="btn btn-ghost" id="toggleOtherCls" onclick="toggleOtherClass()">▸ ${otherTitle} 보기</button>
+  </div>
+  <div id="otherClsWrap" style="display:none">${dayGroupBlockHtml(otherG)}</div>`;
+
+  // 미배정 학생
+  const unassigned = ids.filter(id=>!studentClassKey(id));
+  if(unassigned.length){
+    html += `<div class="cls-block">
+      <div class="cls-block-title" style="color:#b45309">미배정 (${unassigned.length}명)</div>
+      <div class="stu-list">${unassigned.map(studentCardHtml).join('')}</div>
+    </div>`;
+  }
+
+  html+='<div class="seed-note">학생 카드를 클릭하면 진도·목표·반을 수정하고, 학부모 카톡 요약을 생성할 수 있어요. <b style="color:#16a34a">✓ 모든 변경사항은 클라우드에 자동 저장됩니다.</b></div>';
+  html+=toolsHTML();
+  document.getElementById('tcontent').innerHTML=html;
+}
+
+function toggleOtherClass(){
+  const wrap=document.getElementById('otherClsWrap');
+  const btn=document.getElementById('toggleOtherCls');
+  if(!wrap||!btn) return;
+  const show = wrap.style.display==='none';
+  wrap.style.display = show ? 'block' : 'none';
+  btn.textContent = btn.textContent.replace(show?'▸':'▾', show?'▾':'▸');
+}
+
+function newStudent(){
+  editingId=null; teacherTab='new'; renderTeacher();
+}
+function editStudent(id){
+  editingId=id; teacherTab='new'; renderTeacher();
+}
+
+/* ---- 일괄 등록 ---- */
+function renderBulk(){
+  document.getElementById('tcontent').innerHTML=`
+    <div class="form-card">
+      <h3>📥 학생 일괄 등록</h3>
+      <div style="font-size:13px;color:var(--gray);margin-bottom:6px">
+        엑셀에서 복사하거나, 한 줄에 한 명씩 아래 형식으로 붙여넣으세요.<br>
+        형식: <b style="color:var(--navy)">아이디, 비밀번호, 이름, 중학교, 학년</b> (쉼표 또는 탭으로 구분) — 비밀번호 칸은 비워 두세요. 로그인 계정은 아래 '학생 로그인 계정 만들기'로 만듭니다
+      </div>
+      <div style="background:var(--sky);border-radius:9px;padding:10px 12px;font-size:12px;color:var(--navy2);margin-bottom:12px;line-height:1.8">
+        예시)<br>
+        hong, , 홍길동, 대치중, 중2<br>
+        kim, 1234, 김민지, 대청중, 중3<br>
+        lee, 1234, 이서준, 단대부중, 중1
+      </div>
+      <textarea id="bulkText" style="width:100%;min-height:220px;border:1.5px solid var(--line);border-radius:11px;padding:13px;font-size:14px;font-family:inherit;line-height:1.7" placeholder="hong, , 홍길동, 대치중, 중2&#10;kim, 1234, 김민지, 대청중, 중3"></textarea>
+      <div style="font-size:12px;color:var(--gray);margin-top:8px">※ 레벨·교재·진도는 비워둔 채 등록되고, 나중에 학생 카드에서 채우면 됩니다. 이미 있는 아이디는 이름·학교·학년만 업데이트돼요.</div>
+      <div class="actions">
+        <button class="btn btn-save" onclick="doBulk()">📥 일괄 등록하기</button>
+        <button class="btn btn-ghost" onclick="teacherTab='list';renderTeacher()">취소</button>
+      </div>
+      <div id="bulkResult" style="margin-top:14px;font-size:13px"></div>
+    </div>`;
+}
+
+function doBulk(){
+  const raw=document.getElementById('bulkText').value.trim();
+  if(!raw){ showToast('붙여넣은 내용이 없습니다'); return; }
+  const lines=raw.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  let added=0, updated=0, errors=[];
+  lines.forEach((line,idx)=>{
+    const cols=line.split(/\t|,/).map(c=>c.trim());
+    const [id0,pw,name,school,grade]=cols;
+    const id=(id0||'').toLowerCase();
+    if(!id||!name){ errors.push(`${idx+1}행: 아이디·이름 누락 → "${line}"`); return; }
+    if(DB.students[id]){
+      DB.students[id].name=name;
+      DB.students[id].school=school||DB.students[id].school||"";
+      DB.students[id].grade=grade||DB.students[id].grade||"";
+      updated++;
+    }else{
+      DB.students[id]={
+        name, school:school||"", grade:grade||"",
+        level:{word:"",grammar:"",reading:"",listening:""},
+        levelNum:{word:5,grammar:5,reading:5,listening:5},
+        rank:{word:"",grammar:"",reading:"",listening:""},
+        overallLv:"", overallRank:"", overallNum:5, testDate:"", vocabSize:0,
+        book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+        todayStudy:"", todayHw:"", month:todayMonth,
+        vocabBook:"", vocabDay:0, grammarBook:"", grammarCh:0, grammarPage:0, essayBook:"", essayCh:0, essayPage:0, usageBook:"", usageCh:0, usagePage:0, readingBook:"", readingCh:0, readingPage:0, mocks:{}, mocks:{}, readingBook:"", readingCh:0, readingPage:0, essayBook:"", essayCh:0,
+    vocabBook:"", vocabDay:0,
+        todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+        weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+      };
+      added++;
+    }
+  });
+  saveDB();
+  const box=document.getElementById('bulkResult');
+  box.innerHTML=`<div style="color:#16a34a;font-weight:700">✓ 신규 ${added}명 등록, ${updated}명 업데이트 완료</div>`+
+    (errors.length?`<div style="color:#dc2626;margin-top:6px">⚠ ${errors.length}개 행 오류:<br>${errors.join('<br>')}</div>`:'');
+  showToast(`등록 완료: 신규 ${added} · 수정 ${updated}`);
+}
+function editStudent(id){
+  editingId=id; teacherTab='new'; renderTeacher();
+}
+
+function renderStudentForm(id){
+  const isNew = !id;
+  const s = isNew ? {
+    name:"", school:"", grade:"", level:{word:"Lv.1",grammar:"Lv.1",reading:"Lv.1",listening:"Lv.1"},
+    rank:{word:"",grammar:"",reading:"",listening:""}, overallLv:"", overallRank:"", overallNum:5, testDate:"", vocabSize:0,
+    levelNum:{word:5,grammar:5,reading:5,listening:5},
+    book:"", bookMonths:2, startMonth:todayMonth, startYear:2026,
+    todayStudy:"", todayHw:"", month:todayMonth,
+    todayWordTotal:20, todayWordDone:0, todayHwTotal:3, todayHwDone:0,
+    weeks:[{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false},{goal:"",done:false}]
+  } : JSON.parse(JSON.stringify(DB.students[id]));
+
+  const yearOpts=[2025,2026,2027,2028].map(y=>`<option value="${y}" ${s.startYear==y?'selected':''}>${y}년</option>`).join('');
+  const monthOpts=(sel)=>Array.from({length:12},(_,i)=>i+1).map(m=>`<option value="${m}" ${sel==m?'selected':''}>${m}월</option>`).join('');
+
+  const wc=weekCount(s.month);
+  let weekEdit="";
+  for(let i=0;i<5;i++){
+    const w=s.weeks[i]||{goal:"",done:false};
+    const active = i<wc;
+    weekEdit+=`
+      <div class="wk-edit" style="${active?'':'opacity:.45'}">
+        <div class="head">
+          <b>${i+1}주차 ${i===4?'(5주 있는 달만)':''}</b>
+          <label class="check-toggle"><input type="checkbox" id="wk_done_${i}" ${w.done?'checked':''}> 달성</label>
+        </div>
+        <input class="wkgoal" id="wk_goal_${i}" value="${(w.goal||'').replace(/"/g,'&quot;')}" placeholder="${i+1}주차 목표 입력" style="width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px">
+      </div>`;
+  }
+
+  document.getElementById('tcontent').innerHTML=`
+    <div class="form-card">
+      <h3>${isNew?'➕ 새 학생 등록':'✏️ '+s.name+' 진도 수정'}</h3>
+
+      <div class="frow">
+        <div class="field"><label>학생 이름</label><input id="f_name" value="${s.name}" placeholder="홍길동"></div>
+        <div class="field"><label>아이디 (로그인용)</label><input id="f_id" value="${id||''}" ${isNew?'':'readonly style=background:#f1f5f9'} placeholder="hong"></div>
+      </div>
+      <div class="frow">
+        <div class="field"><label>학교</label><input id="f_school" value="${s.school||''}" placeholder="대치중"></div>
+        <div class="field"><label>학년</label><input id="f_grade" value="${s.grade||''}" placeholder="중2"></div>
+      </div>
+      <div class="frow">
+        <div class="field"><label>반 (요일·반)</label>
+          <select id="f_classGroup">
+            <option value="">— 자동/미배정 —</option>
+            ${CLASS_ORDER.map(k=>`<option value="${k}" ${ (s.classGroup||studentClassKey(id)||'')===k ?'selected':''}>${CLASS_GROUPS[k].label} (${CLASS_GROUPS[k].time})</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"></div>
+      </div>
+      <div class="frow">
+        <div class="field"><label>진도 기준 월</label>
+          <select id="f_month" onchange="this.dataset.changed=1">${monthOpts(s.month)}</select>
+        </div>
+      </div>
+
+      <div class="frow">
+        <div class="field"><label>종합 레벨 (예: Lv.6)</label><input id="f_olv" value="${s.overallLv||''}" placeholder="Lv.6"></div>
+        <div class="field"><label>종합 석차 (예: 상위 20%)</label><input id="f_ork" value="${s.overallRank||''}" placeholder="상위 20%"></div>
+      </div>
+      <div class="frow">
+        <div class="field"><label>NELT 응시일 (최신 성적표 기준)</label><input id="f_td" value="${s.testDate||''}" placeholder="2026.05.30"></div>
+        <div class="field"><label>Vocabulary Size (현재 어휘량, 목표 6000)</label><input id="f_vs" type="number" min="0" value="${s.vocabSize||0}" placeholder="3000"></div>
+      </div>
+      <div class="frow four">
+        <div class="field"><label>단어 수준</label><input id="f_lw" value="${s.level.word}" placeholder="중3"><input id="f_rw" value="${(s.rank&&s.rank.word)||''}" placeholder="상위 29%" style="margin-top:6px"><select id="f_nw" style="margin-top:6px">${lnOpts((s.levelNum&&s.levelNum.word)||5)}</select></div>
+        <div class="field"><label>문법 수준</label><input id="f_lg" value="${s.level.grammar}" placeholder="중2"><input id="f_rg" value="${(s.rank&&s.rank.grammar)||''}" placeholder="상위 25%" style="margin-top:6px"><select id="f_ng" style="margin-top:6px">${lnOpts((s.levelNum&&s.levelNum.grammar)||5)}</select></div>
+        <div class="field"><label>독해 수준</label><input id="f_lr" value="${s.level.reading}" placeholder="중3"><input id="f_rr" value="${(s.rank&&s.rank.reading)||''}" placeholder="상위 20%" style="margin-top:6px"><select id="f_nr" style="margin-top:6px">${lnOpts((s.levelNum&&s.levelNum.reading)||5)}</select></div>
+        <div class="field"><label>듣기 수준</label><input id="f_ll" value="${s.level.listening||''}" placeholder="고1(상)"><input id="f_rl" value="${(s.rank&&s.rank.listening)||''}" placeholder="상위 19%" style="margin-top:6px"><select id="f_nl" style="margin-top:6px">${lnOpts((s.levelNum&&s.levelNum.listening)||5)}</select></div>
+      </div>
+      <div style="font-size:12px;color:var(--gray);margin:-6px 0 14px">각 영역: 학년 수준 / 상위% 석차 / 그래프용 L단계(L1~L9)</div>
+      <div class="frow">
+        <div class="field"><label>종합 그래프 위치 (L단계)</label><select id="f_on">${lnOpts(s.overallNum||5)}</select></div>
+        <div class="field"></div>
+      </div>
+
+      <h3 style="margin-top:22px;font-size:15px">📖 교재별 진도 (단어 · 문법 · 독해 · 서술형 · 어법)</h3>
+      <div class="frow">
+        <div class="field"><label>단어책</label>
+          <select id="f_vbook">
+            <option value="">— 선택 안 함 —</option>
+            ${VOCAB_BOOKS.map(b=>`<option value="${b.name}" ${s.vocabBook===b.name?'selected':''}>${b.name} (${b.grade}, ~Day${b.days})</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>현재 Day (진행한 일수)</label><input id="f_vday" type="number" min="0" value="${s.vocabDay||0}" placeholder="0"></div>
+      </div>
+      <div class="frow">
+        <div class="field"><label>단어책 — 오늘까지 학습</label><input id="f_vts" value="${s.vocabTodayStudy||''}" placeholder="Day 12 (p.48~52)"></div>
+        <div class="field"><label>단어책 — 오늘까지 숙제</label><input id="f_vth" value="${s.vocabTodayHw||''}" placeholder="Day 12 단어시험"></div>
+      </div>
+
+      <div class="frow four">
+        <div class="field"><label>문법 교재</label>
+          <select id="f_gbook">
+            <option value="">— 선택 안 함 —</option>
+            ${GRAMMAR_BOOKS.map(b=>`<option value="${b.name}" ${s.grammarBook===b.name?'selected':''}>${b.name} (${b.grade}, ~Ch${b.chapters.length})</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>현재 Chapter</label><input id="f_gch" type="number" min="0" value="${s.grammarCh||0}" placeholder="0"></div>
+        <div class="field"><label>현재 페이지(선택)</label><input id="f_gpage" type="number" min="0" value="${s.grammarPage||0}" placeholder="0"></div>
+        <div class="field"><label>숙제 / 숙제 페이지(선택)</label>
+          <div style="display:flex;gap:8px"><input id="f_ghw" value="${s.grammarHw||''}" placeholder="Ch.5 워크북" style="flex:2"><input id="f_ghwp" value="${s.grammarHwPage||''}" placeholder="p.30~33" style="flex:1"></div>
+        </div>
+      </div>
+
+      <div class="frow four">
+        <div class="field"><label>독해 교재</label>
+          <select id="f_rbook">
+            <option value="">— 선택 안 함 —</option>
+            ${READING_BOOKS.map(b=>`<option value="${b.name}" ${s.readingBook===b.name?'selected':''}>${b.name} (~${b.unit}${b.chapters.length})</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>현재 진도(Section/Unit/회)</label><input id="f_rch" type="number" min="0" value="${s.readingCh||0}" placeholder="0"></div>
+        <div class="field"><label>현재 페이지(선택)</label><input id="f_rpage" type="number" min="0" value="${s.readingPage||0}" placeholder="0"></div>
+        <div class="field"><label>숙제 / 숙제 페이지(선택)</label>
+          <div style="display:flex;gap:8px"><input id="f_rhw" value="${s.readingHw||''}" placeholder="지문 3개 분석" style="flex:2"><input id="f_rhwp" value="${s.readingHwPage||''}" placeholder="p.10~14" style="flex:1"></div>
+        </div>
+      </div>
+
+      <div class="frow four">
+        <div class="field"><label>서술형 교재</label>
+          <select id="f_ebook">
+            <option value="">— 선택 안 함 —</option>
+            ${ESSAY_BOOKS.map(b=>`<option value="${b.name}" ${s.essayBook===b.name?'selected':''}>${b.name} (~${b.unit}${b.chapters.length})</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>현재 Point/Rank</label><input id="f_ech" type="number" min="0" value="${s.essayCh||0}" placeholder="0"></div>
+        <div class="field"><label>현재 페이지(선택)</label><input id="f_epage" type="number" min="0" value="${s.essayPage||0}" placeholder="0"></div>
+        <div class="field"><label>숙제 / 숙제 페이지(선택)</label>
+          <div style="display:flex;gap:8px"><input id="f_ehw" value="${s.essayHw||''}" placeholder="Point 4 풀이" style="flex:2"><input id="f_ehwp" value="${s.essayHwPage||''}" placeholder="p.20~24" style="flex:1"></div>
+        </div>
+      </div>
+
+      <div class="frow four">
+        <div class="field"><label>어법 교재</label>
+          <select id="f_ubook">
+            <option value="">— 선택 안 함 —</option>
+            ${USAGE_BOOKS.map(b=>`<option value="${b.name}" ${s.usageBook===b.name?'selected':''}>${b.name} (~${b.unit}${b.byProblem?b.total:b.chapters.length})</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>현재 진도(Unit/문제 번호)</label><input id="f_uch" type="number" min="0" value="${s.usageCh||0}" placeholder="0"></div>
+        <div class="field"><label>현재 페이지(선택)</label><input id="f_upage" type="number" min="0" value="${s.usagePage||0}" placeholder="0"></div>
+        <div class="field"><label>숙제 / 숙제 페이지(선택)</label>
+          <div style="display:flex;gap:8px"><input id="f_uhw" value="${s.usageHw||''}" placeholder="Unit 6 문제" style="flex:2"><input id="f_uhwp" value="${s.usageHwPage||''}" placeholder="p.40~45" style="flex:1"></div>
+        </div>
+      </div>
+
+      <h3 style="margin-top:22px;font-size:15px">모의고사 기록 (응시 체크 + 점수)</h3>
+      <div style="font-size:12px;color:var(--gray);margin-bottom:10px">응시한 모의고사를 체크하고 점수를 입력하세요. '숙제'를 체크하면 학생 화면에 숙제로 뜨고, 학생이 해오면 '완료'를 체크하세요.</div>
+      ${(()=>{
+        const mk=s.mocks||{};
+        return Object.keys(MOCK_SETS).map(gk=>{
+          const rows=mockList(gk).map(m=>{
+            const rec=(mk[gk]||{})[m.key]||{};
+            const id=`mock_${gk}_${m.key}`.replace(/-/g,'_');
+            return `<label class="mock-item">
+              <input type="checkbox" id="${id}_chk" ${rec.done?'checked':''}>
+              <span class="ml">${m.label}</span>
+              <input type="number" id="${id}_sc" class="mock-score" min="0" max="100" value="${(rec.score!==undefined&&rec.score!==null)?rec.score:''}" placeholder="점수">
+              <span class="mock-hw"><label class="mock-hwchk"><input type="checkbox" id="${id}_hw" ${rec.hw?'checked':''}>숙제</label><label class="mock-hwchk"><input type="checkbox" id="${id}_hwd" ${rec.hwDone?'checked':''}>완료</label></span>
+            </label>`;
+          }).join('');
+          return `<div class="mock-grade">
+            <div class="mock-grade-title">${gk}</div>
+            <div class="mock-grid">${rows}</div>
+          </div>`;
+        }).join('');
+      })()}
+
+      <h3 style="margin-top:22px;font-size:15px">🎮 캐릭터 성장 관리</h3>
+      ${(()=>{
+        if(isNew) return '<div style="font-size:13px;color:var(--gray)">학생 저장 후 캐릭터 성장점을 관리할 수 있어요.</div>';
+        const gPts = studentGrowthPoints(s);
+        const gStage = growthStage(gPts);
+        const ctName = {monster:'몬스터',hero:'히어로',plant:'정령목'}[s.charType]||'미선택';
+        return `<div style="background:#f8fafc;border-radius:12px;padding:14px">
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+            <div style="width:64px;height:68px;background:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center">${s.charType?renderChar(s.charType,gStage):'<span style="font-size:12px;color:#94a3b8">미선택</span>'}</div>
+            <div style="flex:1;min-width:160px">
+              <div style="font-weight:800;color:var(--navy)">${ctName} · Lv.${gStage}</div>
+              <div style="font-size:13px;color:#64748b">현재 성장점 ${gPts}점 (모의고사 숙제 + 누적 + 보너스 ${s.growthBonus||0})</div>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <button type="button" class="btn btn-ghost" style="padding:6px 12px" onclick="adjustGrowth('${id}',1)">＋ 성장 +1</button>
+              <button type="button" class="btn btn-ghost" style="padding:6px 12px" onclick="adjustGrowth('${id}',-1)">－</button>
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--gray);margin-top:8px">숙제 '완료'를 체크하면 자동으로 성장하고, 잘했을 때 '성장 +1'로 보너스를 줄 수 있어요.</div>
+        </div>`;
+      })()}
+
+      <h3 style="margin-top:22px;font-size:15px">주차별 목표 · 달성</h3>
+      ${weekEdit}
+
+      <div class="actions">
+        <button class="btn btn-save" onclick="saveStudent(${isNew})">💾 저장</button>
+        ${isNew?'':`<button class="btn btn-kakao" onclick="openKakao('${id}')">💬 학부모 카톡 요약</button>`}
+        ${isNew?'':`<button class="btn btn-del" onclick="deleteStudent('${id}')">🗑 삭제</button>`}
+        <button class="btn btn-ghost" onclick="teacherTab='list';editingId=null;renderTeacher()">취소</button>
+      </div>
+    </div>`;
+}
+
+function saveStudent(isNew){
+  const id = document.getElementById('f_id').value.trim().toLowerCase();
+  const name = document.getElementById('f_name').value.trim();
+  if(!id||!name){ showToast('이름과 아이디는 필수입니다'); return; }
+  if(isNew && DB.students[id]){ showToast('이미 존재하는 아이디입니다'); return; }
+
+  const weeks=[];
+  for(let i=0;i<5;i++){
+    weeks.push({
+      goal: document.getElementById('wk_goal_'+i).value.trim(),
+      done: document.getElementById('wk_done_'+i).checked
+    });
+  }
+
+  // 모의고사 기록 수집
+  const mocks={};
+  Object.keys(MOCK_SETS).forEach(gk=>{
+    mockList(gk).forEach(m=>{
+      const id=`mock_${gk}_${m.key}`.replace(/-/g,'_');
+      const chk=document.getElementById(id+'_chk');
+      const sc=document.getElementById(id+'_sc');
+      const hw=document.getElementById(id+'_hw');
+      const hwd=document.getElementById(id+'_hwd');
+      const isDone = chk && chk.checked;
+      const isHw = hw && hw.checked;
+      const isHwDone = hwd && hwd.checked;
+      if(isDone || isHw || isHwDone){
+        if(!mocks[gk]) mocks[gk]={};
+        const v=sc?sc.value.trim():'';
+        mocks[gk][m.key]={ done:!!isDone, score: v===''?null:Number(v), hw:!!isHw, hwDone:!!isHwDone };
+      }
+    });
+  });
+
+  const prev = DB.students[id] || {};
+  DB.students[id]={
+    name,
+    school: document.getElementById('f_school').value.trim(),
+    grade: document.getElementById('f_grade').value.trim(),
+    classGroup: document.getElementById('f_classGroup').value || '',
+    level:{
+      word: document.getElementById('f_lw').value,
+      grammar: document.getElementById('f_lg').value,
+      reading: document.getElementById('f_lr').value,
+      listening: document.getElementById('f_ll').value
+    },
+    rank:{
+      word: document.getElementById('f_rw').value,
+      grammar: document.getElementById('f_rg').value,
+      reading: document.getElementById('f_rr').value,
+      listening: document.getElementById('f_rl').value
+    },
+    overallLv: document.getElementById('f_olv').value,
+    overallRank: document.getElementById('f_ork').value,
+    testDate: document.getElementById('f_td').value,
+    vocabSize: parseInt(document.getElementById('f_vs').value)||0,
+    overallNum: parseInt(document.getElementById('f_on').value)||5,
+    levelNum:{
+      word: parseInt(document.getElementById('f_nw').value)||5,
+      grammar: parseInt(document.getElementById('f_ng').value)||5,
+      reading: parseInt(document.getElementById('f_nr').value)||5,
+      listening: parseInt(document.getElementById('f_nl').value)||5
+    },
+    book: prev.book||'',
+    bookMonths: prev.bookMonths||1,
+    startMonth: prev.startMonth,
+    startYear: prev.startYear,
+    todayStudy: prev.todayStudy||'',
+    todayHw: prev.todayHw||'',
+    month: parseInt(document.getElementById('f_month').value),
+    vocabBook: document.getElementById('f_vbook').value,
+    vocabDay: parseInt(document.getElementById('f_vday').value)||0,
+    vocabTodayStudy: (document.getElementById('f_vts')||{}).value||'',
+    vocabTodayHw: (document.getElementById('f_vth')||{}).value||'',
+    grammarBook: document.getElementById('f_gbook').value,
+    grammarCh: parseInt(document.getElementById('f_gch').value)||0,
+    grammarPage: parseInt(document.getElementById('f_gpage').value)||0,
+    grammarHw: (document.getElementById('f_ghw')||{}).value||'',
+    grammarHwPage: (document.getElementById('f_ghwp')||{}).value||'',
+    essayBook: document.getElementById('f_ebook').value,
+    essayCh: parseInt(document.getElementById('f_ech').value)||0,
+    essayPage: parseInt(document.getElementById('f_epage').value)||0,
+    essayHw: (document.getElementById('f_ehw')||{}).value||'',
+    essayHwPage: (document.getElementById('f_ehwp')||{}).value||'',
+    usageBook: document.getElementById('f_ubook').value,
+    usageCh: parseInt(document.getElementById('f_uch').value)||0,
+    usagePage: parseInt(document.getElementById('f_upage').value)||0,
+    usageHw: (document.getElementById('f_uhw')||{}).value||'',
+    usageHwPage: (document.getElementById('f_uhwp')||{}).value||'',
+    readingBook: document.getElementById('f_rbook').value,
+    readingCh: parseInt(document.getElementById('f_rch').value)||0,
+    readingPage: parseInt(document.getElementById('f_rpage').value)||0,
+    readingHw: (document.getElementById('f_rhw')||{}).value||'',
+    readingHwPage: (document.getElementById('f_rhwp')||{}).value||'',
+    mocks,
+    todayWordDone: prev.todayWordDone||0,
+    todayWordTotal: prev.todayWordTotal||0,
+    todayHwDone: prev.todayHwDone||0,
+    todayHwTotal: prev.todayHwTotal||0,
+    charType: prev.charType||'',
+    growthBonus: prev.growthBonus||0,
+    hwDoneCount: prev.hwDoneCount||0,
+    weeks
+  };
+  saveDB();
+  showToast('저장되었습니다 ✓');
+  editingId=null; teacherTab='list'; renderTeacher();
+}
+
+function deleteStudent(id){
+  if(confirm(DB.students[id].name+' 학생을 삭제할까요?')){
+    delete DB.students[id];
+    saveDB();
+    showToast('삭제되었습니다');
+    editingId=null; teacherTab='list'; renderTeacher();
+  }
+}
+
+/* ---- 백업 / 복원 / 초기화 ---- */
+function exportBackup(){
+  const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const d=new Date();
+  a.href=url; a.download=`조민규영어_백업_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast('백업 파일을 내려받았어요 ✓');
+}
+function importBackup(ev){
+  const file=ev.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.students){ showToast('올바른 백업 파일이 아닙니다'); return; }
+      DB=data; saveDB();
+      showToast('백업을 불러왔어요 ✓');
+      teacherTab='list'; renderTeacher();
+    }catch(err){ showToast('파일을 읽을 수 없습니다'); }
+  };
+  reader.readAsText(file);
+}
+function resetAll(){
+  if(confirm('모든 학생 데이터를 삭제하고 초기화할까요? 되돌릴 수 없습니다.\n(먼저 백업 내보내기를 권장합니다)')){
+    DB={ students:{} };
+    saveDB();
+    showToast('초기화되었습니다');
+    teacherTab='list'; renderTeacher();
+  }
+}
+
+
+/* ============================================================
+   명단 반영 파일 · 학생 로그인 계정
+   ============================================================ */
+function applyUpdateFile(ev){
+  const file=ev.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    let data; try{ data=JSON.parse(e.target.result); }catch(err){ showToast('파일을 읽을 수 없습니다'); return; }
+    if(data.type!=='cmk-dashboard-update'){ showToast('명단 반영 파일이 아닙니다'); return; }
+    exportBackup(); // 적용 전 지금 상태를 백업 파일로 내려받기
+    let added=0, updated=0, removed=0, renamed=0;
+    for(const [from,to] of Object.entries(data.rename||{})){
+      if(DB.students[from] && !DB.students[to]){ DB.students[to]=DB.students[from]; delete DB.students[from]; renamed++; }
+    }
+    for(const id of [...(data.remove||[]), ...Object.keys(data.rename||{})]){ if(DB.students[id] && (data.remove||[]).includes(id)){ delete DB.students[id]; removed++; } try{ await window.FB.deleteDoc(window.FB.doc(window.FB.db,'dash_students',id)); delete lastStudentJson[id]; }catch(e){} }
+    for(const [id,u] of Object.entries(data.update||{})){
+      if(DB.students[id]){ Object.assign(DB.students[id], u); updated++; }
+      else if(data.full && data.full[id]){ DB.students[id]=JSON.parse(JSON.stringify(data.full[id])); added++; }
+    }
+    await saveDB();
+    showToast(`명단 반영: 새 학생 ${added} · 수정 ${updated} · 퇴원 정리 ${removed}${renamed?` · 아이디 변경 ${renamed}`:''}`);
+    teacherTab='list'; renderTeacher();
+  };
+  reader.readAsText(file);
+}
+async function makeAccounts(){
+  const ids=Object.keys(DB.students);
+  if(!ids.length){ showToast('학생이 없어요'); return; }
+  if(!confirm(`학생 ${ids.length}명의 로그인 계정을 만들까요?\n이미 계정이 있는 학생은 건너뛰어요.\n처음 비밀번호: 아이디+0000`)) return;
+  let made=0, had=0, fail=[];
+  for(const id of ids){
+    try{ await window.FB.createUser(id+DOMAIN, initialPw(id)); made++; }
+    catch(e){ if(e && e.code==='auth/email-already-in-use') had++; else fail.push(id); }
+  }
+  await saveDB();
+  showToast(`계정 만들기: 새로 ${made}명 · 이미 있음 ${had}명${fail.length?` · 실패 ${fail.join(', ')}`:''}`);
+}
+
+/* ============================================================
+   KAKAO SUMMARY
+   ============================================================ */
+function openKakao(id){
+  const s=DB.students[id];
+  const wc=weekCount(s.month);
+  const fd=finishDate(s);
+  const dw=s.weeks.slice(0,wc).filter(w=>w.done).length;
+
+  let wkText="";
+  for(let i=0;i<wc;i++){
+    const w=s.weeks[i]||{goal:"",done:false};
+    wkText+=`${i+1}주차) ${w.goal||'-'} ${w.done?'✅':'⬜'}\n`;
+  }
+
+  const text =
+`[조민규영어] ${s.name} 학생 학습 안내 (${s.month}월)
+${[s.school,s.grade].filter(Boolean).join(' ')}
+
+📊 현재 레벨${s.overallLv?` (종합 ${lvWithGrade(s.overallLv)}${s.overallRank?', '+s.overallRank:''})`:''}${s.testDate?`
+   [${s.testDate} NELT 기준]`:''}
+· 단어 ${s.level.word}${(s.rank&&s.rank.word)?' ('+s.rank.word+')':''}
+· 문법 ${s.level.grammar}${(s.rank&&s.rank.grammar)?' ('+s.rank.grammar+')':''}
+· 독해 ${s.level.reading}${(s.rank&&s.rank.reading)?' ('+s.rank.reading+')':''}
+· 듣기 ${s.level.listening||'-'}${(s.rank&&s.rank.listening)?' ('+s.rank.listening+')':''}
+· 어휘량 ${(s.vocabSize||0).toLocaleString()}단어 (목표 6,000)
+
+📖 현재 교재: 『${s.book}』
+· 오늘 학습: ${s.todayStudy}
+· 오늘 숙제: ${s.todayHw}${(()=>{const bk=bookInfo(s.vocabBook);if(!s.vocabBook||!bk)return '';const day=Math.min(s.vocabDay||0,bk.days);return `\n\n📗 단어책: ${s.vocabBook}\n· 진도 Day ${day}/${bk.days} (${pct(day,bk.days)}%)`;})()}${(()=>{const gb=grammarInfo(s.grammarBook);if(!s.grammarBook||!gb)return '';const total=gb.chapters.length;const ch=Math.min(s.grammarCh||0,total);const cn=ch>0?gb.chapters[ch-1]:'';return `\n\n📕 문법: ${s.grammarBook}\n· 진도 Ch.${ch}/${total} (${pct(ch,total)}%)${cn?' · 최근 '+cn:''}${s.grammarPage?' · p.'+s.grammarPage:''}`;})()}${(()=>{const rb=readingInfo(s.readingBook);if(!s.readingBook||!rb)return '';const total=rb.chapters.length;const u=rb.unit;const n=Math.min(s.readingCh||0,total);const cn=n>0?rb.chapters[n-1]:'';return `\n\n📖 독해: ${s.readingBook}\n· 진도 ${u} ${n}/${total} (${pct(n,total)}%)${cn?' · 최근 '+cn:''}${s.readingPage?' · p.'+s.readingPage:''}`;})()}${(()=>{const eb=essayInfo(s.essayBook);if(!s.essayBook||!eb)return '';const total=eb.chapters.length;const u=eb.unit;const n=Math.min(s.essayCh||0,total);const cn=n>0?eb.chapters[n-1]:'';return `\n\n📘 서술형: ${s.essayBook}\n· 진도 ${u} ${n}/${total} (${pct(n,total)}%)${cn?' · 최근 '+cn:''}${s.essayPage?' · p.'+s.essayPage:''}`;})()}${(()=>{const ub=usageInfo(s.usageBook);if(!s.usageBook||!ub)return '';const total=ub.byProblem?ub.total:ub.chapters.length;const u=ub.unit;const n=Math.min(s.usageCh||0,total);const cn=(!ub.byProblem&&n>0)?ub.chapters[n-1]:'';return `\n\n📙 어법: ${s.usageBook}\n· 진도 ${u} ${n}/${total} (${pct(n,total)}%)${cn?' · 최근 '+cn:''}${s.usagePage?' · p.'+s.usagePage:''}`;})()}${(()=>{const mk=s.mocks||{};let done=[];Object.keys(MOCK_SETS).forEach(gk=>{mockList(gk).forEach(m=>{const rec=(mk[gk]||{})[m.key];if(rec&&rec.done)done.push(`${gk} ${m.label}${(rec.score!==undefined&&rec.score!==null)?' '+rec.score+'점':''}`);});});if(done.length===0)return '';return `\n\n📝 모의고사 (${done.length}회)\n· ${done.join('\n· ')}`;})()}
+
+🎯 이번 달 주차별 목표 (${dw}/${wc} 달성)
+${wkText}
+📅 이 속도면 『${s.book}』 교재는
+   ${fd.y}년 ${fd.m}월 완료 예정입니다.
+
+가정에서도 숙제 점검 부탁드립니다. 감사합니다 🙏
+- 조민규영어`;
+
+  const bg=document.createElement('div');
+  bg.className='modal-bg';
+  bg.innerHTML=`
+    <div class="modal">
+      <h3>💬 학부모 카톡 발송 요약</h3>
+      <div class="sub">아래 내용을 복사해서 카카오톡에 붙여넣으세요.</div>
+      <textarea id="kakaoText">${text}</textarea>
+      <div class="actions">
+        <button class="btn btn-kakao" onclick="copyKakao()">📋 복사하기</button>
+        <button class="btn btn-ghost" onclick="this.closest('.modal-bg').remove()">닫기</button>
+      </div>
+    </div>`;
+  bg.addEventListener('click',e=>{ if(e.target===bg) bg.remove(); });
+  document.body.appendChild(bg);
+}
+function copyKakao(){
+  const t=document.getElementById('kakaoText');
+  t.select();
+  navigator.clipboard.writeText(t.value).then(()=>showToast('복사완료! 카톡에 붙여넣으세요 ✓'))
+    .catch(()=>{ document.execCommand('copy'); showToast('복사완료 ✓'); });
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+let toastTimer=null;
+function showToast(msg){
+  const old=document.querySelector('.toast'); if(old) old.remove();
+  const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
+  document.body.appendChild(t);
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.remove(),2200);
+}
+</script>
+</body>
+</html>
