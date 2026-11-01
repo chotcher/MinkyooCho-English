@@ -234,7 +234,7 @@
     <h1>조민규영어 <span style="color:#2f6fed">학습 대시보드</span></h1>
     <div class="sub">학원 아이디로 로그인하세요 · 보카 키우기와 같은 비밀번호예요</div>
     <div class="err" id="loginErr"></div>
-    <input type="text" id="loginId" placeholder="아이디 (예: cmk101 / teacher)" autocomplete="off" autocapitalize="off">
+    <input type="text" id="loginId" placeholder="아이디 (예: cmk101)" autocomplete="off" autocapitalize="off">
     <input type="password" id="loginPw" placeholder="비밀번호">
     <button class="btn-primary" onclick="doLogin()">로그인</button>
   </div>
@@ -402,6 +402,7 @@ let editingId = null;
 /* ============================================================
    PERSISTENCE  (Firebase Firestore 클라우드 저장)
    ============================================================ */
+const TEACHER_ID = "chotcher";      // 선생님 로그인 아이디 (Firebase: chotcher@cmkvoca.app)
 const DOMAIN = "@cmkvoca.app";          // Firebase 로그인 아이디 뒤에 붙는 주소 (보카 키우기와 같은 계정)
 const initialPw = id => id + "0000";     // 선생님이 만든 학생 계정의 처음 비밀번호
 const DOC_REF_PATH = ["appdata","main"];
@@ -476,7 +477,7 @@ async function doLogin(){
     err.textContent = "아이디 또는 비밀번호가 올바르지 않습니다."; return;
   }
   try{
-    if(id === "teacher"){
+    if(id === TEACHER_ID){
       session = { role:'teacher' };
       await initCloud();
       err.textContent = ""; enterApp(); return;
