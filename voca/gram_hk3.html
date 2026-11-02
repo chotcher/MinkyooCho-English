@@ -1,4 +1,4 @@
-<title>문법 키우기 중3</title>
+<title>문법 · 해커스 중3</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
@@ -222,7 +222,7 @@ function home(){
   const myTags = new Set([...CH.units.map(u=>u.tag), "ch"+CH.chapter.id]);
   const myWrong = Object.values(ST.wrong).filter(w=>myTags.has(w.tag)); const wrongN = myWrong.length;
   $("#app").innerHTML = `
-  <div class="top"><button class="brand" id="hm">문법 키우기<small>조민규영어</small></button><span class="sp"></span><label class="vlab" for="vsel">발음</label><select id="vsel" class="vsel" aria-label="영어 발음 목소리"></select><button class="btn ghost sm" id="vt" aria-label="발음 들어 보기">🔊</button>${HOST?"":'<button class="btn ghost sm" id="rs">기록 지우기</button>'}</div>
+  <div class="top"><button class="brand" id="hm">${esc(BOOK.title)}<small>문법</small></button><span class="sp"></span><label class="vlab" for="vsel">발음</label><select id="vsel" class="vsel" aria-label="영어 발음 목소리"></select><button class="btn ghost sm" id="vt" aria-label="발음 들어 보기">🔊</button>${HOST?"":'<button class="btn ghost sm" id="rs">기록 지우기</button>'}</div>
   <div class="tabs" role="tablist">${BOOK.chapters.map((c,k)=>{const pr=chapterProgress(c);return `<button class="tab ${c===CH?"on":""}" role="tab" aria-selected="${c===CH}" data-ch="${k}"><b>Ch.${+c.chapter.id}</b> ${esc(c.chapter.name)}<small>${pr.done}/${pr.total}</small></button>`}).join("")}</div>
   <h1>${esc(CH.chapter.title)}</h1>
   <p class="lead">유닛마다 개념톡 → 워크북 연습 → 연습 A → 연습 B → 최종 누적학습 순서로 해요. 최종 누적학습은 이 유닛과 앞에서 배운 유닛·챕터 문제를 섞어서 다시 풀어요. 목표 점수를 넘으면 초록색으로 바뀌어요.</p>
