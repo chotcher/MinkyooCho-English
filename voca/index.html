@@ -7,7 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="보카 키우기">
-<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}img{max-width:100%}.herosimple{margin-top:6px}.login{grid-template-columns:minmax(0,460px)!important;justify-content:center}.deskwrap{width:104px;height:113px;border-radius:18px;background:#e3e9f1;display:grid;place-items:center;flex:none}.deskava{width:84px;height:91px}
+</style>
 <title>조민규영어 보카 키우기</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -579,7 +580,7 @@ function questHTML(){const Q=questsToday();if(!Q)return '';const all=Q.list.ever
   return `<div class="quests panel"><div class="row"><b class="qt">오늘의 퀘스트</b><span class="muted" style="font-size:12.5px">매일 새로 바뀌어요 · 하나당 +${QREW} XP, 셋 다 하면 보물상자 +${CHEST} XP</span></div>
   <div class="qlist">${Q.list.map((x,n)=>{const q=QPOOL.find(z=>z.id===x.id)||{t:'',goal:1};const done=x.prog>=q.goal;return `<div class="q ${x.claimed?'claimed':done?'ready':''}"><div class="qn">${esc(q.t)}</div><div class="qbar"><i style="width:${Math.min(100,x.prog/q.goal*100)}%"></i></div><div class="qs"><span>${Math.min(x.prog,q.goal)} / ${q.goal}</span>${x.claimed?'<span class="qok">받음</span>':done?`<button class="btn sm primary" data-claim="${n}">+${QREW} XP 받기</button>`:''}</div></div>`}).join('')}
   <div class="q chestq ${Q.chest?'claimed':all?'ready':''}"><canvas class="chestc" width="16" height="16" aria-label="보물상자"></canvas><div class="qs">${Q.chest?'<span class="qok">열었어요</span>':all?'<button class="btn sm primary" id="openChest">보물상자 열기</button>':'<span class="muted">퀘스트 3개 완료 시</span>'}</div></div></div></div>`}
-function grantXP(amount,label){const before=lvInfo(U.xp);U.xp+=amount;addWeek(amount,0);const after=lvInfo(U.xp);const unlocked=[];for(let l=before.lv+1;l<=after.lv;l++){const it=progAt(U.av.job,l);if(it)unlocked.push(it)}save();home();toast(`${label} +${amount} XP`);if(after.lv>before.lv)setTimeout(()=>levelUp(before.lv,after.lv,unlocked),300)}
+function grantXP(amount,label){const before=lvInfo(U.xp);U.xp+=amount;addWeek(amount,0);const after=lvInfo(U.xp);const unlocked=[];if(GAME())for(let l=before.lv+1;l<=after.lv;l++){const it=progAt(U.av.job,l);if(it)unlocked.push(it)}save();home();toast(`${label} +${amount} XP`);if(after.lv>before.lv&&GAME())setTimeout(()=>levelUp(before.lv,after.lv,unlocked),300)}
 function bindQuests(){const Q=questsToday();if(!Q)return;
   document.querySelectorAll('[data-claim]').forEach(b=>b.onclick=()=>{const x=Q.list[+b.dataset.claim];if(x.claimed)return;x.claimed=true;sfx.done();grantXP(QREW,'퀘스트 완료')});
   const oc=$('#openChest');if(oc)oc.onclick=()=>{if(Q.chest)return;Q.chest=true;const c=document.querySelector('canvas.chestc');sfx.chest();if(c)replay(c.parentElement,'opening');setTimeout(()=>grantXP(CHEST,'보물상자'),700)};
@@ -659,7 +660,7 @@ function pwChange(first){
    <form id="pf" autocomplete="off" style="display:grid;gap:8px"><div class="field"><label for="p1">새 비밀번호 (6자 이상)</label><input id="p1" type="password"></div>
    <div class="field"><label for="p2">한 번 더</label><input id="p2" type="password"></div><div class="err" id="perr"></div>
    <div class="row"><button class="btn primary" type="submit">바꾸기</button>${first?'<button class="btn ghost" type="button" id="plater">다음에 바꾸기</button>':''}</div></form></div>`;
-  bindCommon();const go=()=>{if(!U.av)return pick();save();enter()};
+  bindCommon();const go=()=>{if(!U.av&&CM()===1)return pick();save();enter()};
   if(first)$('#plater').onclick=go;
   $('#pf').onsubmit=async e=>{e.preventDefault();const a=$('#p1').value,b=$('#p2').value;
     if(a.length<6){$('#perr').textContent='6자 이상으로 정해 주세요.';return}if(a!==b){$('#perr').textContent='두 비밀번호가 달라요.';return}
@@ -670,6 +671,44 @@ function pwChange(first){
 let U=null, VIEW={tab:0};
 function newUser(id,pw){return{id,pw,book:BOOKS[0].id,nick:'',av:null,xp:0,sets:{},daily:{date:'',xp:0,runs:{}},streak:{last:'',n:0},wrong:{},total:{sessions:0,words:0},last:'',created:today()}}
 function save(){if(U&&U.id!=='teacher'&&(ROLE==='student'||ROLE==='demo'))Store.saveUser(U)}
+/* ================= 캐릭터 방식 (v18) — 1 게임 캐릭터 · 2 교실 캐릭터 · 3 캐릭터 없음 ================= */
+const CMODES=[[1,'게임 캐릭터'],[2,'교실 캐릭터'],[3,'캐릭터 없음']];
+function gradeOf(u){const s=`${u.school||''}${u.grade||''}`;const m=s.match(/(초|중|고)\D*?(\d)/);return m?{k:m[1],n:+m[2]}:null}
+function cmodeDefault(u){const g=gradeOf(u||{});return g&&(g.k==='고'||(g.k==='중'&&g.n>=2))?3:2}
+function cmodeOf(u){return u&&u.cmode?+u.cmode:cmodeDefault(u)}
+const CM=()=>cmodeOf(U);
+const GAME=()=>CM()===1&&!!(U&&U.av);
+function hashName(s){let h=7;for(const c of String(s))h=(h*31+c.charCodeAt(0))>>>0;return h}
+function deskAvatar(u,cls=''){
+  const n=u.name||u.id,h=hashName(n),HAIR=['#2b2220','#3a2a22','#1c1c24','#4a3426','#2f2523'],hair=HAIR[h%HAIR.length];
+  const g=gradeOf(u),shirt=!g?'#1d5fd0':g.k==='초'?'#2fa39a':g.k==='고'?'#c0436b':['#4a9be0','#4a9be0','#1d5fd0','#4b3fb0'][Math.min(g.n,3)];
+  const st=h%3;let back='',front;
+  if(u.girl){
+    back=st===1?`<path d="M33 11c7 0 10 7 8 15-1-5-4-8-7-9z" fill="${hair}"/><circle cx="34" cy="11" r="2.4" fill="#e76f9a"/>`
+      :`<path d="M8 25c0-12 7-19 15-19s15 7 15 19v${st===2?9:14}c-2 2-5 2-6 0V27H14v${st===2?7:12}c-1 2-4 2-6 0z" fill="${hair}"/>`;
+    front=st===2?`<path d="M10 23c0-10 6-15 13-15s13 5 13 15c-5-2-9-6-11-9-2 4-8 8-15 9z" fill="${hair}"/><rect x="28" y="12" width="6" height="2.6" rx="1.3" fill="#e76f9a" transform="rotate(-25 31 13)"/>`
+      :`<path d="M10 22c0-9 6-14 13-14s13 5 13 14c-4-3-8-5-13-5-4 0-6 2-7 4-2-1-4 0-6 1z" fill="${hair}"/>`;
+  }else{
+    front=[`<path d="M10 22c0-10 7-15 13-15s13 5 13 15c-3-4-7-6-13-6s-10 2-13 6z" fill="${hair}"/>`,
+      `<path d="M10 22c0-9 6-14 13-14s13 5 13 14c-2-2-4-3-6-3l-2-4-3 4c-4 0-9 1-15 3z" fill="${hair}"/>`,
+      `<path d="M10 21c0-9 6-14 13-14 8 0 13 5 13 13-4-1-9-3-12-6-3 3-8 5-14 7z" fill="${hair}"/>`][st];
+  }
+  return `<svg class="deskava ${cls}" viewBox="0 0 46 50" aria-hidden="true"><path d="M8 50c0-9 7-14 15-14s15 5 15 14z" fill="${shirt}"/>${back}<circle cx="23" cy="22" r="13" fill="#f6d3b4"/>${front}<circle cx="18" cy="24" r="1.8" fill="#1d2430"/><circle cx="28" cy="24" r="1.8" fill="#1d2430"/><circle cx="15" cy="28" r="2.2" fill="#f2a99a" opacity=".55"/><circle cx="31" cy="28" r="2.2" fill="#f2a99a" opacity=".55"/><path d="M20 30q3 2.5 6 0" stroke="#1d2430" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>`;
+}
+function heroSimple(){
+  dailyReset();const c=CM(),L=lvInfo(U.xp);
+  const streak=U.streak.last===today()||U.streak.last===yesterday()?U.streak.n:0;
+  const runs=Object.values(U.daily.runs||{}).reduce((a,b)=>a+b,0);
+  return `<div class="panel herosimple" style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">
+    ${c===2?`<div class="deskwrap">${deskAvatar(U)}</div>`:''}
+    <div style="flex:1;min-width:220px;display:grid;gap:10px">
+      <div class="row"><div><div class="muted" style="font-size:13px;font-weight:600">${esc(CLASSES[U.cls]||'')}${U.school?` · ${esc(U.school)} ${esc(U.grade||'')}`:''}</div><h2 style="font-size:26px">${esc(U.name||U.nick||U.id)}</h2></div><span class="spacer"></span>${c===2?`<div class="lvl">Lv.${L.lv}<small>/100</small></div>`:''}</div>
+      ${c===2?`<div><div class="xpbar" aria-label="경험치"><i style="width:${L.pct}%"></i></div><div class="row muted" style="font-size:13px;margin-top:4px;font-variant-numeric:tabular-nums"><span>${L.lv<100?`다음 레벨까지 ${fmt(L.need-L.cur)} XP`:'최고 레벨'}</span><span class="spacer"></span><span>오늘 ${fmt(U.daily.xp)} XP</span></div></div>`:''}
+      <div class="stats"><div class="stat"><b>${runs}</b><span>오늘 학습</span></div><div class="stat"><b>${streak}일</b><span>연속 학습</span></div><div class="stat"><b>${fmt(U.total.words)}</b><span>푼 단어 수</span></div></div>
+      <div class="row"><button class="btn" id="wrongBtn">오답 노트 ${Object.keys(U.wrong).length}</button><span class="spacer"></span><button class="btn ghost" id="out">로그아웃</button></div>
+    </div></div>`;
+}
+
 /* ================= 문법 키우기 연결 (v16) ================= */
 const GBOOKS=[['hk1','해커스 중학영문법 1학년','중1'],['hk2','해커스 중학영문법 2학년','중2'],['hk3','해커스 중학영문법 3학년','중3'],['hof','해커스 어법 제대로','어법 제대로'],['eos','어법끝 START','어법끝 START']];
 let GLV=null;
@@ -682,8 +721,8 @@ window.GRAM={
 function gramXP(n,label){if(!U||!(ROLE==='student'||ROLE==='demo'))return;dailyReset();
   const gain=Math.max(0,Math.min(n,DAILY_CAP-U.daily.xp));if(!gain){toast('오늘 받을 수 있는 경험치를 다 받았어요');return}
   const before=lvInfo(U.xp);U.xp+=gain;U.daily.xp+=gain;addWeek(gain,0);const after=lvInfo(U.xp);
-  if(after.lv>before.lv&&U.av){const un=[];for(let l=before.lv+1;l<=after.lv;l++){const it=progAt(U.av.job,l);if(it)un.push(it)}GLV=GLV?[GLV[0],after.lv,GLV[2].concat(un)]:[before.lv,after.lv,un]}
-  U.last=new Date().toISOString();save();toast(`${label} +${gain} XP`)}
+  if(after.lv>before.lv&&GAME()){const un=[];for(let l=before.lv+1;l<=after.lv;l++){const it=progAt(U.av.job,l);if(it)un.push(it)}GLV=GLV?[GLV[0],after.lv,GLV[2].concat(un)]:[before.lv,after.lv,un]}
+  U.last=new Date().toISOString();save();if(CM()!==3)toast(`${label} +${gain} XP`)}
 function gramCard(){if(!U||!U.gbook)return '';const g=GBOOKS.find(b=>b[0]===U.gbook);if(!g)return '';
   const p=(U.gram&&U.gram[U.gbook]&&U.gram[U.gbook].prog)||null;
   return `<div class="mybook gramcard"><span class="bn">문법 · 선생님이 정한 교재</span><b>${esc(g[1])}</b><span class="bp">${p?`${p.done}/${p.total} 단계 통과`:'아직 시작 전이에요'}</span><div class="xpbar" style="height:8px"><i style="width:${p&&p.total?Math.round(p.done/p.total*100):0}%"></i></div><button class="btn primary" id="gramGo" type="button" style="margin-top:8px;justify-self:start">문법 공부하기 →</button></div>`}
@@ -710,10 +749,9 @@ function login(msg=''){
   U=null;if(ROLE&&ROLE!=='demo'){return logout()}ROLE=null;
   $('#app').innerHTML=`${topbar()}
   <div class="login">
-    ${stageHTML(DEMO_AV,62,'예시 · 성기사 Lv.62')}
     <div class="panel">
-      <h2 style="font-size:26px;margin-bottom:4px">단어를 외우면 캐릭터가 자라요</h2>
-      <p class="muted" style="margin:0 0 16px">학생 대시보드와 같은 아이디·비밀번호로 들어가세요. 처음이면 캐릭터를 고릅니다.</p>
+      <h2 style="font-size:26px;margin-bottom:4px">로그인</h2>
+      <p class="muted" style="margin:0 0 16px">학생 대시보드와 같은 아이디·비밀번호로 들어가세요.</p>
       <form id="lf" autocomplete="off">
         <div class="field"><label for="lid">아이디</label><input id="lid" placeholder="예: cmk101" autocapitalize="off" spellcheck="false"></div>
         <div class="field"><label for="lpw">비밀번호</label><input id="lpw" type="password" placeholder="비밀번호"></div>
@@ -732,9 +770,9 @@ function login(msg=''){
     if(ROLE==='teacher')return teacher();
     if(!U.book)U.book=BOOKS[0].id;
     if(pw===id+'0000')return pwChange(true);
-    if(!U.av)return pick();save();enter()};
+    if(!U.av&&CM()===1)return pick();save();enter()};
   $('#cred').onclick=credits;
-  $('#demo').onclick=()=>{ROLE='demo';let u=Store.loadUser('demo');if(!u){u=newUser('demo','0000');u.nick='체험기사';u.av={...DEMO_AV,hide:{}};u.bookBy='teacher';u.xp=cum(47)+300;u.streak={last:yesterday(),n:4};u.sets={'mhard:0':{card:1,recall:95,spell:88,match:42,test:100},'mhard:1':{card:1,recall:90},'mhard:3':{card:1}};u.book='mhard';u.bookBy='teacher';u.gbook='hk1';u.total={sessions:31,words:612}}U=migrate(u);save();enter()};
+  $('#demo').onclick=()=>{ROLE='demo';let u=Store.loadUser('demo');if(!u){u=newUser('demo','0000');u.nick='체험기사';u.av={...DEMO_AV,hide:{}};u.bookBy='teacher';u.xp=cum(47)+300;u.streak={last:yesterday(),n:4};u.sets={'mhard:0':{card:1,recall:95,spell:88,match:42,test:100},'mhard:1':{card:1,recall:90},'mhard:3':{card:1}};u.book='mhard';u.bookBy='teacher';u.gbook='hk1';u.cmode=1;u.total={sessions:31,words:612}}U=migrate(u);save();enter()};
 }
 
 const DEMO_AV={job:'warrior',body:'male',skin:'light',hair:'hair_messy1',hc:'dark_brown',cloth:'blue',cape:'red',hide:{}};
@@ -772,7 +810,7 @@ function pick(){
   };draw();
 }
 
-function heroHTML(){
+function heroHTML(){if(!GAME())return heroSimple();
   dailyReset();const L=lvInfo(U.xp),av=U.av,nr=nextReward(av.job,L.lv);
   const nrText=nr?(nr.tt?`Lv.${nr.l}에 <b>${nr.tt[1]}</b>(으)로 승급해요`:nr.it?`Lv.${nr.l}에 <b>${nr.it.nm}</b>을(를) 받아요`:`Lv.${nr.l}에 새 장소 <b>${nr.sc}</b>(으)로 가요`):'모든 성장을 끝냈어요!';
   const nrIc=nr&&nr.it?itemCanvas(av,nr.it):charCanvas(av,nr?nr.l:100,{nohide:true});
@@ -790,7 +828,7 @@ function heroHTML(){
 
 function home(){
   if(!U)return login();
-  if(!U.bookBy){$('#app').innerHTML=`${topbar()}${heroHTML()}${questHTML()}${weekHTML()}${gramCard()}<div class="panel waitbook"><h3 style="font-size:20px">아직 단어책이 정해지지 않았어요</h3><p class="muted" style="margin:6px 0 0">선생님이 내 아이디에 단어책을 배정하면 여기에 Day 목록이 나와요. 선생님께 말해 주세요. 오답 노트와 장비 화면은 지금도 볼 수 있어요.</p></div>`;bindCommon();bindQuests();bindWeek();bindGram();$('#room').onclick=room;$('#dexBtn').onclick=()=>{room();const d=document.getElementById('dex');if(d)d.scrollIntoView()};$('#wrongBtn').onclick=()=>setView('W');$('#out').onclick=logout;return}
+  if(!U.bookBy){$('#app').innerHTML=`${topbar()}${heroHTML()}${GAME()?questHTML()+weekHTML():''}${gramCard()}<div class="panel waitbook"><h3 style="font-size:20px">아직 단어책이 정해지지 않았어요</h3><p class="muted" style="margin:6px 0 0">선생님이 내 아이디에 단어책을 배정하면 여기에 Day 목록이 나와요. 선생님께 말해 주세요. 오답 노트와 장비 화면은 지금도 볼 수 있어요.</p></div>`;bindCommon();bindQuests();bindWeek();bindGram();if($('#room'))$('#room').onclick=room;if($('#dexBtn'))$('#dexBtn').onclick=()=>{room();const d=document.getElementById('dex');if(d)d.scrollIntoView()};$('#wrongBtn').onclick=()=>setView('W');$('#out').onclick=logout;return}
   if(DATA.id!==U.book)useBook(U.book);
   if(!DATA.tabs.some(t=>t[0]===VIEW.tab))VIEW.tab=DATA.tabs[0][0];
   const R=Object.fromEntries(DATA.tabs);
@@ -800,7 +838,7 @@ function home(){
   const setRow=s=>`<button class="setbtn" data-set="${s.i}"><span class="nm">${esc(s.d?s.t:s.k==='cum'?s.t.replace(/Day\d+-\d+ · /,''):s.k==='app'?s.t:s.t.replace('④ 형태변화 ',''))}</span><span class="cnt">${s.w.length}</span>${setDots(s.i)}</button>`;
   const dayPct=d=>{const ss=sets.filter(s=>s.d===d);const done=ss.reduce((a,s)=>a+MODES.filter(([m])=>(U.sets[sk(s.i)]||{})[m]!=null).length,0);return Math.round(done/(ss.length*5)*100)};
   const bi=BOOKS.findIndex(b=>b.id===DATA.id),bookDone=Object.keys(U.sets).filter(k=>k.startsWith(DATA.id+':')).length;
-  $('#app').innerHTML=`${topbar()}${heroHTML()}${questHTML()}${weekHTML()}${gramCard()}
+  $('#app').innerHTML=`${topbar()}${heroHTML()}${GAME()?questHTML()+weekHTML():''}${gramCard()}
   <div class="mybook"><span class="bn">${bi+1}단계 · 선생님이 정한 단어책</span><b>${esc(DATA.name)}</b><span class="bp">${U.day?`지금 위치 Day ${pad(U.day)} · `:''}${bookDone}/${DATA.sets.length} 세트 학습</span><div class="xpbar" style="height:8px"><i style="width:${Math.round(bookDone/DATA.sets.length*100)}%"></i></div></div>
   <div class="tabs" role="tablist">${DATA.tabs.map(([r,l])=>`<button class="tab ${r===VIEW.tab?'on':''}" data-tab="${r}" role="tab" aria-selected="${r===VIEW.tab}">${l}</button>`).join('')}</div>
   <div class="days">${days.map(d=>`<div class="day ${U.day===d?'here':''}"><h3>Day ${pad(d)}${U.day===d?'<span class="herebadge">지금 여기</span>':''}<span class="pct">${dayPct(d)}%</span></h3>${sets.filter(s=>s.d===d).map(setRow).join('')}</div>`).join('')}</div>
@@ -810,7 +848,7 @@ function home(){
   bindCommon();
   document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{VIEW.tab=+b.dataset.tab;home()});
   document.querySelectorAll('[data-set]').forEach(b=>b.onclick=()=>setView(+b.dataset.set));
-  bindQuests();bindWeek();bindGram();$('#room').onclick=room;$('#dexBtn').onclick=()=>{room();const d=document.getElementById('dex');if(d)d.scrollIntoView()};$('#wrongBtn').onclick=()=>setView('W');$('#out').onclick=logout;
+  bindQuests();bindWeek();bindGram();if($('#room'))$('#room').onclick=room;if($('#dexBtn'))$('#dexBtn').onclick=()=>{room();const d=document.getElementById('dex');if(d)d.scrollIntoView()};$('#wrongBtn').onclick=()=>setView('W');$('#out').onclick=logout;
 }
 
 function setView(i){
@@ -820,7 +858,7 @@ function setView(i){
   const can=m=>W.length>=(m==='match'?3:m==='recall'||m==='test'?1:1);
   $('#app').innerHTML=`${topbar('<button class="btn" data-go="home">← 목록</button>')}
   <div class="muted" style="font-size:13px;font-weight:600">${esc(DATA.name)}</div><h2 style="font-size:26px">${esc(title)}</h2><p class="muted" style="margin:2px 0 0">${W.length}단어${i==='W'?' · 맞히면 2번째에 오답 노트에서 빠져요':''}</p>
-  ${W.length?`<div class="modes">${MODES.map(([m,nm,ds])=>`<button class="mode" data-m="${m}" ${can(m)?'':'disabled style="opacity:.45"'}><b>${nm}</b><span>${ds}</span>${r[m]!=null?`<span class="done">최고 기록 ${lab[m](r[m])}</span>`:''}</button>`).join('')}</div>`:'<div class="panel" style="margin-top:14px">아직 틀린 단어가 없어요. 리콜·스펠·테스트에서 틀린 단어가 여기 모여요.</div>'}
+  ${W.length?`<div class="modes">${MODES.map(([m,nm,ds])=>`<button class="mode" data-m="${m}" ${can(m)?'':'disabled style="opacity:.45"'}><b>${nm}</b><span>${GAME()?ds:ds.replace(/ · (몬스터 사냥|보스전)/,'')}</span>${r[m]!=null?`<span class="done">최고 기록 ${lab[m](r[m])}</span>`:''}</button>`).join('')}</div>`:'<div class="panel" style="margin-top:14px">아직 틀린 단어가 없어요. 리콜·스펠·테스트에서 틀린 단어가 여기 모여요.</div>'}
   <div class="wlist">${W.map(([w,m])=>`<div class="witem"><button class="en" data-say="${esc(w)}" aria-label="${esc(w)} 발음 듣기">${esc(w)}</button>${meanHTML(m)}</div>`).join('')}</div>`;
   bindCommon();
   document.querySelectorAll('[data-say]').forEach(b=>b.onclick=()=>say(b.dataset.say));
@@ -829,7 +867,7 @@ function setView(i){
 
 /* ================= study modes ================= */
 let SES=null;
-function run(m,i){SES={m,i,words:wordsOf(i).map(([w,me])=>({w,m:me})),right:0,wrong:0,wrongList:[],start:Date.now(),firstTry:new Set(),miss:new Set()};if(['recall','spell','test'].includes(m)){const n=m==='test'?Math.min(30,SES.words.length):SES.words.length;const mm=pickMonster(m==='test',lvInfo(U.xp).lv);SES.mon={m:mm,hp:n,max:n,hits:0,combo:0,maxCombo:0,shiny:mm.t<5&&Math.random()<0.07}}({card:runCard,recall:runRecall,spell:runSpell,match:runMatch,test:runTest})[m]()}
+function run(m,i){SES={m,i,words:wordsOf(i).map(([w,me])=>({w,m:me})),right:0,wrong:0,wrongList:[],start:Date.now(),firstTry:new Set(),miss:new Set()};if(GAME()&&['recall','spell','test'].includes(m)){const n=m==='test'?Math.min(30,SES.words.length):SES.words.length;const mm=pickMonster(m==='test',lvInfo(U.xp).lv);SES.mon={m:mm,hp:n,max:n,hits:0,combo:0,maxCombo:0,shiny:mm.t<5&&Math.random()<0.07}}({card:runCard,recall:runRecall,spell:runSpell,match:runMatch,test:runTest})[m]()}
 function shell(inner,progress,total){return `${topbar('<button class="btn" id="quit">그만하기</button>')}<div class="study"><div class="prog"><span class="muted" style="font-size:13px;font-variant-numeric:tabular-nums">${progress}/${total}</span><div class="xpbar"><i style="width:${total?progress/total*100:0}%"></i></div></div>${battleHTML()}${inner}</div>`}
 function bindQuit(){bindCommon();const q=$('#quit');if(q)q.onclick=()=>setView(SES.i)}
 function distractors(word,mean,n,field){const pool=SES.words.filter(x=>x.w!==word);let cands=shuffle(pool);if(cands.length<n){const p=posOf(mean);cands=cands.concat(shuffle(POOLof().filter(([w,m])=>w!==word&&posOf(m)===p)).slice(0,40).map(([w,m])=>({w,m})))}const seen=new Set([field==='w'?word:mean]);const out=[];for(const c of cands){const v=c[field];if(!seen.has(v)){seen.add(v);out.push(c)}if(out.length>=n)break}return out}
@@ -953,15 +991,15 @@ function finish(){
   const before=lvInfo(U.xp);U.xp+=gain;const after=lvInfo(U.xp);U.daily.xp+=gain;U.daily.runs[key]=runs+1;addWeek(gain,MB?MB.max-MB.hp:0);
   U.total.sessions++;U.total.words+=n;U.last=new Date().toISOString();
   if(i!=='W'){const r=setRec(i);if(m==='match')r.match=r.match==null?rec:Math.min(r.match,rec);else r[m]=Math.max(r[m]||0,rec);r.at=today()}
-  const unlocked=[];for(let l=before.lv+1;l<=after.lv;l++){const it=progAt(U.av.job,l);if(it)unlocked.push(it)}
+  const unlocked=[];if(GAME())for(let l=before.lv+1;l<=after.lv;l++){const it=progAt(U.av.job,l);if(it)unlocked.push(it)}
   save();
   const wl=m==='test'?SES.wrongList:[...SES.miss].map(w=>words.find(x=>x.w===w)).filter(Boolean);
   $('#app').innerHTML=`${topbar()}<div class="result">
-    ${stageHTML(U.av,after.lv,`${titleOf(U.av.job,after.lv)} · ${SCENES[sceneOf(after.lv)][0]}`,{pet:U.pet})}
-    <div class="panel"><div class="row"><h2 style="font-size:24px">${m==='test'?`${rec}점!`:'학습 완료!'}</h2><span class="spacer"></span><div class="lvl" style="font-size:30px">Lv.${after.lv}</div></div>
+    ${GAME()?stageHTML(U.av,after.lv,`${titleOf(U.av.job,after.lv)} · ${SCENES[sceneOf(after.lv)][0]}`,{pet:U.pet}):''}
+    <div class="panel"><div class="row"><h2 style="font-size:24px">${m==='test'?`${rec}점!`:'학습 완료!'}</h2><span class="spacer"></span>${CM()===3?'':`<div class="lvl" style="font-size:30px">Lv.${after.lv}</div>`}</div>${CM()===3?`<div class="muted" style="margin-top:6px">${esc(lines[0][0])}</div>`:`
       <div class="xpbar" style="margin:10px 0 4px"><i id="xb" style="width:${after.lv>before.lv?0:before.pct}%"></i></div>
       <div class="muted" style="font-size:13px;text-align:right;font-variant-numeric:tabular-nums">${after.lv<100?`${fmt(after.cur)} / ${fmt(after.need)} XP`:'최고 레벨'}</div>
-      <div class="xplines" style="margin-top:10px">${lines.map(([t,v])=>`<div><span>${esc(t)}</span><span>${v==null?'':'+'+v}</span></div>`).join('')}<div class="tot"><span>받은 경험치</span><span>+${gain} XP</span></div></div></div>
+      <div class="xplines" style="margin-top:10px">${lines.map(([t,v])=>`<div><span>${esc(t)}</span><span>${v==null?'':'+'+v}</span></div>`).join('')}<div class="tot"><span>받은 경험치</span><span>+${gain} XP</span></div></div>`}</div>
     ${MB?`<div class="panel monres ${won?'':'fled'}">${monCanvas(MB.m,{cls:MB.shiny?'shiny':''})}<div><b style="font-size:18px">${won?`${MB.shiny?'황금 ':''}${esc(MB.m.nm)} 처치!${firstCatch?' <span class="newTag">NEW</span>':''}${MB.maxCombo>=3?` <span class="cTag">최대 콤보 ${MB.maxCombo}</span>`:''}`:`${esc(MB.m.nm)}이(가) 도망갔어요`}</b><div class="mr2">${won?`몬스터 도감 ${dexCount()}/${MONS.length} · ${esc(MB.m.nm)} ${U.dex[MB.m.k]}마리째${MB.hits?` · 맞은 횟수 ${MB.hits}`:' · 한 대도 안 맞았어요'}`:`남은 HP ${MB.hp}/${MB.max} · 테스트 100점이면 보스를 잡을 수 있어요`}</div></div></div>`:''}
     ${wl.length?`<div class="panel"><b>다시 볼 단어 ${wl.length}개</b> <span class="muted" style="font-size:13px">· 오답 노트에 모였어요</span><div class="wlist" style="margin-top:8px">${wl.map(x=>`<div class="witem"><span class="en">${esc(x.w)}</span>${meanHTML(x.m)}</div>`).join('')}</div></div>`:''}
     <div class="row"><button class="btn big" id="again" style="flex:1">한 번 더</button><button class="btn primary big" id="back" style="flex:1">세트로 돌아가기</button></div></div>`;
@@ -969,7 +1007,8 @@ function finish(){
   $('#again').onclick=()=>run(m,i);$('#back').onclick=()=>setView(i);
   requestAnimationFrame(()=>setTimeout(()=>{const xb=$('#xb');if(xb)xb.style.width=after.pct+'%';walkFor(2400)},60));
   if(gain>0)sfx.done();
-  if(after.lv>before.lv)setTimeout(()=>levelUp(before.lv,after.lv,unlocked),700);
+  if(after.lv>before.lv&&GAME())setTimeout(()=>levelUp(before.lv,after.lv,unlocked),700);
+  else if(after.lv>before.lv&&CM()===2)toast(`레벨 업! Lv.${after.lv}`);
 }
 function levelUp(from,to,items){
   sfx.lvl();const job=U.av.job,evo=titleIdx(job,to)>titleIdx(job,from),sceneNew=sceneOf(to)>sceneOf(from);
@@ -1030,9 +1069,10 @@ function teacher(msg=''){
   const list=ids.map(id=>migrate(getUser(id))).filter(Boolean).map(u=>({u,L:lvInfo(u.xp)})).sort((a,b)=>CO.indexOf(a.u.cls||'')-CO.indexOf(b.u.cls||'')||(a.u.name||a.u.id).localeCompare(b.u.name||b.u.id));
   const bookSel=(id,cur)=>`<select class="bsel" data-uid="${esc(id)}" aria-label="${esc(id)} 단어책"><option value="">— 배정 안 함 —</option>${BOOKS.map((b,n)=>`<option value="${b.id}" ${cur===b.id?'selected':''}>${n+1}단계 ${esc(b.short)}</option>`).join('')}</select>`;
   const nob=list.filter(({u})=>!u.bookBy).length;
+  const charSel=u=>`<select class="csel" data-cuid="${esc(u.id)}" aria-label="${esc(u.id)} 캐릭터 방식"><option value="" ${u.cmode?'':'selected'}>자동 (${cmodeDefault(u)}번)</option>${CMODES.map(([v,nm])=>`<option value="${v}" ${+u.cmode===v?'selected':''}>${v}. ${nm}</option>`).join('')}</select><label class="memo" style="display:flex;gap:4px;align-items:center"><input type="checkbox" class="cgirl" data-cuid="${esc(u.id)}" ${u.girl?'checked':''}> 여학생 모습</label>`;
   const gramSel=u=>{const g=u.gram&&u.gbook&&u.gram[u.gbook]&&u.gram[u.gbook].prog;return `<select class="gsel" data-guid="${esc(u.id)}" aria-label="${esc(u.id)} 문법 교재"><option value="">—</option>${GBOOKS.map(b=>`<option value="${b[0]}" ${u.gbook===b[0]?'selected':''}>${b[2]}</option>`).join('')}</select>${g?`<div class="memo">${g.done}/${g.total} 통과</div>`:''}`};
   $('#app').innerHTML=`${topbar('<button class="btn" id="tout">로그아웃</button>')}
-  <h2 style="font-size:24px">선생님 화면</h2><p class="muted" style="margin:2px 0 12px">학생 아이디마다 단어책 단계와 문법 교재(해커스 중1·중2·중3, 어법 제대로, 어법끝 START)를 정해 주세요. 학생은 배정된 책만 볼 수 있어요. 학생 명단·이름·반은 학생 대시보드에서 가져오고, 대시보드에서 단어책이나 Day를 바꾸면 여기 들어올 때 함께 바뀝니다.</p>
+  <h2 style="font-size:24px">선생님 화면</h2><p class="muted" style="margin:2px 0 12px">학생 아이디마다 단어책 단계, 문법 교재(해커스 중1·중2·중3, 어법 제대로, 어법끝 START), 캐릭터 방식을 정해 주세요. 캐릭터 방식은 1 게임 캐릭터 · 2 교실 캐릭터 · 3 캐릭터 없음이고, '자동'이면 초6·중1은 2번, 중2·중3은 3번이에요. 학생은 배정된 책만 볼 수 있어요. 학생 명단·이름·반은 학생 대시보드에서 가져오고, 대시보드에서 단어책이나 Day를 바꾸면 여기 들어올 때 함께 바뀝니다.</p>
   <form class="panel addst" id="addf" autocomplete="off">
     <b>학생 아이디 추가</b>
     <div class="row"><input id="nid" placeholder="아이디 이름 (예: cmk701 홍길동)" autocapitalize="off" spellcheck="false" aria-label="학생 아이디">${bookSel('',BOOKS[0].id).replace('class="bsel" data-uid=""','id="nbook"')}<button class="btn primary" type="submit">추가</button></div>
@@ -1041,8 +1081,8 @@ function teacher(msg=''){
   </form>
   <div class="panel addst" style="margin-top:12px"><b>반 전체에 한 번에 배정</b><div class="row"><select id="clsSel" aria-label="반">${Object.entries(CLASSES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select>${bookSel('',BOOKS[0].id).replace('class="bsel" data-uid=""','id="clsBook"')}<label style="font-size:13px;display:flex;gap:4px;align-items:center"><input type="checkbox" id="onlyNo" checked> 아직 배정 안 된 학생만</label><button class="btn" id="clsGo" type="button">배정</button></div><div class="row" style="margin-top:6px"><span style="font-size:13px;font-weight:600">문법 교재</span><select id="clsGram" aria-label="반 전체 문법 교재">${GBOOKS.map(b=>`<option value="${b[0]}">${esc(b[1])}</option>`).join('')}</select><button class="btn" id="clsGramGo" type="button">위에서 고른 반에 문법 배정</button></div></div>
   ${nob?`<div class="next" style="margin-top:12px">단어책이 아직 배정되지 않은 학생이 <b>${nob}명</b> 있어요.</div>`:''}
-  <div class="panel scroll" style="margin-top:12px">${list.length?`<table class="tbl"><thead><tr><th>반</th><th>이름</th><th>아이디</th><th>단어책 배정</th><th>지금 Day</th><th>문법</th><th>캐릭터</th><th>레벨</th><th class="num">총 XP</th><th class="num">이번 주</th><th class="num">오늘 XP</th><th class="num">연속</th><th class="num">이 책 세트</th><th class="num">오답</th><th>마지막 학습</th></tr></thead><tbody>
-    ${list.map(({u,L})=>`<tr class="${u.bookBy?'':'nobook'}"><td>${esc(CLASSES[u.cls]||'-')}</td><td>${esc(u.name||'')}${u.school?` <span class="muted">${esc(u.school)} ${esc(u.grade||'')}</span>`:''}</td><td>${esc(u.id)}${u.id==='demo'?' <span class="muted">(체험)</span>':''}</td><td>${bookSel(u.id,u.bookBy?u.book:'')}${u.memo?`<div class="memo">${esc(u.memo)}</div>`:''}</td><td><input class="dayin" type="number" min="1" max="60" value="${u.day||''}" data-day="${esc(u.id)}" aria-label="${esc(u.id)} 지금 Day" placeholder="-"></td><td>${gramSel(u)}</td><td>${u.av?`${esc(u.nick)} · ${JOBS[u.av.job].nm}`:'<span class="muted">아직 안 들어옴</span>'}</td><td>Lv.${L.lv} ${u.av?titleOf(u.av.job,L.lv):''}</td><td class="num">${fmt(u.xp)}</td><td class="num">${fmt(wkOf(u).xp)}</td><td class="num">${u.daily&&u.daily.date===today()?fmt(u.daily.xp):0}</td><td class="num">${u.streak.n}일</td><td class="num">${Object.keys(u.sets).filter(k=>k.startsWith(u.book+':')).length}</td><td class="num">${Object.keys(u.wrong).length}</td><td>${u.last?u.last.slice(0,10):'-'}</td></tr>`).join('')}</tbody></table>`:'<p style="margin:0">아직 학생이 없어요. 위에서 학생 아이디를 추가하세요.</p>'}</div>
+  <div class="panel scroll" style="margin-top:12px">${list.length?`<table class="tbl"><thead><tr><th>반</th><th>이름</th><th>아이디</th><th>단어책 배정</th><th>지금 Day</th><th>문법</th><th>캐릭터 방식</th><th>캐릭터</th><th>레벨</th><th class="num">총 XP</th><th class="num">이번 주</th><th class="num">오늘 XP</th><th class="num">연속</th><th class="num">이 책 세트</th><th class="num">오답</th><th>마지막 학습</th></tr></thead><tbody>
+    ${list.map(({u,L})=>`<tr class="${u.bookBy?'':'nobook'}"><td>${esc(CLASSES[u.cls]||'-')}</td><td>${esc(u.name||'')}${u.school?` <span class="muted">${esc(u.school)} ${esc(u.grade||'')}</span>`:''}</td><td>${esc(u.id)}${u.id==='demo'?' <span class="muted">(체험)</span>':''}</td><td>${bookSel(u.id,u.bookBy?u.book:'')}${u.memo?`<div class="memo">${esc(u.memo)}</div>`:''}</td><td><input class="dayin" type="number" min="1" max="60" value="${u.day||''}" data-day="${esc(u.id)}" aria-label="${esc(u.id)} 지금 Day" placeholder="-"></td><td>${gramSel(u)}</td><td>${charSel(u)}</td><td>${u.av?`${esc(u.nick)} · ${JOBS[u.av.job].nm}`:'<span class="muted">아직 안 들어옴</span>'}</td><td>Lv.${L.lv} ${u.av?titleOf(u.av.job,L.lv):''}</td><td class="num">${fmt(u.xp)}</td><td class="num">${fmt(wkOf(u).xp)}</td><td class="num">${u.daily&&u.daily.date===today()?fmt(u.daily.xp):0}</td><td class="num">${u.streak.n}일</td><td class="num">${Object.keys(u.sets).filter(k=>k.startsWith(u.book+':')).length}</td><td class="num">${Object.keys(u.wrong).length}</td><td>${u.last?u.last.slice(0,10):'-'}</td></tr>`).join('')}</tbody></table>`:'<p style="margin:0">아직 학생이 없어요. 위에서 학생 아이디를 추가하세요.</p>'}</div>
   <div class="panel" style="margin-top:12px;font-size:14px"><b>경험치 규칙</b><div class="muted" style="margin-top:4px">암기 카드 단어당 1 · 리콜 한 번에 맞힌 단어당 2 (+완료 5) · 스펠 한 번에 3, 힌트로 1 (+완료 5) · 매칭 10~25 · 테스트 100점 40, 90점 이상 30, 70점 이상 15 · 세트 첫 100점 +30 · 매일 첫 학습 연속일 × 5 (최대 50) · 같은 날 같은 학습 2번째 ×0.5, 3번째부터 ×0.2 · 하루 최대 ${DAILY_CAP} XP. 문법(처음 통과할 때만): 개념톡 5 · 워크북·연습 A 20 · 연습 B 25 · 최종 누적학습 30 · 서술형 40 · 실전 50 (하루 최대에 함께 포함). 경험치와 캐릭터는 책을 바꿔도 그대로 이어지고, 책마다 세트 기록은 따로 남아요.</div></div>`;
   bindCommon();$('#tout').onclick=logout;
   $('#addf').onsubmit=e=>{e.preventDefault();const raw=$('#nid').value,book=$('#nbook').value;
@@ -1056,6 +1096,8 @@ function teacher(msg=''){
     list.forEach(({u})=>{if(u.cls!==c||(only&&u.bookBy))return;u.book=bk;u.bookBy='teacher';Store.saveUser(u);n++});
     teacher(`${CLASSES[c]} ${n}명에게 ${BOOKS.find(b=>b.id===bk).short}을(를) 배정했어요`)};
   $('#clsGramGo').onclick=()=>{const c=$('#clsSel').value,g=$('#clsGram').value,only=$('#onlyNo').checked;let n=0;list.forEach(({u})=>{if(u.cls!==c||(only&&u.gbook))return;u.gbook=g;Store.saveUser(u);n++});teacher(`${CLASSES[c]} ${n}명에게 문법 ${GBOOKS.find(b=>b[0]===g)[2]}을(를) 배정했어요`)};
+  document.querySelectorAll('select.csel').forEach(sel=>sel.onchange=()=>{const u=migrate(getUser(sel.dataset.cuid));if(!u)return;if(sel.value)u.cmode=+sel.value;else delete u.cmode;Store.saveUser(u);toast(`${u.name||u.id} → 캐릭터 ${cmodeOf(u)}번 (${CMODES.find(x=>x[0]===cmodeOf(u))[1]})`)});
+  document.querySelectorAll('input.cgirl').forEach(cb=>cb.onchange=()=>{const u=migrate(getUser(cb.dataset.cuid));if(!u)return;if(cb.checked)u.girl=1;else delete u.girl;Store.saveUser(u);toast(`${u.name||u.id} 교실 캐릭터 ${cb.checked?'여학생':'남학생'} 모습`)});
   document.querySelectorAll('select.gsel').forEach(sel=>sel.onchange=()=>{const u=migrate(getUser(sel.dataset.guid));if(!u)return;if(sel.value)u.gbook=sel.value;else delete u.gbook;Store.saveUser(u);toast(sel.value?`${u.name||u.id} → 문법 ${GBOOKS.find(b=>b[0]===sel.value)[2]} 배정했어요`:`${u.name||u.id} 문법 배정을 뺐어요`)});
   document.querySelectorAll('input.dayin').forEach(inp=>inp.onchange=()=>{const u=migrate(getUser(inp.dataset.day));const v=parseInt(inp.value,10);if(v>0)u.day=v;else delete u.day;Store.saveUser(u);toast(`${u.name||u.id} 지금 위치 ${v>0?'Day '+v:'지움'}`)});
   document.querySelectorAll('select.bsel').forEach(sel=>sel.onchange=()=>{const u=migrate(getUser(sel.dataset.uid));if(!u)return;
