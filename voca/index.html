@@ -689,6 +689,19 @@ function ccPanel(){const a=$('#app');if(!a||document.getElementById('ccpanel'))r
   const tb=a.querySelector('.topbar');if(tb&&tb.nextSibling)a.insertBefore(d,tb.nextSibling);else a.prepend(d);
   const out=d.querySelector('#ccout');d.querySelector('#ccup').onclick=e=>ccUpload(e.currentTarget,out);ccPanelState(out)}
 const _teacherV25=teacher;teacher=function(m){_teacherV25(m);if(ROLE==='teacher'){ccPanel();trialPanel()}};
+/* v30-open: 원장님 체험 아이디 */
+function isOpenId(){return ROLE==='student'&&U&&/^chotcher\d+$/.test(U.id)}
+function openPanel(){const a=$('#app');if(!a||document.getElementById('openpanel'))return;const d=document.createElement('div');d.id='openpanel';d.className='panel';d.style.marginTop='14px';
+  const bopts=[...new Set(BOOKS.map(b=>b.grp))].map(g=>`<optgroup label="${esc(g)}">${BOOKS.map((b,n)=>[b,n]).filter(([b])=>b.grp===g).map(([b,n])=>`<option value="${b.id}" ${U.book===b.id?'selected':''}>${b.lazy?'':(n+1)+'단계 '}${esc(b.short)}</option>`).join('')}</optgroup>`).join('');
+  d.innerHTML=`<div class="row" style="gap:10px;flex-wrap:wrap;align-items:center"><b>체험 아이디 · 교재 바꾸기</b><span class="muted" style="font-size:13px">이 아이디만 보이는 칸이에요</span></div>
+   <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">
+    <select id="opBook" aria-label="단어책" style="max-width:320px">${bopts}</select>
+    <select id="opGram" aria-label="문법 교재"><option value="">문법 없음</option>${GBOOKS.map(b=>`<option value="${b[0]}" ${U.gbook===b[0]?'selected':''}>${esc(b[1])}</option>`).join('')}</select>
+    <select id="opMode" aria-label="캐릭터 방식"><option value="3" ${CM()==3?'selected':''}>캐릭터 없음</option><option value="2" ${CM()==2?'selected':''}>교실 캐릭터</option><option value="1" ${CM()==1?'selected':''}>게임 캐릭터</option></select>
+    <button class="btn primary" id="opGo" type="button">바꾸기</button></div>`;
+  const tb=a.querySelector('.topbar');if(tb&&tb.nextSibling)a.insertBefore(d,tb.nextSibling);else a.prepend(d);
+  d.querySelector('#opGo').onclick=()=>{const b=$('#opBook').value;if(b!==U.book){U.book=b;U.day=0}U.bookBy='teacher';const g=$('#opGram').value;if(g)U.gbook=g;else delete U.gbook;U.cmode=+$('#opMode').value;save();CURK=null;toast('바꿨어요');(!U.av&&CM()===1)?pick():enter()}}
+const _homeV30=home;home=function(){_homeV30();if(isOpenId())openPanel()};
 /* v29-trial: 학생 화면 체험 */
 let TRIAL=null;
 function trialPanel(){const a=$('#app');if(!a||document.getElementById('trialpanel'))return;const d=document.createElement('div');d.id='trialpanel';d.className='panel';d.style.marginTop='14px';
