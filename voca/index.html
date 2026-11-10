@@ -526,8 +526,15 @@ BOOKS.forEach(b=>{b.grp=b.grp||'능률VOCA 단계'});
 CCB.forEach(c=>BOOKS.push({...c,lazy:1,sets:[],tabs:[[0,'']]}));
 function bookOf(id){return BOOKS.find(b=>b.id===id)}
 function needLoad(id){const b=bookOf(id);return b&&b.lazy&&!b.loaded}
+/* v25-fs: 책 내용은 로그인한 사람만 읽는 Firestore voca_books/<id>__<n> 에 있음 (조각으로 나눠 저장) */
+const CC_VER='20261110';
+async function fsBook(id){const F=window.FB||await FBP;if(!F||!F.auth.currentUser)return null;
+  const d0=await F.getDoc(F.doc(F.db,'voca_books',id+'__0'));if(!d0.exists())return null;const h=d0.data();const parts=[h.part];
+  for(let k=1;k<h.n;k++){const d=await F.getDoc(F.doc(F.db,'voca_books',id+'__'+k));if(!d.exists())return null;parts.push(d.data().part)}
+  return JSON.parse(parts.join(''))}
 async function loadBook(id){const b=bookOf(id);if(!b||!b.lazy||b.loaded)return b;
-  const r=await fetch('cc/'+id+'.json',{cache:'no-cache'});if(!r.ok)throw new Error('load '+r.status);const j=await r.json();
+  let j=null;try{j=await fsBook(id)}catch(e){console.warn('fsBook',e)}
+  if(!j){const r=await fetch('cc/'+id+'.json',{cache:'no-cache'});if(!r.ok)throw new Error('load '+r.status);j=await r.json()}
   b.sets=j.sets;b.tabs=j.tabs;b.kind=j.kind||b.kind;b.unit=j.unit||b.unit;b.loaded=1;return b}
 function loadingView(id,next){const b=bookOf(id);$('#app').innerHTML=`${topbar()}<div class="panel" style="margin-top:18px;text-align:center;padding:40px 20px"><b style="font-size:18px">${esc(b?b.name:'단어책')}</b><p class="muted" style="margin:8px 0 0">단어책을 불러오는 중이에요…</p></div>`;
   loadBook(id).then(next).catch(()=>{$('#app').innerHTML=`${topbar()}<div class="panel" style="margin-top:18px">단어책을 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침해 주세요.</div>`;bindCommon()})}
@@ -561,6 +568,22 @@ function runOrder(isTest){
     if($('#pass'))$('#pass').onclick=()=>{if(locked)return;locked=true;sfx.no();bMiss();SES.wrong++;SES.miss.add(c.w);addWrong(c.w,c.m);show();say(c.w);const x=q.shift();q.splice(Math.min(q.length,3),0,x);setTimeout(draw,2400)};
   };draw();
 }
+async function ccUpload(btn,out){const F=window.FB||await FBP;if(!F||!F.auth.currentUser){out.textContent='선생님 계정으로 로그인해야 올릴 수 있어요.';return}
+  btn.disabled=true;let n=0,fail=0;const CH=150000;
+  for(const c of CCB){try{const r=await fetch('cc/'+c.id+'.json',{cache:'no-cache'});if(!r.ok)throw new Error('파일 '+r.status);const t=await r.text();const parts=[];for(let i=0;i<t.length;i+=CH)parts.push(t.slice(i,i+CH));
+      for(let k=0;k<parts.length;k++)await F.setDoc(F.doc(F.db,'voca_books',c.id+'__'+k),k?{part:parts[k]}:{part:parts[k],n:parts.length,ver:CC_VER,name:c.name});n++}
+    catch(e){fail++;console.warn('ccUpload',c.id,e);if(fail===1&&n===0){out.innerHTML='올리지 못했어요: '+esc(String(e.message||e))+'<br>Firebase 규칙에 voca_books 쓰기 권한이 필요해요.';btn.disabled=false;return}}
+    out.textContent=`올리는 중… ${n+fail}/${CCB.length}권`}
+  if(!fail)await F.setDoc(F.doc(F.db,'voca_books','_meta'),{ver:CC_VER,count:n,at:new Date().toISOString()});
+  out.textContent=fail?`${n}권 올림, ${fail}권 실패 — 다시 눌러 주세요`:`완료! ${n}권을 로그인 보호 저장소에 올렸어요.`;btn.disabled=false;ccPanelState(out)}
+async function ccPanelState(out){const F=window.FB||await FBP;if(!F)return;try{const m=await F.getDoc(F.doc(F.db,'voca_books','_meta'));const ok=m.exists()&&m.data().ver===CC_VER;
+  const st=document.getElementById('ccst');if(st)st.innerHTML=ok?`<b style="color:var(--good)">올라가 있음</b> · ${m.data().count}권 · ${esc(String(m.data().at).slice(0,10))}`:'<b style="color:var(--bad)">아직 안 올림</b>';
+  const b=document.getElementById('ccup');if(b&&!ok&&!b.dataset.auto){b.dataset.auto=1;b.click()}}catch(e){const st=document.getElementById('ccst');if(st)st.textContent='확인하지 못했어요: '+(e.message||e)}}
+function ccPanel(){const a=$('#app');if(!a||document.getElementById('ccpanel'))return;const d=document.createElement('div');d.id='ccpanel';d.className='panel';d.style.marginTop='14px';
+  d.innerHTML=`<div class="row" style="gap:10px;flex-wrap:wrap"><b>클래스카드에서 옮긴 책 ${CCB.length}권</b><span id="ccst" class="muted" style="font-size:13px">확인 중…</span><span class="spacer"></span><button class="btn" id="ccup" type="button">로그인 보호 저장소로 올리기</button></div><div id="ccout" class="muted" style="font-size:13px;margin-top:6px"></div>`;
+  const tb=a.querySelector('.topbar');if(tb&&tb.nextSibling)a.insertBefore(d,tb.nextSibling);else a.prepend(d);
+  const out=d.querySelector('#ccout');d.querySelector('#ccup').onclick=e=>ccUpload(e.currentTarget,out);ccPanelState(out)}
+const _teacherV25=teacher;teacher=function(m){_teacherV25(m);if(ROLE==='teacher')ccPanel()};
 function exHTML(x,w){if(!x)return '';const L=String(x).split(/\n+/);const en=esc(L[0]).replace(/\{([^}]*)\}/g,'<b>$1</b>');return `<div class="ex"><div class="ex-en">${en}</div>${L[1]?`<div class="ex-ko">${esc(L.slice(1).join(' '))}</div>`:''}</div>`}
 /* ================= storage (교체 지점: Firebase 연결 시 이 객체만 바꾸면 됨) ================= */
 const NS='jmkvoca1:';
