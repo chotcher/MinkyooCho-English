@@ -13,7 +13,8 @@
 <title>조민규영어</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;600;700&family=Fredoka:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap">
 <style>
 /* Layout: one centered column app; hero "character room" card on top, study list below; study screens replace the list */
 :root{
@@ -336,6 +337,137 @@ input[type=range]{width:100%;accent-color:var(--blue)}
   .lvl{font-size:34px}
 }
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;z-index:60}
+
+/* ===== v22-ui ===== */
+:root{
+  --bg:#f2f5fb; --surface:#ffffff; --surface2:#f6f8fc; --ink:#0f1b33; --muted:#5b6a84; --line:#dde4f0;
+  --blue:#1f4fd8; --blue-ink:#ffffff; --blue-soft:#e9effe; --navy:#0c2463; --navy2:#123188;
+  --good:#0e9f6e; --good-soft:#e3f6ee; --bad:#e0464c; --bad-soft:#fdebec; --gold:#b98a1e; --gold-soft:#fbf2dc;
+  --f-display:"Pretendard Variable",Pretendard,"IBM Plex Sans KR",system-ui,-apple-system,"Malgun Gothic",sans-serif;
+  --f-body:"Pretendard Variable",Pretendard,"IBM Plex Sans KR",system-ui,-apple-system,"Malgun Gothic",sans-serif;
+  --f-en:"Source Serif 4","Iowan Old Style",Georgia,serif;
+  --r:16px; --sh:0 1px 2px rgba(15,35,80,.06),0 10px 28px -14px rgba(15,35,80,.22);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0b1222; --surface:#131d33; --surface2:#18243d; --ink:#e8eefb; --muted:#97a6c2; --line:#26334f;
+  --blue:#6b95ff; --blue-ink:#0b1222; --blue-soft:#1b2a4c; --navy:#0f2a6e; --navy2:#173a91; --sh:none}}
+:root[data-theme="dark"]{--bg:#0b1222; --surface:#131d33; --surface2:#18243d; --ink:#e8eefb; --muted:#97a6c2; --line:#26334f; --blue:#6b95ff; --blue-ink:#0b1222; --blue-soft:#1b2a4c; --navy:#0f2a6e; --navy2:#173a91; --sh:none}
+body{font-size:15.5px;letter-spacing:-.005em}
+#app{max-width:1040px}
+h1,h2,h3{font-weight:700;letter-spacing:-.02em}
+.en,.word,.ww,.tile.en,.opt.en{font-family:var(--f-en)}
+.btn{border-radius:12px;border:1px solid var(--line);font-weight:600;box-shadow:0 1px 0 rgba(15,35,80,.04)}
+.btn.primary{box-shadow:0 6px 16px -8px rgba(31,79,216,.7)}
+.panel,.day,.mybook,.mode,.witem,.qcard,.opt,.tile{box-shadow:var(--sh)}
+.panel{border-radius:var(--r)}
+.topbar{padding-block:4px 6px}
+/* home day cards */
+.day{border-radius:var(--r);padding:14px 16px}
+.day h3{font-size:17px}
+.day.here{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue),var(--sh)}
+.mybook{border:1px solid var(--line);border-left:4px solid var(--blue)}
+.mybook b{font-family:var(--f-body);font-weight:700}
+/* set header band */
+.setband{display:flex;align-items:flex-end;gap:16px;background:var(--navy);color:#fff;border-radius:20px;padding:22px 26px;margin-top:4px;position:relative;overflow:hidden}
+.setband::after{content:"";position:absolute;right:-60px;top:-80px;width:260px;height:260px;border-radius:50%;border:38px solid rgba(255,255,255,.05)}
+.sb-l{display:grid;gap:4px;flex:1;min-width:0;position:relative;z-index:1}
+.sb-book{font-size:13px;color:#b9c8f3;font-weight:600}
+.setband h2{font-size:clamp(22px,3.2vw,30px);color:#fff}
+.sb-meta{font-size:14px;color:#d7e0fa}
+.sb-day{font-family:var(--f-en);font-weight:600;font-size:clamp(34px,6vw,54px);line-height:1;color:#fff;position:relative;z-index:1;white-space:nowrap}
+.modes{grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:16px 0 20px}
+@media (max-width:760px){.modes{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.mode{border:1px solid var(--line);border-radius:var(--r);padding:16px 16px 14px;gap:6px;transition:border-color .15s,transform .15s}
+.mode:hover:not(:disabled){border-color:var(--blue);transform:translateY(-2px)}
+.mode:disabled{opacity:.45}
+.mode .mi{width:38px;height:38px;border-radius:11px;background:var(--blue-soft);display:grid;place-items:center;margin-bottom:4px}
+.mode .mi svg,.mtab svg,.spk svg,.sayb svg{width:20px;height:20px;fill:none;stroke:var(--blue);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.mode b{font-family:var(--f-body);font-weight:700;font-size:17px}
+.mode .md{font-size:13px;color:var(--muted);line-height:1.45}
+.mode .done{font-size:12.5px;font-weight:700;color:var(--good);margin-top:2px}
+.mode .done:where(:not(:empty)){display:block}
+.wlist{grid-template-columns:1fr;gap:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh)}
+.witem{grid-template-columns:36px minmax(140px,220px) 1fr auto;align-items:center;border:0;border-bottom:1px solid var(--line);border-radius:0;box-shadow:none;padding:12px 18px}
+.witem:last-child{border-bottom:0}
+.witem .wn{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.witem .ww{font-size:19px;font-weight:600}
+.witem .mean{font-size:14.5px}
+.spk{width:36px;height:36px;border-radius:50%;display:grid;place-items:center}
+.spk:hover{background:var(--blue-soft)}
+@media (max-width:600px){.witem{grid-template-columns:28px 1fr auto;padding:10px 12px}.witem .mean{grid-column:2/3}.witem .spk{grid-row:1/3;grid-column:3}}
+/* study header */
+.study{max-width:760px}
+.shead{display:flex;align-items:center;gap:14px;background:var(--navy);color:#fff;border-radius:18px;padding:12px 14px 12px 20px;margin-bottom:14px;flex-wrap:wrap}
+.sh-t{display:grid;line-height:1.3;min-width:0;flex:1}
+.sh-t span{font-size:12.5px;color:#b9c8f3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sh-t b{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mtabs{display:flex;gap:4px;background:rgba(255,255,255,.08);padding:4px;border-radius:12px}
+.mtab{display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;color:#cdd8f6;font-weight:600;font-size:14px}
+.mtab svg{stroke:#cdd8f6;width:17px;height:17px}
+.mtab.on{background:#fff;color:var(--navy)}
+.mtab.on svg{stroke:var(--blue)}
+.mtab:hover:not(.on){background:rgba(255,255,255,.1)}
+.mtab:disabled{opacity:.35}
+.sh-x{color:#cdd8f6;font-size:14px;font-weight:600;padding:8px 10px;border-radius:9px}
+.sh-x:hover{background:rgba(255,255,255,.1);color:#fff}
+@media (max-width:720px){.mtab span{display:none}.mtab{padding:8px 10px}.shead{padding:10px 12px}}
+.prog{gap:12px;margin-bottom:16px}
+.pbar{flex:1;height:8px;border-radius:99px;background:var(--blue-soft);overflow:hidden}
+.pbar i{display:block;height:100%;background:var(--blue);border-radius:99px;transition:width .4s}
+.prog .pc{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.prog .pc b{color:var(--ink)}
+.prog .pr{display:flex;gap:6px}
+.prog .pr em{font-style:normal;font-size:13px;font-weight:700;padding:2px 9px;border-radius:99px;font-variant-numeric:tabular-nums}
+.prog .pr .g{background:var(--good-soft);color:var(--good)}
+.prog .pr .b{background:var(--bad-soft);color:var(--bad)}
+.seg{display:flex;justify-content:center;margin:0 auto 14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:3px;width:max-content;box-shadow:var(--sh)}
+.seg button{padding:7px 16px;border-radius:9px;font-size:14px;font-weight:600;color:var(--muted)}
+.seg button.on{background:var(--blue-soft);color:var(--blue)}
+.qcard{border-radius:22px;min-height:300px;padding:40px 28px;border:1px solid var(--line);position:relative;overflow:hidden}
+.qcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--blue)}
+.qcard .word{font-weight:600;font-size:clamp(38px,9vw,64px);letter-spacing:-.01em}
+.qcard .mean{font-size:clamp(19px,3vw,24px);gap:6px}
+.qcard .mean .pos{font-size:12px;vertical-align:3px}
+.qcard.back{background:linear-gradient(var(--surface),var(--surface)) padding-box}
+.qcard .hint{position:absolute;bottom:16px;left:0;right:0;font-size:12.5px}
+.cardact{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;margin-top:14px}
+.cardact .btn{display:grid;gap:0;line-height:1.25;padding:14px}
+.cardact small{font-size:12px;font-weight:500;opacity:.75}
+.sayb{width:64px}
+.opts.grid2{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:560px){.opts.grid2{grid-template-columns:1fr}}
+.opt{border:1px solid var(--line);border-radius:14px;padding:16px 18px;font-size:17px;min-height:64px;transition:border-color .12s,background .12s}
+.opt.en{font-size:21px;font-weight:600}
+.opt:hover{border-color:var(--blue)}
+.opt .k{width:26px;height:26px;border-radius:8px;background:var(--blue-soft);color:var(--blue);font-family:var(--f-body)}
+.opt.right{border-color:var(--good);background:var(--good-soft);box-shadow:0 0 0 1px var(--good)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft);box-shadow:0 0 0 1px var(--bad)}
+.spell input{font-size:28px;padding:16px 18px;border-radius:16px;border:1.5px solid var(--line);box-shadow:var(--sh)}
+.spell input:focus{border-color:var(--blue);outline:0;box-shadow:0 0 0 4px var(--blue-soft)}
+.blanks{font-size:24px;letter-spacing:.3em;color:var(--blue)}
+.feedback{font-size:16px}
+.match{gap:10px}
+.tile{border:1px solid var(--line);border-radius:14px;min-height:86px;font-size:15px}
+.tile.en{font-size:20px;font-weight:600}
+.tile.sel{box-shadow:0 0 0 2px var(--blue)}
+.result .panel{padding:22px}
+
+/* ===== v22b-ui ===== */
+.books2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:18px}
+.books2 .mybook{margin-top:0;max-width:none;padding:16px 18px;gap:6px;align-content:start}
+.books2 .mybook b{font-size:20px}
+.gramcard{order:2}
+.stat{border-radius:14px;padding:14px 16px}
+.stat b{font-family:var(--f-body);font-weight:700;font-size:26px;letter-spacing:-.02em}
+.stat span{font-size:12.5px}
+.herosimple h2{font-size:28px!important}
+.qcard{min-height:210px;padding:32px 28px}
+.qcard.flip{min-height:340px}
+.spell input{box-sizing:border-box;width:100%}
+.tabs .tab{font-weight:600}
+
+@media (max-width:720px){.shead{padding:8px}.sh-t{display:none}.mtabs{flex:1;justify-content:space-between}.mtab{flex:1;justify-content:center}.sh-x{padding:8px}}
+@media (max-width:600px){.qcard{min-height:150px;padding:24px 18px}.qcard.flip{min-height:250px}.mode{padding:12px 14px}.mode .mi{width:32px;height:32px}.setband{padding:18px 20px}.cardact .btn{padding:12px 8px}.sayb{width:52px}}
 </style>
 
 </head><body>
@@ -703,7 +835,7 @@ function heroSimple(){
   return `<div class="panel herosimple" style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">
     ${c===2?`<div class="deskwrap">${deskAvatar(U)}</div>`:''}
     <div style="flex:1;min-width:220px;display:grid;gap:10px">
-      <div class="row"><div><div class="muted" style="font-size:13px;font-weight:600">${esc(CLASSES[U.cls]||'')}${U.school?` · ${esc(U.school)} ${esc(U.grade||'')}`:''}</div><h2 style="font-size:26px">${esc(U.name||U.nick||U.id)}</h2></div><span class="spacer"></span>${c===2?`<div class="lvl">Lv.${L.lv}<small>/100</small></div>`:''}</div>
+      <div class="row"><div><div class="muted" style="font-size:13px;font-weight:600">${[CLASSES[U.cls]||'',U.school?`${U.school} ${U.grade||''}`.trim():''].filter(Boolean).map(esc).join(' · ')}</div><h2 style="font-size:26px">${esc(U.name||U.nick||U.id)}</h2></div><span class="spacer"></span>${c===2?`<div class="lvl">Lv.${L.lv}<small>/100</small></div>`:''}</div>
       ${c===2?`<div><div class="xpbar" aria-label="경험치"><i style="width:${L.pct}%"></i></div><div class="row muted" style="font-size:13px;margin-top:4px;font-variant-numeric:tabular-nums"><span>${L.lv<100?`다음 레벨까지 ${fmt(L.need-L.cur)} XP`:'최고 레벨'}</span><span class="spacer"></span><span>오늘 ${fmt(U.daily.xp)} XP</span></div></div>`:''}
       <div class="stats"><div class="stat"><b>${runs}</b><span>오늘 학습</span></div><div class="stat"><b>${streak}일</b><span>연속 학습</span></div><div class="stat"><b>${fmt(U.total.words)}</b><span>푼 단어 수</span></div></div>
       <div class="row"><button class="btn" id="wrongBtn">오답 노트 ${Object.keys(U.wrong).length}</button><span class="spacer"></span><button class="btn ghost" id="out">로그아웃</button></div>
@@ -835,8 +967,8 @@ function home(){
   const setRow=s=>`<button class="setbtn" data-set="${s.i}"><span class="nm">${esc(s.d?s.t:s.k==='cum'?s.t.replace(/Day\d+-\d+ · /,''):s.k==='app'?s.t:s.t.replace('④ 형태변화 ',''))}</span><span class="cnt">${s.w.length}</span>${setDots(s.i)}</button>`;
   const dayPct=d=>{const ss=sets.filter(s=>s.d===d);const done=ss.reduce((a,s)=>a+MODES.filter(([m])=>(U.sets[sk(s.i)]||{})[m]!=null).length,0);return Math.round(done/(ss.length*5)*100)};
   const bi=BOOKS.findIndex(b=>b.id===DATA.id),bookDone=Object.keys(U.sets).filter(k=>k.startsWith(DATA.id+':')).length;
-  $('#app').innerHTML=`${topbar()}${heroHTML()}${GAME()?questHTML()+weekHTML():''}${gramCard()}
-  <div class="mybook"><span class="bn">${bi+1}단계 · 선생님이 정한 단어책</span><b>${esc(DATA.name)}</b><span class="bp">${U.day?`지금 위치 Day ${pad(U.day)} · `:''}${bookDone}/${DATA.sets.length} 세트 학습</span><div class="xpbar" style="height:8px"><i style="width:${Math.round(bookDone/DATA.sets.length*100)}%"></i></div></div>
+  $('#app').innerHTML=`${topbar()}${heroHTML()}${GAME()?questHTML()+weekHTML():''}<div class="books2">${gramCard()}
+  <div class="mybook"><span class="bn">${bi+1}단계 · 선생님이 정한 단어책</span><b>${esc(DATA.name)}</b><span class="bp">${U.day?`지금 위치 Day ${pad(U.day)} · `:''}${bookDone}/${DATA.sets.length} 세트 학습</span><div class="xpbar" style="height:8px"><i style="width:${Math.round(bookDone/DATA.sets.length*100)}%"></i></div></div></div>
   <div class="tabs" role="tablist">${DATA.tabs.map(([r,l])=>`<button class="tab ${r===VIEW.tab?'on':''}" data-tab="${r}" role="tab" aria-selected="${r===VIEW.tab}">${l}</button>`).join('')}</div>
   <div class="days">${days.map(d=>`<div class="day ${U.day===d?'here':''}"><h3>Day ${pad(d)}${U.day===d?'<span class="herebadge">지금 여기</span>':''}<span class="pct">${dayPct(d)}%</span></h3>${sets.filter(s=>s.d===d).map(setRow).join('')}</div>`).join('')}</div>
   ${tests.length?`<div class="sec-title">${R[VIEW.tab]==='부록'?'부록':R[VIEW.tab]+' 테스트'}</div>`:''}
@@ -853,20 +985,25 @@ function setView(i){
   const r=i==='W'?{}:(U.sets[sk(i)]||{});
   const lab={card:v=>'완료',recall:v=>v+'점',spell:v=>v+'점',match:v=>v+'초',test:v=>v+'점'};
   const can=m=>W.length>=(m==='match'?3:m==='recall'||m==='test'?1:1);
-  $('#app').innerHTML=`${topbar('<button class="btn" data-go="home">← 목록</button>')}
-  <div class="muted" style="font-size:13px;font-weight:600">${esc(DATA.name)}</div><h2 style="font-size:26px">${esc(title)}</h2><p class="muted" style="margin:2px 0 0">${W.length}단어${i==='W'?' · 맞히면 2번째에 오답 노트에서 빠져요':''}</p>
-  ${W.length?`<div class="modes">${MODES.map(([m,nm,ds])=>`<button class="mode" data-m="${m}" ${can(m)?'':'disabled style="opacity:.45"'}><b>${nm}</b><span>${GAME()?ds:ds.replace(/ · (몬스터 사냥|보스전)/,'')}</span>${r[m]!=null?`<span class="done">최고 기록 ${lab[m](r[m])}</span>`:''}</button>`).join('')}</div>`:'<div class="panel" style="margin-top:14px">아직 틀린 단어가 없어요. 리콜·스펠·테스트에서 틀린 단어가 여기 모여요.</div>'}
-  <div class="wlist">${W.map(([w,m])=>`<div class="witem"><button class="en" data-say="${esc(w)}" aria-label="${esc(w)} 발음 듣기">${esc(w)}</button>${meanHTML(m)}</div>`).join('')}</div>`;
+  $('#app').innerHTML=`${topbar('<button class="btn" data-go="home">목록</button>')}
+  <section class="setband"><div class="sb-l"><span class="sb-book">${esc(DATA.name)}</span><h2>${esc(setTitleOf(i))}</h2><span class="sb-meta">${W.length}단어${i==='W'?' · 두 번 맞히면 오답 노트에서 빠져요':''}</span></div>${setDayOf(i)?`<div class="sb-day">${esc(setDayOf(i))}</div>`:''}</section>
+  ${W.length?`<div class="modes">${MODES.map(([m,nm,ds])=>`<button class="mode" data-m="${m}" ${can(m)?'':'disabled'}><span class="mi">${MICON[m]}</span><b>${nm}</b><span class="md">${GAME()?ds:ds.replace(/ · (몬스터 사냥|보스전)/,'')}</span><span class="done">${r[m]!=null?`최고 ${lab[m](r[m])}`:'아직 안 함'}</span></button>`).join('')}</div>`:'<div class="panel" style="margin-top:14px">아직 틀린 단어가 없어요. 리콜·스펠·테스트에서 틀린 단어가 여기 모여요.</div>'}
+  ${W.length?`<div class="wlist">${W.map(([w,m],n)=>`<div class="witem"><span class="wn">${n+1}</span><span class="ww">${esc(w)}</span>${meanHTML(m)}<button class="spk" data-say="${esc(w)}" aria-label="${esc(w)} 발음 듣기"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg></button></div>`).join('')}</div>`:''}`;
   bindCommon();
   document.querySelectorAll('[data-say]').forEach(b=>b.onclick=()=>say(b.dataset.say));
   document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{if(!b.disabled)run(b.dataset.m,i)});
 }
 
+
+/* ===== v22-ui: 학습창 디자인 ===== */
+const MICON={"card": "<svg viewBox=\"0 0 24 24\"><rect x=\"3\" y=\"5\" width=\"14\" height=\"14\" rx=\"2.5\"/><path d=\"M7 3h11a3 3 0 0 1 3 3v11\"/></svg>", "recall": "<svg viewBox=\"0 0 24 24\"><rect x=\"3\" y=\"3\" width=\"8\" height=\"8\" rx=\"2\"/><rect x=\"13\" y=\"3\" width=\"8\" height=\"8\" rx=\"2\"/><rect x=\"3\" y=\"13\" width=\"8\" height=\"8\" rx=\"2\"/><path d=\"m14.5 17 2 2 3.5-4\"/></svg>", "spell": "<svg viewBox=\"0 0 24 24\"><path d=\"M4 20h4L19 9l-4-4L4 16z\"/><path d=\"m13.5 6.5 4 4\"/></svg>", "match": "<svg viewBox=\"0 0 24 24\"><circle cx=\"6\" cy=\"7\" r=\"2.5\"/><circle cx=\"18\" cy=\"17\" r=\"2.5\"/><circle cx=\"18\" cy=\"7\" r=\"2.5\"/><circle cx=\"6\" cy=\"17\" r=\"2.5\"/><path d=\"M8.3 8.2 15.7 15.8M8.5 17h7\"/></svg>", "test": "<svg viewBox=\"0 0 24 24\"><path d=\"M7 3h10v18H7z\"/><path d=\"M10 8h4M10 12h4M10 16h2\"/></svg>"};
+function setTitleOf(i){return i==='W'?'오답 노트':DATA.sets[i].t}
+function setDayOf(i){return i==='W'?'':(DATA.sets[i].d?`Day ${pad(DATA.sets[i].d)}`:'')}
 /* ================= study modes ================= */
 let SES=null;
 function run(m,i){SES={m,i,words:wordsOf(i).map(([w,me])=>({w,m:me})),right:0,wrong:0,wrongList:[],start:Date.now(),firstTry:new Set(),miss:new Set()};if(GAME()&&['recall','spell','test'].includes(m)){const n=m==='test'?Math.min(30,SES.words.length):SES.words.length;const mm=pickMonster(m==='test',lvInfo(U.xp).lv);SES.mon={m:mm,hp:n,max:n,hits:0,combo:0,maxCombo:0,shiny:mm.t<5&&Math.random()<0.07}}({card:runCard,recall:runRecall,spell:runSpell,match:runMatch,test:runTest})[m]()}
-function shell(inner,progress,total){return `${topbar('<button class="btn" id="quit">그만하기</button>')}<div class="study"><div class="prog"><span class="muted" style="font-size:13px;font-variant-numeric:tabular-nums">${progress}/${total}</span><div class="xpbar"><i style="width:${total?progress/total*100:0}%"></i></div></div>${battleHTML()}${inner}</div>`}
-function bindQuit(){bindCommon();const q=$('#quit');if(q)q.onclick=()=>setView(SES.i)}
+function shell(inner,progress,total){const i=SES.i;return `${topbar()}<div class="study"><div class="shead"><div class="sh-t"><span>${esc(DATA.name)}${setDayOf(i)?` · ${esc(setDayOf(i))}`:''}</span><b>${esc(setTitleOf(i))}</b></div><nav class="mtabs" aria-label="학습 방법">${MODES.map(([m,nm])=>`<button class="mtab ${m===SES.m?'on':''}" data-mm="${m}" ${m==='match'&&SES.words.length<3?'disabled':''}>${MICON[m]}<span>${nm}</span></button>`).join('')}</nav><button class="sh-x" id="quit">그만하기</button></div><div class="prog"><div class="pbar"><i style="width:${total?progress/total*100:0}%"></i></div><span class="pc"><b>${progress}</b> / ${total}</span>${SES.m!=='card'&&SES.m!=='match'?`<span class="pr"><em class="g">${SES.right}</em><em class="b">${SES.wrong}</em></span>`:''}</div>${battleHTML()}${inner}</div>`}
+function bindQuit(){bindCommon();const q=$('#quit');if(q)q.onclick=()=>{document.onkeydown=null;setView(SES.i)};document.querySelectorAll('[data-mm]').forEach(b=>b.onclick=()=>{if(b.dataset.mm!==SES.m&&!b.disabled){document.onkeydown=null;run(b.dataset.mm,SES.i)}})}
 function distractors(word,mean,n,field){const pool=SES.words.filter(x=>x.w!==word);let cands=shuffle(pool);if(cands.length<n){const p=posOf(mean);cands=cands.concat(shuffle(POOLof().filter(([w,m])=>w!==word&&posOf(m)===p)).slice(0,40).map(([w,m])=>({w,m})))}const seen=new Set([field==='w'?word:mean]);const out=[];for(const c of cands){const v=c[field];if(!seen.has(v)){seen.add(v);out.push(c)}if(out.length>=n)break}return out}
 function addWrong(w,m){U.wrong[w]={m,c:0,at:today()}}
 function clearWrong(w){if(SES.i==='W'&&U.wrong[w]){U.wrong[w].c=(U.wrong[w].c||0)+1;if(U.wrong[w].c>=2)delete U.wrong[w]}}
@@ -874,10 +1011,9 @@ function clearWrong(w){if(SES.i==='W'&&U.wrong[w]){U.wrong[w].c=(U.wrong[w].c||0
 function runCard(){
   let q=shuffle(SES.words),done=0,total=q.length,flipped=false,front='en';
   const draw=()=>{if(!q.length)return finish({});const c=q[0];
-    $('#app').innerHTML=shell(`<div class="row" style="justify-content:center;margin-bottom:10px"><button class="btn ${front==='en'?'primary':''}" id="fe">영어 먼저</button><button class="btn ${front==='ko'?'primary':''}" id="fk">뜻 먼저</button></div>
-      <div class="qcard flip" id="card" tabindex="0" aria-label="카드 뒤집기">${(front==='en')!==flipped?`<div class="word">${esc(c.w)}</div>`:meanHTML(c.m)}<div class="hint">${flipped?'':'눌러서 뒤집기'}</div></div>
-      <div class="row" style="margin-top:14px"><button class="btn big" id="no" style="flex:1">몰라요 (다시)</button><button class="btn primary big" id="yes" style="flex:1">알아요</button></div>
-      <div class="row" style="justify-content:center;margin-top:8px"><button class="btn ghost" id="sp">발음 듣기</button></div>`,done,total);bindQuit();
+    $('#app').innerHTML=shell(`<div class="seg"><button class="${front==='en'?'on':''}" id="fe">영어 먼저</button><button class="${front==='ko'?'on':''}" id="fk">뜻 먼저</button></div>
+      <div class="qcard flip ${flipped?'back':''}" id="card" tabindex="0" aria-label="카드 뒤집기">${(front==='en')!==flipped?`<div class="word">${esc(c.w)}</div>`:meanHTML(c.m)}<div class="hint">${flipped?'':'카드를 누르면 뒤집혀요'}</div></div>
+      <div class="cardact"><button class="btn big know-no" id="no">몰라요<small>조금 뒤에 다시</small></button><button class="btn big sayb" id="sp" aria-label="발음 듣기"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg></button><button class="btn primary big know-yes" id="yes">알아요<small>다음 카드</small></button></div>`,done,total);bindQuit();
     $('#card').onclick=$('#card').onkeydown=e=>{if(e.type==='keydown'&&e.key!==' '&&e.key!=='Enter')return;flipped=!flipped;if(flipped&&front==='ko')say(c.w);draw()};
     $('#sp').onclick=()=>say(c.w);
     $('#fe').onclick=()=>{front='en';flipped=false;draw()};$('#fk').onclick=()=>{front='ko';flipped=false;draw()};
@@ -891,9 +1027,9 @@ function runRecall(){
   let q=shuffle(SES.words),total=q.length,done=0,dir='ko2en';
   const draw=()=>{if(!q.length)return finish({});const c=q[0];SES.cur=c;
     const ds=distractors(c.w,c.m,3,dir==='ko2en'?'w':'m');const opts=shuffle([c,...ds]);
-    $('#app').innerHTML=shell(`<div class="row" style="justify-content:center;margin-bottom:10px"><button class="btn ${dir==='ko2en'?'primary':''}" id="d1">뜻 → 단어</button><button class="btn ${dir==='en2ko'?'primary':''}" id="d2">단어 → 뜻</button></div>
+    $('#app').innerHTML=shell(`<div class="seg"><button class="${dir==='ko2en'?'on':''}" id="d1">뜻 보고 단어</button><button class="${dir==='en2ko'?'on':''}" id="d2">단어 보고 뜻</button></div>
       <div class="qcard">${dir==='ko2en'?meanHTML(c.m):`<div class="word">${esc(c.w)}</div>`}</div>
-      <div class="opts">${opts.map((o,k)=>`<button class="opt ${dir==='ko2en'?'en':''}" data-k="${k}"><span class="k">${k+1}</span>${dir==='ko2en'?esc(o.w):esc(meanShort(o.m,40))}</button>`).join('')}</div><div class="feedback" id="fb"></div>`,done,total);bindQuit();
+      <div class="opts grid2">${opts.map((o,k)=>`<button class="opt ${dir==='ko2en'?'en':''}" data-k="${k}"><span class="k">${k+1}</span>${dir==='ko2en'?esc(o.w):esc(meanShort(o.m,40))}</button>`).join('')}</div><div class="feedback" id="fb"></div>`,done,total);bindQuit();
     $('#d1').onclick=()=>{dir='ko2en';draw()};$('#d2').onclick=()=>{dir='en2ko';draw()};
     let locked=false;
     const choose=k=>{if(locked)return;locked=true;const o=opts[k],ok=o.w===c.w;const btns=document.querySelectorAll('.opt');btns[opts.indexOf(c)].classList.add('right');
