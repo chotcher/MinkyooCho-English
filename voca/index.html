@@ -538,6 +538,9 @@ h1,h2,h3{font-weight:700;letter-spacing:-.02em}
 .k-word{background:var(--blue-soft);color:var(--blue)}
 .k-sent{background:var(--good-soft);color:var(--good)}
 .k-drill{background:var(--gold-soft,#fbf2dc);color:var(--gold)}
+
+/* ===== v29-trial ===== */
+.btn.trialx{background:var(--gold-soft,#fbf2dc);border-color:transparent;color:#7a5a12;font-weight:700}
 </style>
 
 </head><body>
@@ -685,7 +688,25 @@ function ccPanel(){const a=$('#app');if(!a||document.getElementById('ccpanel'))r
   d.innerHTML=`<div class="row" style="gap:10px;flex-wrap:wrap"><b>클래스카드에서 옮긴 책 ${CCB.length}권</b><span id="ccst" class="muted" style="font-size:13px">확인 중…</span><span class="spacer"></span><button class="btn" id="ccup" type="button">로그인 보호 저장소로 올리기</button></div><div id="ccout" class="muted" style="font-size:13px;margin-top:6px"></div>`;
   const tb=a.querySelector('.topbar');if(tb&&tb.nextSibling)a.insertBefore(d,tb.nextSibling);else a.prepend(d);
   const out=d.querySelector('#ccout');d.querySelector('#ccup').onclick=e=>ccUpload(e.currentTarget,out);ccPanelState(out)}
-const _teacherV25=teacher;teacher=function(m){_teacherV25(m);if(ROLE==='teacher')ccPanel()};
+const _teacherV25=teacher;teacher=function(m){_teacherV25(m);if(ROLE==='teacher'){ccPanel();trialPanel()}};
+/* v29-trial: 학생 화면 체험 */
+let TRIAL=null;
+function trialPanel(){const a=$('#app');if(!a||document.getElementById('trialpanel'))return;const d=document.createElement('div');d.id='trialpanel';d.className='panel';d.style.marginTop='14px';
+  const prev=(()=>{try{return JSON.parse(localStorage.getItem('cmk_trial')||'{}')}catch(e){return {}}})();
+  const bopts=[...new Set(BOOKS.map(b=>b.grp))].map(g=>`<optgroup label="${esc(g)}">${BOOKS.map((b,n)=>[b,n]).filter(([b])=>b.grp===g).map(([b,n])=>`<option value="${b.id}" ${prev.book===b.id?'selected':''}>${b.lazy?'':(n+1)+'단계 '}${esc(b.short)}</option>`).join('')}</optgroup>`).join('');
+  d.innerHTML=`<div class="row" style="gap:10px;flex-wrap:wrap;align-items:center"><b>학생 화면 체험</b><span class="muted" style="font-size:13px">학생 기록에는 남지 않아요</span></div>
+   <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">
+    <select id="trBook" aria-label="체험할 단어책" style="max-width:320px">${bopts}</select>
+    <select id="trGram" aria-label="체험할 문법 교재"><option value="">문법 없음</option>${GBOOKS.map(b=>`<option value="${b[0]}" ${prev.gbook===b[0]?'selected':''}>${esc(b[1])}</option>`).join('')}</select>
+    <select id="trMode" aria-label="캐릭터 방식"><option value="3" ${(prev.cmode||3)==3?'selected':''}>캐릭터 없음</option><option value="2" ${prev.cmode==2?'selected':''}>교실 캐릭터</option><option value="1" ${prev.cmode==1?'selected':''}>게임 캐릭터</option></select>
+    <button class="btn primary" id="trGo" type="button">학생 화면으로 들어가기</button></div>`;
+  const ref=document.getElementById('ccpanel');if(ref&&ref.nextSibling)a.insertBefore(d,ref.nextSibling);else a.prepend(d);
+  d.querySelector('#trGo').onclick=()=>{const o={book:$('#trBook').value,gbook:$('#trGram').value,cmode:+$('#trMode').value};try{localStorage.setItem('cmk_trial',JSON.stringify(o))}catch(e){}trialStart(o)}}
+function trialStart(o){TRIAL={role:ROLE,u:U};ROLE='demo';let u=Store.loadUser('demo');
+  if(!u){u=newUser('demo','0000');u.nick='체험 학생';u.av={...DEMO_AV,hide:{}};u.streak={last:yesterday(),n:1};u.total={sessions:0,words:0}}
+  u.book=o.book;u.bookBy='teacher';u.cmode=o.cmode;u.day=0;if(o.gbook)u.gbook=o.gbook;else delete u.gbook;
+  U=migrate(u);save();CURK=null;enter()}
+function trialEnd(){if(!TRIAL)return;save();ROLE=TRIAL.role;U=TRIAL.u;TRIAL=null;CURK=null;document.body.classList.remove('sentbook','drillbook');teacher()}
 function exHTML(x,w){if(!x)return '';const L=String(x).split(/\n+/);const en=esc(L[0]).replace(/\{([^}]*)\}/g,'<b>$1</b>');return `<div class="ex"><div class="ex-en">${en}</div>${L[1]?`<div class="ex-ko">${esc(L.slice(1).join(' '))}</div>`:''}</div>`}
 /* ================= storage (교체 지점: Firebase 연결 시 이 객체만 바꾸면 됨) ================= */
 const NS='jmkvoca1:';
@@ -979,7 +1000,7 @@ async function teacherSync(F){
 }
 function writeRoster(F){F=F||window.FB;const ids=[...new Set([...ROSTER.map(r=>r[0]),...Object.keys(CACHE).filter(x=>x!=='demo')])];
   return F.setDoc(F.doc(F.db,'voca_meta','roster'),{ids,updated:new Date().toISOString()}).catch(e=>console.warn('roster',e))}
-async function logout(){flushAll();ROLE=null;U=null;try{const F=window.FB;if(F)await F.signOut(F.auth)}catch(e){}login()}
+async function logout(){if(TRIAL)return trialEnd();flushAll();ROLE=null;U=null;try{const F=window.FB;if(F)await F.signOut(F.auth)}catch(e){}login()}
 function pwChange(first){
   $('#app').innerHTML=`${topbar()}<div class="panel" style="max-width:460px;margin:30px auto;display:grid;gap:10px">
    <h2 style="font-size:22px">${first?'처음 비밀번호를 바꿔 주세요':'비밀번호 바꾸기'}</h2>
@@ -1069,8 +1090,8 @@ function wordsOf(i){if(i==='W')return Object.entries(U.wrong).map(([w,v])=>[w,v.
 const POOLS={};function POOLof(){const K=DATA.id+':'+(KIND()||'');if(!POOLS[K]){const m=new Map();DATA.sets.forEach(s=>{if((s.kind||DATA.kind)!==KIND()&&DATA.kind==='mix')return;(s.w||[]).forEach(([w,me])=>{if(!m.has(w))m.set(w,me)})});POOLS[K]=[...m.entries()]}return POOLS[K]}
 
 /* ================= screens ================= */
-function topbar(extra=''){return `<div class="topbar"><button class="brand" data-go="home" aria-label="처음 화면"><span class="cmklogo" role="img" aria-label="조민규영어"></span></button><span class="spacer"></span>${extra}<button class="btn ghost" id="snd" aria-label="소리 켜고 끄기">${SOUND?'소리 켬':'소리 끔'}</button></div>`}
-function bindCommon(){document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const g=b.dataset.go;if(g==='home'){U?home():login()}});const s=$('#snd');if(s)s.onclick=()=>{SOUND=!SOUND;s.textContent=SOUND?'소리 켬':'소리 끔'}}
+function topbar(extra=''){return `<div class="topbar"><button class="brand" data-go="home" aria-label="처음 화면"><span class="cmklogo" role="img" aria-label="조민규영어"></span></button><span class="spacer"></span>${TRIAL?'<button class="btn trialx" id="trialEnd" type="button">체험 끝내기 · 선생님 화면</button>':''}${extra}<button class="btn ghost" id="snd" aria-label="소리 켜고 끄기">${SOUND?'소리 켬':'소리 끔'}</button></div>`}
+function bindCommon(){const te=document.getElementById('trialEnd');if(te)te.onclick=()=>{document.onkeydown=null;trialEnd()};document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const g=b.dataset.go;if(g==='home'){U?home():login()}});const s=$('#snd');if(s)s.onclick=()=>{SOUND=!SOUND;s.textContent=SOUND?'소리 켬':'소리 끔'}}
 
 function login(msg=''){
   U=null;if(ROLE&&ROLE!=='demo'){return logout()}ROLE=null;
