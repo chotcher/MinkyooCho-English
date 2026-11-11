@@ -769,7 +769,16 @@ function toast(t){const d=document.createElement('div');d.className='toast';d.te
 let AC=null,SOUND=true;
 function beep(seq){if(!SOUND)return;try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();let t=AC.currentTime;seq.forEach(([f,d,type='triangle',v=.12])=>{const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(AC.destination);o.start(t);o.stop(t+d);t+=d*.8})}catch(e){}}
 const sfx={crit:()=>beep([[880,.06,'square',.08],[1320,.08,'square',.08],[1760,.16,'square',.07]]),chest:()=>beep([[392,.1],[523,.1],[659,.1],[784,.1],[1046,.12],[1318,.3]]),shiny:()=>beep([[1568,.07],[2093,.07],[2637,.2]]),ok:()=>beep([[660,.09],[990,.14]]),no:()=>beep([[220,.18,'sawtooth',.06]]),done:()=>beep([[523,.1],[659,.1],[784,.1],[1046,.25]]),lvl:()=>beep([[523,.12],[659,.12],[784,.12],[1046,.12],[1318,.35]])};
-function say(w){try{const u=new SpeechSynthesisUtterance(w);u.lang='en-US';u.rate=.9;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+/* v31-voice: 가장 좋은 영어 음성 고르기 */
+let VOICES=[];
+function vscore(v){const n=v.name;let s=0;
+  if(/natural/i.test(n))s+=100;if(/online|neural/i.test(n))s+=60;if(/google/i.test(n))s+=50;if(/premium/i.test(n))s+=45;if(/enhanced/i.test(n))s+=40;
+  if(/aria|jenny|guy|ava|samantha|allison|emma|andrew|brian|michelle|susan/i.test(n))s+=20;
+  if(/^en[-_]US/i.test(v.lang))s+=10;else if(/^en[-_](GB|AU|CA)/i.test(v.lang))s+=5;
+  if(/compact|espeak|novelty|whisper|bad news|bells|bubbles|cellos|jester|organ|trinoids|zarvox|albert|fred|junior|ralph|kathy|boing|wobble/i.test(n))s-=200;return s}
+function loadVoices(){try{VOICES=speechSynthesis.getVoices().filter(v=>/^en([-_]|$)/i.test(v.lang)).sort((a,b)=>vscore(b)-vscore(a))}catch(e){VOICES=[]}}
+try{loadVoices();speechSynthesis.onvoiceschanged=loadVoices}catch(e){}
+function say(w){try{if(!VOICES.length)loadVoices();const u=new SpeechSynthesisUtterance(w);const v=VOICES[0];if(v){u.voice=v;u.lang=v.lang}else u.lang='en-US';u.rate=/google/i.test(v&&v.name||'')?.95:.9;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
 
 /* ================= level system ================= */
 const MAXLV=100, DAILY_CAP=800;
