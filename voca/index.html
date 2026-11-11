@@ -552,6 +552,67 @@ canvas.q3d.walking{animation:q3hop .5s ease-in-out infinite}
 canvas.lpc.q3d.icon{width:84px;height:84px}
 .rc canvas.lpc.q3d{border-radius:50%;background:var(--blue-soft,#e8f0ff)}
 @media (prefers-reduced-motion: reduce){canvas.q3d{animation:none!important}}
+
+/* ===== v33-battle ===== */
+.battle.q3{height:250px;background:#cfe0ff;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1.1fr);border:0;isolation:isolate}
+.battle.q3>svg.scene{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+.battle.q3::before{z-index:0;background:radial-gradient(120% 60% at 50% 105%,rgba(0,0,0,.28),transparent 60%),linear-gradient(180deg,rgba(10,20,50,.18),transparent 40%)}
+.battle.q3{display:block}.battle.q3 .fighter{z-index:2;position:absolute;bottom:0;height:96%;width:44%;display:flex;align-items:flex-end}.battle.q3 .fighter.me{left:2%}.battle.q3 .fighter.foe{right:2%}.battle.q3 .bmid{position:absolute;left:50%;transform:translateX(-50%);top:0;width:min(46%,260px)}
+.battle.q3 canvas.q3b,.battle.q3 .fighter canvas.mon{height:100%;width:auto;max-width:none;aspect-ratio:1;transform:none;image-rendering:auto}
+.battle.q3 .fighter.me{justify-content:flex-start}.battle.q3 .fighter.foe{justify-content:flex-end}
+.battle.q3 .fighter canvas.mon{height:86%}.battle.q3 .fighter canvas.mon.boss{height:112%;margin-top:-12%}
+.battle.q3 .shadow{position:absolute;bottom:6px;left:50%;width:46%;height:12px;border-radius:50%;background:rgba(0,0,0,.28);transform:translateX(-50%);z-index:-1;filter:blur(2px)}
+.battle.q3 .bmid{margin-top:10px;background:rgba(14,22,48,.62);backdrop-filter:blur(3px);border-radius:14px;padding:8px 12px;z-index:3}
+.battle.q3 .bname{font-size:18px}
+.battle.q3 .hpbar{height:12px}
+.battle.q3 .bpet{left:auto;right:-8%;width:38%;bottom:0}
+.battle.q3 .bpet canvas{image-rendering:auto}
+.battle.q3 .combo{font-size:26px;top:10px;left:14px;padding:2px 12px;border-radius:12px;background:rgba(14,22,48,.55)}
+.battle.q3 .combo.fire{color:#fff;background:linear-gradient(90deg,#ff5a1f,#ffb21f);text-shadow:0 2px 0 #a52a00}
+.battle.q3 .dmg{font-size:30px;top:4%;left:30%;-webkit-text-stroke:1px #4a2a00;animation:dmg2 .8s forwards;z-index:5}
+.battle.q3 .dmg.crit{font-size:34px;color:#ff4d4d;left:0}
+@keyframes dmg2{0%{transform:scale(.4) translateY(10px);opacity:0}25%{transform:scale(1.25);opacity:1}100%{transform:scale(1) translateY(-40px);opacity:0}}
+.battle.q3 .me.atk.war{animation:lunge2 .45s}
+@keyframes lunge2{40%{transform:translateX(28%)}}
+.battle.q3 .me.atk.mage::after{display:none}
+.battle.q3 .foe.atk{animation:foeatk2 .45s}
+@keyframes foeatk2{40%{transform:translateX(-26%)}}
+.battle.q3 .foe.hurt canvas{animation:hurt2 .4s}
+@keyframes hurt2{25%{filter:brightness(3) saturate(0);transform:translateX(8%)}}
+.battle.q3 .me.hurt canvas{animation:mehurt2 .45s}
+@keyframes mehurt2{25%{filter:brightness(1.4) sepia(1) saturate(5) hue-rotate(-40deg);transform:translateX(-8%)}}
+.battle.q3 canvas.mon.gone{animation:gone .7s forwards}
+@keyframes gone{30%{filter:brightness(4)}100%{transform:scale(.2) translateY(30%);opacity:0;filter:brightness(4)}}
+.battle.q3 .foe.dead canvas{animation:gone .7s forwards}
+.fx{position:absolute;pointer-events:none;z-index:6}
+.fx.slash{left:20%;top:12%;width:70%;height:70%;border-radius:50%;border-top:7px solid #fff;border-right:3px solid rgba(255,255,255,.6);filter:drop-shadow(0 0 6px #9fd0ff);animation:slash .45s ease-out forwards}
+@keyframes slash{0%{transform:rotate(-70deg) scale(.6);opacity:0}30%{opacity:1}100%{transform:rotate(60deg) scale(1.1);opacity:0}}
+.fx.orbshot{left:24%;top:42%;width:34px;height:34px;border-radius:50%;background:radial-gradient(#fff,#8fd8ff 45%,rgba(120,190,255,0) 72%);box-shadow:0 0 22px 8px rgba(120,200,255,.7);animation:orbshot .3s ease-in forwards}
+@keyframes orbshot{to{left:72%;transform:scale(1.5)}}
+.fx.boomlet{left:30%;top:25%;width:50%;aspect-ratio:1;border-radius:50%;background:radial-gradient(rgba(255,255,255,.95),rgba(140,210,255,.7) 35%,rgba(140,210,255,0) 70%);animation:boomlet .5s forwards}
+@keyframes boomlet{0%{transform:scale(.2);opacity:1}100%{transform:scale(1.6);opacity:0}}
+.fx.sparks{left:55%;top:45%;width:0;height:0}
+.fx.sparks i{position:absolute;width:7px;height:7px;border-radius:50%;box-shadow:0 0 8px currentColor;animation:spark .6s ease-out forwards;transform:rotate(var(--a)) translateX(0)}
+@keyframes spark{to{transform:rotate(var(--a)) translateX(var(--d));opacity:0}}
+.fx.boom{left:10%;top:5%;width:85%;aspect-ratio:1}
+.fx.boom b{position:absolute;inset:0;border-radius:50%;background:radial-gradient(rgba(255,255,220,1),rgba(255,200,60,.85) 30%,rgba(255,120,30,.4) 55%,rgba(255,80,0,0) 70%);animation:boom 1s ease-out forwards}
+.fx.boom b:nth-child(2){animation-delay:.12s;inset:15%}.fx.boom b:nth-child(3){animation-delay:.24s;inset:-10%;background:radial-gradient(rgba(255,255,255,0) 55%,rgba(255,230,120,.8) 62%,rgba(255,230,120,0) 70%)}
+@keyframes boom{0%{transform:scale(.1);opacity:1}100%{transform:scale(1.4);opacity:0}}
+.fx.kobanner{inset:0;display:grid;place-items:center}
+.fx.kobanner span{font-family:var(--f-display);font-size:46px;font-weight:800;color:#ffe066;-webkit-text-stroke:2px #7a3b00;text-shadow:0 4px 0 #7a3b00,0 0 20px rgba(255,200,60,.8);animation:ko 1.2s forwards}
+@keyframes ko{0%{transform:scale(3);opacity:0}20%{transform:scale(1);opacity:1}80%{opacity:1}100%{transform:translateY(-20px);opacity:0}}
+.fx.critflash{inset:0;background:rgba(255,240,180,.55);animation:fade .35s forwards}
+.fx.ouch{inset:0;box-shadow:inset 0 0 60px 20px rgba(255,40,40,.65);animation:fade .45s forwards}
+@keyframes fade{to{opacity:0}}
+canvas.mon.q3m{image-rendering:auto}
+.dexi .btn.sm:not(.primary){color:#1b2a4a;background:#fff}
+.petwrap{width:30%}
+.dexi canvas.mon.q3m{width:100%;height:auto;max-width:110px;aspect-ratio:1}
+.petwrap canvas.mon.q3m{image-rendering:auto}
+.dexi .btn.sm:not(.primary){color:#1b2a4a;background:#fff}
+.petwrap{width:30%}
+@media (max-width:640px){.battle.q3{height:230px}.battle.q3 .bmid{padding:4px 8px;margin-top:6px;width:56%;gap:2px;font-size:11px}.battle.q3 .hpbar{height:8px}.battle.q3 .myhearts{font-size:12px}.battle.q3 .fighter{height:74%;width:48%}.battle.q3 .combo{font-size:18px;top:auto;bottom:6px;left:50%;transform:translateX(-50%)}.battle.q3 .dmg{font-size:24px}.fx.kobanner span{font-size:34px}.battle.q3 .bname{font-size:15px}}
+@media (prefers-reduced-motion: reduce){.fx{display:none}}
 </style>
 
 </head><body>
@@ -1477,6 +1538,39 @@ credits=function(){const d=document.createElement('div');d.className='ov';
     <b>몬스터·던전 바닥 그림</b><p>16x16 DungeonTileset II — 0x72 (CC0) · <a href="https://0x72.itch.io/dungeontileset-ii" target="_blank" rel="noopener">https://0x72.itch.io/dungeontileset-ii</a></p></div>
     <button class="btn primary" id="ovok">닫기</button></div>`;
   document.body.appendChild(d);d.querySelector('#ovok').onclick=()=>d.remove();d.onclick=e=>{if(e.target===d)d.remove()}};
+
+
+/* v33-battle: 3D 몬스터 + 전투 연출 */
+const QM_KEYS=["tiny_zombie", "goblin", "imp", "skelet", "muddy", "swampy", "zombie", "ice_zombie", "masked_orc", "orc_warrior", "orc_shaman", "necromancer", "wogol", "chort", "big_zombie", "ogre", "big_demon"],QM_NAMES={"tiny_zombie": "꼬마 퍼글린", "goblin": "퍼글린", "imp": "임프", "skelet": "붉은 퍼글린", "muddy": "늪 임프", "swampy": "푸른 퍼글린", "zombie": "얼음 임프", "ice_zombie": "서리 퍼글린", "masked_orc": "그림자 퍼글린", "orc_warrior": "전사 임프", "orc_shaman": "주술 임프", "necromancer": "유령 임프", "wogol": "독 퍼글린", "chort": "불꽃 임프", "big_zombie": "퍼글린 대장", "ogre": "얼음 임프 대장", "big_demon": "대악마 임프"};
+MONS.forEach(m=>{if(QM_NAMES[m.k])m.nm=QM_NAMES[m.k]});
+const QMW=384,QMC=9,QPI={i:0,a:1,h:2};
+monImg=function(){return q3Img('mons.webp')};
+monCanvas=function(m,opt={}){return `<canvas class="mon q3m ${m.t>=5?'boss':''} ${opt.cls||''}" width="${QMW}" height="${QMW}" data-mon="${m.k}" data-still="1" aria-label="${esc(m.nm)}" role="img"></canvas>`};
+drawMon=function(cv){const m=MON_BY[cv.dataset.mon];if(!m||!cv._img)return;const n=QM_KEYS.indexOf(m.k)*3+(QPI[cv.dataset.pose]||0);
+  const x=cv.getContext('2d');x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.clearRect(0,0,QMW,QMW);x.drawImage(cv._img,(n%QMC)*QMW,Math.floor(n/QMC)*QMW,QMW,QMW,0,0,QMW,QMW)};
+function heroB(av,lv){const id='c'+(++CRID);CREG.set(id,{av:JSON.parse(JSON.stringify(av)),lv,opt:{}});return `<canvas class="q3b" id="bMeC" width="${QMW}" height="${QMW}" data-cid="${id}" role="img" aria-label="내 캐릭터"></canvas>`}
+async function paintHeroB(cv){const r=CREG.get(cv.dataset.cid);if(!r)return;const av=r.av,sx=av.body==='female'?'f':'m',job=JOBS[av.job]?av.job:'warrior',k=q3Stage(job,r.lv||1)*3+(QPI[cv.dataset.pose]||0),hk=q3Hair(av);
+  const [b,h]=await Promise.all([q3Img(`bb_${sx}_${job}.webp`),q3Img(`bh_${sx}_${job}_${hk}.webp`)]);if(!b||!cv.isConnected)return;
+  const cx=(k%QMC)*QMW,cy=Math.floor(k/QMC)*QMW,x=cv.getContext('2d');x.clearRect(0,0,QMW,QMW);x.drawImage(b,cx,cy,QMW,QMW,0,0,QMW,QMW);
+  if(h){const t=Q3T.getContext('2d');t.globalCompositeOperation='source-over';t.clearRect(0,0,Q3W,Q3W);t.drawImage(h,cx,cy,QMW,QMW,0,0,QMW,QMW);
+    t.globalCompositeOperation='multiply';t.fillStyle=HCX[av.hc]||HCX.dark_brown;t.fillRect(0,0,QMW,QMW);t.globalCompositeOperation='destination-in';t.drawImage(h,cx,cy,QMW,QMW,0,0,QMW,QMW);t.globalCompositeOperation='source-over';
+    x.drawImage(Q3T,0,0,QMW,QMW,0,0,QMW,QMW)}}
+new MutationObserver(()=>document.querySelectorAll('canvas.q3b:not([data-p])').forEach(c=>{c.dataset.p=1;paintHeroB(c)})).observe(document.body,{childList:true,subtree:true});
+const PT={};function pose(cv,p,ms){if(!cv)return;clearTimeout(PT[cv.id||cv.dataset.cid]);const set=v=>{cv.dataset.pose=v;cv.classList.contains('q3b')?paintHeroB(cv):drawMon(cv)};set(p);if(ms)PT[cv.id||cv.dataset.cid]=setTimeout(()=>{if(cv.isConnected&&!cv.classList.contains('gone'))set('i')},ms)}
+function fx(parent,cls,html='',ms=900,style=''){if(!parent)return;const d=document.createElement('div');d.className='fx '+cls;if(style)d.style.cssText=style;d.innerHTML=html;parent.appendChild(d);setTimeout(()=>d.remove(),ms);return d}
+function sparks(parent,col,n=10){let h='';for(let i=0;i<n;i++)h+=`<i style="--a:${i*360/n+Math.random()*20}deg;--d:${40+Math.random()*50}px;background:${col}"></i>`;fx(parent,'sparks',h,700)}
+battleHTML=function(){const b=SES&&SES.mon;if(!b)return '';const m=b.m,lv=lvInfo(U.xp).lv;const pet=U.pet&&MON_BY[U.pet];
+  return `<div class="battle q3 ${b.shiny?'shinyb':''} ${m.t>=5?'bossb':''}" id="battle">${sceneSVG(lv)}<div class="combo ${b.combo>=3?'on':''} ${b.combo>=10?'fire':''}" id="bCombo">${b.combo>=3?`COMBO ×${b.combo}`:''}</div><div class="fighter me" id="bMe">${pet?`<span class="bpet">${monCanvas(pet,{cls:'pet'})}</span>`:''}${heroB(U.av,lv)}<span class="shadow"></span></div>
+  <div class="bmid"><div class="bname">${b.shiny?'<span class="shTag">황금</span> ':''}${esc(m.nm)}${m.t>=5?' <span class="bossTag">BOSS</span>':''}</div><div class="hpbar"><i id="bhpbar" style="width:${b.hp/b.max*100}%"></i></div><div class="bhp" id="bhp">HP ${b.hp} / ${b.max}</div><div class="myhearts" id="bHearts" aria-label="내 체력">${hearts()}</div></div>
+  <div class="fighter foe" id="bFoe">${monCanvas(m,{cls:b.shiny?'shiny':''})}<span class="shadow"></span></div></div>`};
+const _bHitV33=bHit;bHit=function(){const b=SES&&SES.mon;if(!b)return;_bHitV33();
+  const bt=$('#battle'),foe=$('#bFoe'),me=$('#bMeC'),mc=foe&&foe.querySelector('canvas.mon');const mage=U.av.job==='mage',crit=foe&&foe.querySelector('.dmg.crit');
+  pose(me,'a',480);
+  const hitFx=()=>{if(!foe)return;pose(mc,'h',420);sparks(foe,crit?'#ffd23f':mage?'#8fd8ff':'#fff',crit?16:10);
+    if(mage)fx(foe,'boomlet','',600);else fx(foe,'slash','',500);if(crit)fx(bt,'critflash','',400)};
+  if(mage&&bt){fx(bt,'orbshot','',420);setTimeout(hitFx,260)}else hitFx();
+  if(b.hp===0&&foe){setTimeout(()=>{fx(foe,'boom','<b></b><b></b><b></b>',1200);sparks(foe,'#ffd23f',22);fx(bt,'kobanner','<span>처치!</span>',1300);if(mc)mc.classList.add('gone')},380)}};
+const _bMissV33=bMiss;bMiss=function(){_bMissV33();const foe=$('#bFoe'),mc=foe&&foe.querySelector('canvas.mon');pose(mc,'a',480);setTimeout(()=>{pose($('#bMeC'),'h',480);sparks($('#bMe'),'#ff5d5d',8);fx($('#battle'),'ouch','',450)},180)};
 
 /* ================= teacher ================= */
 function teacher(msg=''){
