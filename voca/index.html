@@ -1671,6 +1671,25 @@ function teacher(msg=''){
 
 }
 
+/* v33-world: VOCA WORLD — 복셀 오픈월드 단어 게임. 선생님이 정한 단어책(U.book)의 표제어만 world.html로 넘김 */
+function worldWords(){if(!DATA||!Array.isArray(DATA.sets))return[];const out=[],seen=new Set();
+  DATA.sets.forEach(st=>{if(!st||!st.d||!Array.isArray(st.w)||st.q)return;
+    if(st.kind==='sent'||st.kind==='drill'||(DATA.kind==='sent'&&!st.kind))return;
+    if(st.k&&st.k!=='new')return;
+    st.w.forEach(x=>{const w=String(x&&x[0]||'').trim(),m=String(x&&x[1]||'').trim();
+      if(!w||!m||!/[A-Za-z]/.test(w)||/\s{2,}\S+\s{2,}/.test(w))return;
+      const key=w.toLowerCase();if(seen.has(key))return;seen.add(key);out.push({day:st.d,word:w,mean:m})})});
+  return out}
+function worldGo(){const ws=worldWords();if(ws.length<4){toast('이 단어책으로는 아직 VOCA WORLD를 할 수 없어요');return}
+  try{localStorage.setItem('cmk_world',JSON.stringify({id:U.id,nick:U.nick||U.name||U.id,book:DATA.id,bookName:DATA.name,cur:U.day||0,words:ws,at:Date.now()}))}
+  catch(e){toast('기기 저장 공간이 부족해 들어갈 수 없어요');return}
+  save();location.href='world.html'}
+const _homeV33=home;home=function(){_homeV33();
+  if(!U||!U.bookBy||!DATA||ROLE==='teacher'||document.getElementById('worldGo'))return;
+  const mb=document.querySelector('.mybook');if(!mb)return;
+  const b=document.createElement('button');b.className='btn primary';b.id='worldGo';b.type='button';
+  b.style.cssText='margin-top:8px;justify-self:start';b.textContent='VOCA WORLD 탐험하기 →';b.onclick=worldGo;mb.appendChild(b)};
+
 login();
 </script>
 
