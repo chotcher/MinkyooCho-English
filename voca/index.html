@@ -634,6 +634,7 @@ canvas.mon.q3m{image-rendering:auto}
 /* ===== v35-unlock ===== */
 .chip.lock{opacity:.6;border-style:dashed}.chip.lock small{font-size:11px;color:var(--muted)}
 .sw.lock{position:relative;opacity:.45}.sw.lock::after{content:'🔒';position:absolute;inset:0;display:grid;place-items:center;font-size:12px}
+.gpick{max-width:760px;margin:24px auto;text-align:center}.gpk{display:grid;grid-template-columns:1fr 1fr;gap:16px}.gcard{border:2px solid var(--line);border-radius:18px;background:#fff;padding:10px;cursor:pointer;display:grid;gap:8px;font:inherit;font-size:20px}.gcard:hover,.gcard:focus-visible{border-color:var(--blue)}.gcard .stage{pointer-events:none}
 .keybadge{background:#fff7da;border:1px solid #f1d37a;border-radius:999px;padding:4px 12px;font-size:14px;white-space:nowrap}
 .keyhow{border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:13.5px}.keyhow summary{cursor:pointer;font-weight:600}.keyhow ul{margin:6px 0 0;padding-left:18px;display:grid;gap:3px}
 </style>
@@ -1637,7 +1638,7 @@ const _homeV34=home;home=function(){_homeV34();if(!U||ROLE==='teacher')return;co
 
 /* v35-unlock: 꾸미기 열쇠 */
 const START_AV={job:'warrior',body:'male',skin:'light',hair:'parted',hc:'dark_brown',cloth:'blue',cape:'red',hide:{}};
-const UNL_FREE=['body:male','hair:parted','hc:dark_brown','job:warrior'];
+const UNL_FREE=['body:male','body:female','hair:parted','hair:long','hc:dark_brown','job:warrior'];
 const UNL_COST={'job:mage':2};
 const KEY_LV=[2,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100];
 function unlState(){if(!U.unl){U.unl={own:[],seen:0};if(U.av){const a=U.av;['body:'+a.body,'hair:'+q3Hair(a),'hc:'+a.hc,'job:'+a.job].forEach(k=>{if(!UNL_FREE.includes(k)&&!U.unl.own.includes(k))U.unl.own.push(k)})}}return U.unl}
@@ -1658,8 +1659,12 @@ function keyInfo(){const lv=lvInfo(U.xp).lv;const out={lv:KEY_LV.filter(l=>l<=lv
   out.nextLv=KEY_LV.find(l=>l>lv)||null;return out}
 const _pickOrig=pick;
 pick=function(){
-  if(!U.av){U.av=JSON.parse(JSON.stringify(START_AV));U.nick=U.nick||(U.name||U.id||'').slice(0,8);U.unl={own:[],seen:0};delete U.sp;delete U.eq;save();
-    toast('캐릭터와 함께 시작해요! 공부하면 꾸미기 열쇠를 얻어요');return enter()}
+  if(!U.av){const mk=b=>({...JSON.parse(JSON.stringify(START_AV)),body:b,hair:b==='female'?'long':'parted'});
+    $('#app').innerHTML=`${topbar()}<div class="panel gpick"><h2 style="font-size:26px;margin:0">나의 캐릭터</h2><p class="muted" style="margin:6px 0 16px">하나만 골라 주세요. 머리 모양·머리 색·직업은 공부하면서 열쇠를 모아 하나씩 열 수 있어요.</p>
+      <div class="gpk">${[['male','남자'],['female','여자']].map(([b,n])=>`<button class="gcard" data-b="${b}" type="button">${stageHTML(mk(b),1,'')}<b>${n}</b></button>`).join('')}</div></div>`;
+    bindCommon();
+    document.querySelectorAll('.gcard').forEach(x=>x.onclick=()=>{U.av=mk(x.dataset.b);U.nick=U.nick||(U.name||U.id||'').slice(0,8);U.unl={own:[],seen:0};delete U.sp;delete U.eq;save();
+      toast('출발! 공부하면 꾸미기 열쇠를 얻어요');enter()});return}
   const av=JSON.parse(JSON.stringify(U.av)),lvNow=lvInfo(U.xp).lv;av.hair=q3Hair(av);let nick=U.nick||'';const own=[...unlState().own];
   const K=()=>{const k=keyInfo();const used=own.reduce((a,x)=>a+(UNL_COST[x]||1),0);return {...k,left:Math.max(0,k.total-used)}};
   const has=k=>UNL_FREE.includes(k)||own.includes(k);
