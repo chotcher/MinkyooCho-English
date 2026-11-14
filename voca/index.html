@@ -630,6 +630,12 @@ canvas.mon.q3m{image-rendering:auto}
 .mlb{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font:inherit;font-size:13.5px;cursor:pointer}
 .mlb:hover{border-color:var(--blue)}.mlb.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
 @media (max-width:640px){.mlg{grid-template-columns:1fr;gap:4px}.mlgn{padding:0}}
+
+/* ===== v35-unlock ===== */
+.chip.lock{opacity:.6;border-style:dashed}.chip.lock small{font-size:11px;color:var(--muted)}
+.sw.lock{position:relative;opacity:.45}.sw.lock::after{content:'🔒';position:absolute;inset:0;display:grid;place-items:center;font-size:12px}
+.keybadge{background:#fff7da;border:1px solid #f1d37a;border-radius:999px;padding:4px 12px;font-size:14px;white-space:nowrap}
+.keyhow{border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:13.5px}.keyhow summary{cursor:pointer;font-weight:600}.keyhow ul{margin:6px 0 0;padding-left:18px;display:grid;gap:3px}
 </style>
 
 </head><body>
@@ -1627,6 +1633,79 @@ const _homeV34=home;home=function(){_homeV34();if(!U||ROLE==='teacher')return;co
   d.innerHTML=`<div class="row" style="justify-content:space-between;align-items:baseline"><b>내 학습 <span class="muted" style="font-weight:500">${bs.length}권</span></b><span class="muted" style="font-size:12.5px">선생님이 걸어 준 책이에요. 눌러서 바꿔 공부해요.</span></div>
    ${grps.map(g=>`<div class="mlg"><span class="mlgn">${esc(g)}</span><div class="mlc">${bs.filter(id=>bookOf(id).grp===g).map(id=>{const b=bookOf(id);return `<button type="button" class="mlb ${id===U.book?'on':''}" data-b="${id}" aria-pressed="${id===U.book}">${esc(bookLabel(b))}</button>`}).join('')}</div></div>`).join('')}`;
   anchor.after(d);d.querySelectorAll('.mlb').forEach(x=>x.onclick=()=>{const id=x.dataset.b;if(id===U.book)return;U.book=id;U.day=0;save();CURK=null;home();window.scrollTo({top:document.getElementById('mylearn')?.offsetTop-80||0,behavior:'smooth'})})};
+
+
+/* v35-unlock: 꾸미기 열쇠 */
+const START_AV={job:'warrior',body:'male',skin:'light',hair:'parted',hc:'dark_brown',cloth:'blue',cape:'red',hide:{}};
+const UNL_FREE=['body:male','hair:parted','hc:dark_brown','job:warrior'];
+const UNL_COST={'job:mage':2};
+const KEY_LV=[2,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100];
+function unlState(){if(!U.unl){U.unl={own:[],seen:0};if(U.av){const a=U.av;['body:'+a.body,'hair:'+q3Hair(a),'hc:'+a.hc,'job:'+a.job].forEach(k=>{if(!UNL_FREE.includes(k)&&!U.unl.own.includes(k))U.unl.own.push(k)})}}return U.unl}
+function owns(k){return UNL_FREE.includes(k)||unlState().own.includes(k)}
+function bookSetTotal(id){const b=bookOf(id);if(!b)return 0;return (b.lazy&&!b.loaded)?(b.n||0):(b.sets||[]).length}
+function isReadBook(id){const b=bookOf(id);return !!b&&/독해/.test(b.grp||'')}
+/* 열쇠 계산: 지금까지의 기록으로 매번 다시 셈 → 같은 일로 두 번 받지 않음 */
+function keyInfo(){const lv=lvInfo(U.xp).lv;const out={lv:KEY_LV.filter(l=>l<=lv).length,word:0,read:0,gram:0,list:[]};
+  const done={};Object.entries(U.sets||{}).forEach(([k,r])=>{const i=k.lastIndexOf(':');const id=k.slice(0,i);if(r&&r.test!=null)done[id]=(done[id]||0)+1});
+  const readBase={};
+  Object.entries(done).forEach(([id,n])=>{const t=bookSetTotal(id);if(!t)return;const b=bookOf(id);
+    if(isReadBook(id)){if(n>=t){const base=id.replace(/s$/,'');if(!readBase[base]){readBase[base]=1;out.read++;out.list.push((b.short||b.name)+' 끝')}}}
+    else{const q=Math.min(4,Math.floor(n/t*4));if(q){out.word+=q;out.list.push(`${b.short||b.name} ${q}/4`)}}});
+  Object.entries(U.gram||{}).forEach(([bk,st])=>{const n=Object.entries((st&&st.done)||{}).filter(([k,v])=>/^ch.+:test$/.test(k)&&v&&v.pass).length;const q=Math.floor(n/4);if(q){out.gram+=q;const g=(typeof GBOOKS!=='undefined')&&GBOOKS.find(x=>x[0]===bk);out.list.push(`문법 ${g?g[2]:bk} ${n}챕터`)}});
+  out.total=out.lv+out.word+out.read+out.gram;
+  const used=unlState().own.reduce((a,k)=>a+(UNL_COST[k]||1),0);
+  out.used=used;out.left=Math.max(0,out.total-used);
+  out.nextLv=KEY_LV.find(l=>l>lv)||null;return out}
+const _pickOrig=pick;
+pick=function(){
+  if(!U.av){U.av=JSON.parse(JSON.stringify(START_AV));U.nick=U.nick||(U.name||U.id||'').slice(0,8);U.unl={own:[],seen:0};delete U.sp;delete U.eq;save();
+    toast('캐릭터와 함께 시작해요! 공부하면 꾸미기 열쇠를 얻어요');return enter()}
+  const av=JSON.parse(JSON.stringify(U.av)),lvNow=lvInfo(U.xp).lv;av.hair=q3Hair(av);let nick=U.nick||'';const own=[...unlState().own];
+  const K=()=>{const k=keyInfo();const used=own.reduce((a,x)=>a+(UNL_COST[x]||1),0);return {...k,left:Math.max(0,k.total-used)}};
+  const has=k=>UNL_FREE.includes(k)||own.includes(k);
+  const chip=(k,v,nm)=>{const id=k+':'+v,ok=has(id),c=UNL_COST[id]||1;return `<button class="chip ${av[k]===v?'on':''} ${ok?'':'lock'}" data-k="${k}" data-v="${v}" aria-pressed="${av[k]===v}">${ok?'':'🔒 '}${nm}${ok?'':` <small>열쇠 ${c}</small>`}</button>`};
+  const draw=()=>{const k=K();
+    $('#app').innerHTML=`${topbar('<button class="btn" id="cx">← 돌아가기</button>')}
+    <div class="creator">
+      <div class="cprev">
+        ${stageHTML(av,lvNow,`지금 · Lv.${lvNow} ${titleOf(av.job,lvNow)}`)}
+        <div class="future"><div class="muted" style="font-size:13px;font-weight:600">이렇게 강해져요</div><div class="fut">${[20,50,100].map(l=>`<div>${charCanvas(av,l,{anim:true,nohide:true})}<span>Lv.${l}<br>${titleOf(av.job,l)}</span></div>`).join('')}</div></div>
+      </div>
+      <div class="panel copts">
+        <div class="row" style="align-items:center"><h2 style="font-size:24px;margin:0">캐릭터 꾸미기</h2><span class="spacer"></span><span class="keybadge" aria-label="꾸미기 열쇠">🔑 열쇠 <b>${k.left}</b>개</span></div>
+        <p class="muted" style="margin:2px 0 4px;font-size:13px">자물쇠가 걸린 것은 꾸미기 열쇠로 열어요. 한 번 연 것은 언제든 다시 고를 수 있어요.</p>
+        <div class="orow"><b>직업</b><div class="chips">${Object.entries(JOBS).map(([v,j])=>chip('job',v,j.nm)).join('')}</div><span class="muted hint2">${JOBS[av.job].desc}</span></div>
+        <div class="orow"><b>체형</b><div class="chips">${chip('body','male','남자')}${chip('body','female','여자')}</div></div>
+        <div class="orow"><b>머리 모양</b><div class="chips">${HAIRS.map(([v,n])=>chip('hair',v,n)).join('')}</div></div>
+        <div class="orow"><b>머리 색</b><div class="sws">${HAIRC.map(c=>{const ok=has('hc:'+c);return `<button class="sw ${av.hc===c?'on':''} ${ok?'':'lock'}" data-k="hc" data-v="${c}" style="--c:${HCX[c]}" aria-label="${c}${ok?'':' (잠김)'}" aria-pressed="${av.hc===c}"></button>`}).join('')}</div></div>
+        <div class="field"><label for="nick">닉네임 (8자까지)</label><input id="nick" maxlength="8" value="${esc(nick)}" placeholder="예: 단어용사"></div>
+        <details class="keyhow"><summary>열쇠는 이렇게 얻어요</summary><ul>
+          <li>레벨 업: Lv.2 · 5 · 10 · 15 … 100 (5레벨마다) — 지금 ${k.lv}개${k.nextLv?` · 다음은 Lv.${k.nextLv}`:''}</li>
+          <li>단어책: 한 권을 4등분해서 1/4 끝낼 때마다 (테스트까지) — 지금 ${k.word}개</li>
+          <li>독해책: 한 권을 다 끝내면 — 지금 ${k.read}개</li>
+          <li>문법: 챕터 테스트 4개 통과할 때마다 — 지금 ${k.gram}개</li></ul>
+          <p class="muted" style="font-size:12.5px;margin:4px 0 0">받은 열쇠 ${k.total}개 · 쓴 열쇠 ${k.total-k.left}개</p></details>
+        <div class="err" id="perr"></div>
+        <button class="btn primary big" id="ok" style="width:100%">저장하기</button>
+      </div>
+    </div>`;
+    bindCommon();
+    $('#nick').oninput=e=>nick=e.target.value;
+    document.querySelectorAll('.creator [data-k]').forEach(b=>b.onclick=()=>{const kk=b.dataset.k,v=b.dataset.v,id=kk+':'+v;
+      if(!has(id)){const c=UNL_COST[id]||1,kn=K();if(kn.left<c){$('#perr').textContent=`열쇠가 ${c}개 필요해요. 공부해서 열쇠를 더 모아 보세요!`;sfx&&sfx.bad&&sfx.bad();return}
+        own.push(id);sfx&&sfx.ok&&sfx.ok()}
+      av[kk]=v;draw()});
+    $('#cx').onclick=room;
+    $('#ok').onclick=()=>{const n=nick.trim();if(!n){$('#perr').textContent='닉네임을 써 주세요.';$('#nick').focus();return}U.av=av;U.nick=n.slice(0,8);unlState().own=own;delete U.sp;delete U.eq;save();toast('저장했어요');room()};
+  };draw()};
+/* 새 열쇠를 얻으면 알려 줌 */
+const _homeV35=home;home=function(){_homeV35();if(!U||!U.av||CM()!==1||!(ROLE==='student'||ROLE==='demo'))return;const k=keyInfo(),st=unlState();
+  if(k.total>(st.seen||0)){const got=k.total-(st.seen||0);st.seen=k.total;save();if(document.querySelector('.ov.keyov'))return;
+    const d=document.createElement('div');d.className='ov keyov';
+    d.innerHTML=`<div class="box" role="dialog" aria-label="꾸미기 열쇠"><div style="font-size:46px;line-height:1">🔑</div><h2 style="font-size:24px">꾸미기 열쇠 ${got}개를 얻었어요!</h2>
+      <p style="margin:0">지금 쓸 수 있는 열쇠 <b>${k.left}개</b> — 새 머리 색, 머리 모양, 체형, 직업을 열 수 있어요.</p>
+      <div class="row" style="justify-content:center;gap:8px"><button class="btn" id="kl">나중에</button><button class="btn primary" id="kg">꾸미러 가기</button></div></div>`;
+    document.body.appendChild(d);d.querySelector('#kl').onclick=()=>d.remove();d.querySelector('#kg').onclick=()=>{d.remove();pick()}}};
 
 /* ================= teacher ================= */
 function teacher(msg=''){
