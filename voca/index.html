@@ -650,6 +650,20 @@ canvas.mon.q3m{image-rendering:auto}
 @keyframes zbsh{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 .zbhelp{font-size:13px}.zbres{text-align:center}.zbres.win{border-color:#86efac}.zbres.lose{border-color:#fca5a5}
 @media (prefers-reduced-motion:reduce){.zbform input.wrong{animation:none}}
+
+/* ===== v37-marks ===== */
+.mkbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:14px;padding:10px 14px;border:1px solid var(--line);border-radius:14px;background:#fff}
+.mkl{font-weight:700;font-size:14px}.mkseg button:disabled{opacity:.45;cursor:not-allowed}.mkhint{font-size:13px;color:var(--muted);flex:1;min-width:200px}
+.mode .mkn{display:inline-block;margin-top:4px;font-size:11.5px;font-weight:700;color:#1d4ed8;background:#eff6ff;border-radius:999px;padding:1px 8px}.mode .mkn.all{color:#475569;background:#f1f5f9}
+.wlist .witem.mkable{cursor:pointer;border:2px solid transparent;transition:border-color .12s}.wlist .witem.mkable:hover{border-color:#bfdbfe}
+.wlist .witem.mk{border-color:#2563eb;box-shadow:0 0 0 2px rgba(37,99,235,.15);background:#f8fbff}
+.wlist .witem.mkable:focus-visible{outline:3px solid #93c5fd;outline-offset:2px}
+.ov .box.hlmodal{width:min(760px,94vw);max-height:88vh;display:flex;flex-direction:column;text-align:left;overflow:hidden}
+.hltool{display:flex;align-items:center;gap:6px;margin:10px 0 6px;flex-wrap:wrap}.hlsw{width:34px;height:26px;border-radius:6px;border:1px solid rgba(0,0,0,.15);cursor:pointer}
+.hllist{overflow:auto;flex:1;min-height:0;border:1px solid var(--line);border-radius:12px;padding:4px 8px}
+.hltab{font-weight:700;font-size:13px;color:var(--blue);padding:8px 4px 4px}.hlrow{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:8px;font-size:14px;cursor:pointer}.hlrow i{font-style:normal;color:var(--muted);font-size:12px}
+.hlrow.hid{opacity:.5;text-decoration:line-through}.hlrow em{margin-left:auto;font-style:normal;font-size:12px;color:#b91c1c}
+.hlentry{margin-bottom:12px}
 </style>
 
 </head><body>
@@ -1345,7 +1359,7 @@ function setTitleOf(i){return i==='W'?'오답 노트':DATA.sets[i].t}
 function setDayOf(i){return i==='W'?'':(DATA.sets[i].d?`Day ${pad(DATA.sets[i].d)}`:'')}
 /* ================= study modes ================= */
 let SES=null;
-function run(m,i){useKind(i);SES={m,i,words:DRILL()&&i!=='W'?DATA.sets[i].q.map((q,n)=>({w:'q'+n,m:'',q})):wordsOf(i).map(([w,me,x])=>({w,m:me,x})),right:0,wrong:0,wrongList:[],start:Date.now(),firstTry:new Set(),miss:new Set()};if(GAME()&&['recall','spell','test'].includes(m)){const n=m==='test'?Math.min(30,SES.words.length):SES.words.length;const mm=pickMonster(m==='test',lvInfo(U.xp).lv);SES.mon={m:mm,hp:n,max:n,hits:0,combo:0,maxCombo:0,shiny:mm.t<5&&Math.random()<0.07}}(DRILL()&&i!=='W'?{recall:()=>runDrill(false),test:()=>runDrill(true)}:SENT()?{card:runCard,recall:runRecall,spell:runOrder,match:runMatch,test:()=>runOrder(true)}:{card:runCard,recall:runRecall,spell:runSpell,match:runMatch,test:runTest})[m]()}
+function run(m,i){useKind(i);SES={m,i,words:DRILL()&&i!=='W'?DATA.sets[i].q.map((q,n)=>({w:'q'+n,m:'',q})):wordsOf(i).map(([w,me,x])=>({w,m:me,x})),right:0,wrong:0,wrongList:[],start:Date.now(),firstTry:new Set(),miss:new Set()};if(GAME()&&['recall','spell','test'].includes(m)){const n=m==='test'?Math.min(30,SES.words.length):SES.words.length;const mm=pickMonster(m==='test',lvInfo(U.xp).lv);SES.mon={m:mm,hp:n,max:n,hits:0,combo:0,maxCombo:0,shiny:mm.t<5&&Math.random()<0.07}}mkFilter(m,i);(DRILL()&&i!=='W'?{recall:()=>runDrill(false),test:()=>runDrill(true)}:SENT()?{card:runCard,recall:runRecall,spell:runOrder,match:runMatch,test:()=>runOrder(true)}:{card:runCard,recall:runRecall,spell:runSpell,match:runMatch,test:runTest})[m]()}
 function shell(inner,progress,total){const i=SES.i;return `${topbar()}<div class="study"><div class="shead"><div class="sh-t"><span>${esc(DATA.name)}${setDayOf(i)?` · ${esc(setDayOf(i))}`:''}</span><b>${esc(setTitleOf(i))}</b></div><nav class="mtabs" aria-label="학습 방법">${MODESX().map(([m,nm])=>`<button class="mtab ${m===SES.m?'on':''}" data-mm="${m}" ${m==='match'&&SES.words.length<3?'disabled':''}>${MICON[m]}<span>${nm}</span></button>`).join('')}</nav><button class="sh-x" id="quit">그만하기</button></div><div class="prog"><div class="pbar"><i style="width:${total?progress/total*100:0}%"></i></div><span class="pc"><b>${progress}</b> / ${total}</span>${SES.m!=='card'&&SES.m!=='match'?`<span class="pr"><em class="g">${SES.right}</em><em class="b">${SES.wrong}</em></span>`:''}</div>${battleHTML()}${inner}</div>`}
 function bindQuit(){bindCommon();const q=$('#quit');if(q)q.onclick=()=>{document.onkeydown=null;setView(SES.i)};document.querySelectorAll('[data-mm]').forEach(b=>b.onclick=()=>{if(b.dataset.mm!==SES.m&&!b.disabled){document.onkeydown=null;run(b.dataset.mm,SES.i)}})}
 function distractors(word,mean,n,field){const pool=SES.words.filter(x=>x.w!==word);let cands=shuffle(pool);if(cands.length<n){const p=posOf(mean);cands=cands.concat(shuffle(POOLof().filter(([w,m])=>w!==word&&posOf(m)===p)).slice(0,40).map(([w,m])=>({w,m})))}const seen=new Set([field==='w'?word:mean]);const out=[];for(const c of cands){const v=c[field];if(!seen.has(v)){seen.add(v);out.push(c)}if(out.length>=n)break}return out}
@@ -1859,6 +1873,54 @@ function zbFinish(R){const {i,words}=SES;const n=words.length;const ft=SES.first
   requestAnimationFrame(()=>setTimeout(()=>{const xb=$('#xb');if(xb)xb.style.width=after.pct+'%'},60));
   if(gain>0)try{sfx.done()}catch(e){}
   if(after.lv>before.lv&&GAME()&&U.av)setTimeout(()=>levelUp(before.lv,after.lv,unlocked),700);else if(after.lv>before.lv&&CM()===2)toast(`레벨 업! Lv.${after.lv}`)}
+
+
+/* v37-marks: 단어 표시 + 선생님 세트 색 */
+function mkSet(i){U.mk=U.mk||{};return new Set(U.mk[sk(i)]||[])}
+function mkOn(i){return !!(U.mko&&U.mko[sk(i)])&&mkSet(i).size>0}
+function mkFilter(m,i){if(i==='W'||DRILL()||m==='test'||!U||!mkOn(i))return;const S=mkSet(i);const sub=SES.words.filter(x=>S.has(x.w));if(!sub.length||(m==='match'&&sub.length<3))return;
+  SES.words=sub;SES.mk=true;if(SES.mon){SES.mon.hp=SES.mon.max=sub.length}}
+const _setViewV37=setView;setView=function(i){_setViewV37(i);if(i==='W'||DRILL()||!U)return;const key=sk(i);const W=wordsOf(i);if(!W.length)return;
+  const S=mkSet(i);[...S].forEach(w=>{if(!W.some(x=>x[0]===w))S.delete(w)});
+  const md=document.querySelector('.modes');if(!md)return;
+  const bar=document.createElement('div');bar.className='mkbar';md.before(bar);
+  const unit=SENT()?'문장':'단어';
+  const draw=()=>{const n=S.size,on=!!(U.mko&&U.mko[key])&&n>0;
+    bar.innerHTML=`<span class="mkl">학습 범위</span><div class="seg mkseg" role="group" aria-label="학습 범위"><button type="button" data-mo="0" class="${on?'':'on'}" aria-pressed="${!on}">전체 ${W.length}</button><button type="button" data-mo="1" class="${on?'on':''}" ${n?'':'disabled'} aria-pressed="${on}">표시한 ${unit}만 ${n}</button></div>
+      <span class="mkhint">${n?`어려운 ${unit}를 눌러 파란 테두리로 표시해요 · <b>테스트는 늘 전체</b>로 봐요`:`아래 ${unit} 카드를 누르면 파란 테두리로 표시돼요. 표시한 것만 모아서 외울 수 있어요 · 테스트는 늘 전체`}</span>${n?'<button type="button" class="btn sm" id="mkclr">표시 지우기</button>':''}`;
+    bar.querySelectorAll('[data-mo]').forEach(b=>b.onclick=()=>{if(b.disabled)return;U.mko=U.mko||{};if(b.dataset.mo==='1')U.mko[key]=1;else delete U.mko[key];save();draw()});
+    const c=bar.querySelector('#mkclr');if(c)c.onclick=()=>{S.clear();U.mk[key]=[];if(U.mko)delete U.mko[key];save();document.querySelectorAll('.wlist .witem.mk').forEach(x=>x.classList.remove('mk'));draw()};
+    document.querySelectorAll('.modes .mode').forEach(b=>{const m=b.dataset.m;let t=b.querySelector('.mkn');if(on&&m!=='test'&&!(m==='match'&&n<3)){if(!t){t=document.createElement('span');t.className='mkn';b.appendChild(t)}t.textContent=`표시한 ${n}개`}else if(t)t.remove();if(m==='test'&&on){if(!t){t=document.createElement('span');t.className='mkn all';b.appendChild(t)}t.textContent='전체'}})};
+  document.querySelectorAll('.wlist .witem').forEach((el,n)=>{const w=W[n]&&W[n][0];if(!w)return;el.classList.add('mkable');el.tabIndex=0;el.setAttribute('role','button');el.setAttribute('aria-pressed',S.has(w));if(S.has(w))el.classList.add('mk');
+    const tog=e=>{if(e.target.closest('.spk'))return;if(S.has(w))S.delete(w);else S.add(w);el.classList.toggle('mk',S.has(w));el.setAttribute('aria-pressed',S.has(w));U.mk[key]=[...S];save();draw()};
+    el.onclick=tog;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();tog(e)}}});
+  draw()};
+/* 선생님 세트 색·숨김 */
+const HL_COL={c1:'#ebe7e3',c2:'#dcefc4',c3:'#f6edb4',c4:'#f7d4cc',c5:'#cfe6ef',c6:'#e6dcf3'};
+let HL=null,HL_AT=0;
+async function hlLoad(force){if(HL&&!force&&Date.now()-HL_AT<300000)return HL;const F=window.FB||await FBP;if(!F||!F.auth.currentUser)return HL||{};
+  try{const d=await F.getDoc(F.doc(F.db,'voca_books','_hl'));HL=d.exists()?JSON.parse(d.data().payload||'{}'):{}}catch(e){HL=HL||{}}HL_AT=Date.now();return HL}
+function hlApply(){const m=(HL||{})[DATA&&DATA.id];if(!m)return;document.querySelectorAll('.setbtn[data-set]').forEach(b=>{const v=m[b.dataset.set];if(!v)return;if(v==='hide'){b.remove();return}b.style.background=HL_COL[v];b.style.borderColor='rgba(0,0,0,.08)'});
+  document.querySelectorAll('.days .day').forEach(d=>{if(!d.querySelector('.setbtn'))d.remove()})}
+const _homeV37=home;home=function(){_homeV37();if(!U||ROLE==='teacher')return;if(HL&&Date.now()-HL_AT<300000)return hlApply();hlLoad().then(()=>{if(document.querySelector('.setbtn[data-set]'))hlApply()})};
+async function hlModal(){const d=document.createElement('div');d.className='ov';d.innerHTML=`<div class="box hlmodal" role="dialog" aria-label="세트 색 표시와 숨김"><h2 style="font-size:20px;margin:0">세트 색 표시 · 숨김</h2><p class="muted" style="margin:4px 0 10px;font-size:13px">고른 책을 쓰는 모든 학생의 Day 목록에 색이 보이고, 숨긴 세트는 학생 화면에서 사라져요.</p>
+  <select id="hlb" class="bkq" aria-label="책 고르기"><option value="">책을 고르세요</option>${[...new Set(BOOKS.map(b=>b.grp))].map(g=>`<optgroup label="${esc(g)}">${BOOKS.filter(b=>b.grp===g&&b.kind!=='drill').map(b=>`<option value="${b.id}">${esc(b.lazy?b.short:b.name)}</option>`).join('')}</optgroup>`).join('')}</select>
+  <div class="hltool"><span class="muted" id="hlcnt">0개 선택</span><span class="spacer"></span>${Object.entries(HL_COL).map(([k,c])=>`<button type="button" class="hlsw" data-c="${k}" style="background:${c}" aria-label="색 ${k.slice(1)}"></button>`).join('')}<button type="button" class="btn sm" data-c="hide">숨김</button><button type="button" class="btn sm" data-c="">초기화</button></div>
+  <div class="hllist" id="hll"><p class="muted" style="padding:10px">책을 고르면 세트 목록이 나와요.</p></div>
+  <div class="row" style="justify-content:flex-end;gap:8px;margin-top:10px"><span class="muted" id="hlmsg" style="margin-right:auto;font-size:13px"></span><button class="btn" id="hlno" type="button">닫기</button><button class="btn primary" id="hlok" type="button" disabled>저장</button></div></div>`;
+  document.body.appendChild(d);const all=await hlLoad(true);let cur=null,map={},sets=[];
+  const cnt=()=>{d.querySelector('#hlcnt').textContent=d.querySelectorAll('#hll input:checked').length+'개 선택'};
+  const draw=()=>{const tabs=cur.tabs||[[0,'세트']];d.querySelector('#hll').innerHTML=tabs.map(([r,l])=>{const ss=sets.filter(x=>(x.r||0)===r);return ss.length?`<div class="hltab">${esc(l)}</div>`+ss.map(x=>{const v=map[x.i];return `<label class="hlrow ${v==='hide'?'hid':''}" style="${v&&v!=='hide'?'background:'+HL_COL[v]:''}"><input type="checkbox" value="${x.i}"> <span>${esc(x.t)}${x.d?` <i>Day ${pad(x.d)}</i>`:''}</span>${v==='hide'?'<em>숨김</em>':''}</label>`}).join(''):''}).join('');cnt()};
+  d.querySelector('#hlb').onchange=async e=>{const id=e.target.value;if(!id)return;d.querySelector('#hll').innerHTML='<p class="muted" style="padding:10px">불러오는 중…</p>';const b=bookOf(id);let data=b&&!(b.lazy&&!b.loaded)?b:await fsBook(id);
+    if(!data){d.querySelector('#hll').innerHTML='<p class="muted" style="padding:10px">책을 불러오지 못했어요.</p>';return}cur={id,tabs:data.tabs};sets=(data.sets||[]).map((x,i)=>({...x,i}));map={...(all[id]||{})};draw();d.querySelector('#hlok').disabled=false};
+  d.querySelector('#hll').onchange=cnt;
+  d.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{if(!cur)return;const v=b.dataset.c;d.querySelectorAll('#hll input:checked').forEach(c=>{if(v)map[c.value]=v;else delete map[c.value]});draw();d.querySelector('#hlmsg').textContent='저장을 눌러야 학생 화면에 반영돼요'});
+  d.querySelector('#hlno').onclick=()=>d.remove();
+  d.querySelector('#hlok').onclick=async()=>{const F=window.FB||await FBP;const fresh=await hlLoad(true);if(Object.keys(map).length)fresh[cur.id]=map;else delete fresh[cur.id];
+    try{await F.setDoc(F.doc(F.db,'voca_books','_hl'),{payload:JSON.stringify(fresh),at:new Date().toISOString()});HL=fresh;d.querySelector('#hlmsg').textContent='저장했어요. 학생 화면은 다음에 목록을 열 때 바뀌어요.'}catch(e){d.querySelector('#hlmsg').textContent='저장하지 못했어요: '+(e.message||e)}}}
+const _teacherV37=teacher;teacher=function(m){_teacherV37(m);if(ROLE!=='teacher')return;const host=document.querySelector('#app .panel');if(!host||document.getElementById('hlopen'))return;
+  const p=document.createElement('div');p.className='panel hlentry';p.innerHTML=`<div class="row" style="align-items:center;gap:10px"><b>세트 색 표시 · 숨김</b><span class="muted" style="font-size:13px">클래스카드처럼 책의 세트를 색으로 구분하거나 학생 화면에서 숨겨요</span><span class="spacer"></span><button class="btn" id="hlopen" type="button">열기</button></div>`;
+  host.before(p);p.querySelector('#hlopen').onclick=hlModal};
 
 /* ================= teacher ================= */
 function teacher(msg=''){
