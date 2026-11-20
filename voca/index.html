@@ -664,6 +664,18 @@ canvas.mon.q3m{image-rendering:auto}
 .hltab{font-weight:700;font-size:13px;color:var(--blue);padding:8px 4px 4px}.hlrow{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:8px;font-size:14px;cursor:pointer}.hlrow i{font-style:normal;color:var(--muted);font-size:12px}
 .hlrow.hid{opacity:.5;text-decoration:line-through}.hlrow em{margin-left:auto;font-style:normal;font-size:12px;color:#b91c1c}
 .hlentry{margin-bottom:12px}
+
+/* v35-games: 단어 게임 */
+.gamesbox{margin:14px 0;padding:14px;border:1px solid #d7e2f7;border-radius:16px;background:#f5f8fe}
+.gamesbox .gb-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.gamesbox .gb-h b{font-size:16px}.gamesbox .gb-h .muted{font-size:12.5px}
+.gamesbox .gb-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.gbtn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;border:1px solid #d7e2f7;background:#fff;border-radius:12px;padding:10px 12px;cursor:pointer;font:inherit;color:inherit}
+.gbtn:hover,.gbtn:focus-visible{border-color:#2457d6;box-shadow:0 0 0 2px #2457d622}
+.gbtn .gi{font-size:22px;line-height:1.2}.gbtn b{font-size:15px}.gbtn .gd{font-size:12px;color:#6b7690;line-height:1.35}
+#gameLayer{position:fixed;inset:0;z-index:1000;background:#0e1633}
+#gameLayer iframe{width:100%;height:100%;border:0;display:block}
+body.ingame{overflow:hidden}
 </style>
 
 </head><body>
@@ -1348,11 +1360,32 @@ function setView(i){useKind(i);
   ${W.length?`<div class="modes">${MODESX().map(([m,nm,ds])=>`<button class="mode" data-m="${m}" ${can(m)?'':'disabled'}><span class="mi">${MICON[m]}</span><b>${nm}</b><span class="md">${GAME()?ds:ds.replace(/ · (몬스터 사냥|보스전)/,'')}</span><span class="done">${r[m]!=null?`최고 ${lab[m](r[m])}`:'아직 안 함'}</span></button>`).join('')}</div>`:'<div class="panel" style="margin-top:14px">아직 틀린 단어가 없어요. 리콜·스펠·테스트에서 틀린 단어가 여기 모여요.</div>'}
   ${W.length?`<div class="wlist">${W.map(([w,m],n)=>`<div class="witem"><span class="wn">${n+1}</span><span class="ww">${esc(w)}</span>${meanHTML(m)}<button class="spk" data-say="${esc(w)}" aria-label="${esc(w)} 발음 듣기"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg></button></div>`).join('')}</div>`:''}`;
   bindCommon();
+  {const mo=document.querySelector('.modes'),gh=gamesHTML(i,W);if(mo&&gh)mo.insertAdjacentHTML('afterend',gh);document.querySelectorAll('[data-game]').forEach(b=>b.onclick=()=>openGame(b.dataset.game,i))}
   document.querySelectorAll('[data-say]').forEach(b=>b.onclick=()=>say(b.dataset.say));
   document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{if(!b.disabled)run(b.dataset.m,i)});
 }
 
 
+/* ===== v35-games: 단어 게임 (선생님이 학생별로 켬: u.games) ===== */
+const GAMES=[
+ {id:'chicken',nm:'치킨보카',ds:'객관식 → 스펠링 · 닭을 하늘 끝까지',ic:'🐔',kind:'word',min:4},
+ {id:'spell',nm:'스펠링 달리기',ds:'뜻 보고 철자 쓰기 · 힌트·스피드 모드',ic:'🏃',kind:'word',min:1},
+ {id:'rescue',nm:'RESCUE',ds:'카드 · 테스트 · 예문 · 듣기',ic:'🛟',kind:'word',min:4},
+ {id:'bear',nm:'곰돌이 구출',ds:'한글 보고 영어 문장 타이핑',ic:'🐻',kind:'sent',min:1}];
+function gamesOn(){return !!(U&&(U.games||ROLE==='demo'))}
+function gamesHTML(i,W){if(!gamesOn()||DRILL()||!W.length)return '';const k=SENT()?'sent':'word';const gs=GAMES.filter(g=>g.kind===k&&W.length>=g.min);if(!gs.length)return '';
+  return `<div class="gamesbox"><div class="gb-h"><b>단어 게임</b><span class="muted">이 세트의 ${SENT()?'문장':'단어'}로 게임해요</span></div><div class="gb-row">${gs.map(g=>`<button class="gbtn" data-game="${g.id}"><span class="gi" aria-hidden="true">${g.ic}</span><b>${g.nm}</b><span class="gd">${g.ds}</span></button>`).join('')}</div></div>`}
+function gameMean(m){return meanParts(m).map(p=>(p.pos?'('+p.pos+') ':'')+p.t).join(' / ')}
+function openGame(g,i){useKind(i);const W=wordsOf(i),sent=SENT();
+  const ho={v:1,uid:U.id,key:DATA.id+':'+i,book:DATA.name,title:setTitleOf(i)+(setDayOf(i)?' · '+setDayOf(i):''),kind:sent?'sent':'word',
+    items:W.map(([w,m,x])=>({w:String(w),m:sent?String(m):gameMean(m),x:x?String(x):''})),at:Date.now()};
+  try{localStorage.setItem('cmk_game',JSON.stringify(ho))}catch(e){toast('게임을 열 수 없어요');return}
+  cmkCloseGame();document.onkeydown=null;
+  const d=document.createElement('div');d.id='gameLayer';
+  d.innerHTML=`<iframe src="games/${g}.html?v=${GAME_VER}" title="${esc((GAMES.find(x=>x.id===g)||{}).nm||'단어 게임')}" allow="autoplay"></iframe>`;
+  document.body.appendChild(d);document.body.classList.add('ingame');try{speechSynthesis.cancel()}catch(e){}}
+const GAME_VER='35a';
+window.cmkCloseGame=function(){const d=document.getElementById('gameLayer');if(d){d.remove();document.body.classList.remove('ingame')}};
 /* ===== v22-ui: 학습창 디자인 ===== */
 const MICON={"card": "<svg viewBox=\"0 0 24 24\"><rect x=\"3\" y=\"5\" width=\"14\" height=\"14\" rx=\"2.5\"/><path d=\"M7 3h11a3 3 0 0 1 3 3v11\"/></svg>", "recall": "<svg viewBox=\"0 0 24 24\"><rect x=\"3\" y=\"3\" width=\"8\" height=\"8\" rx=\"2\"/><rect x=\"13\" y=\"3\" width=\"8\" height=\"8\" rx=\"2\"/><rect x=\"3\" y=\"13\" width=\"8\" height=\"8\" rx=\"2\"/><path d=\"m14.5 17 2 2 3.5-4\"/></svg>", "spell": "<svg viewBox=\"0 0 24 24\"><path d=\"M4 20h4L19 9l-4-4L4 16z\"/><path d=\"m13.5 6.5 4 4\"/></svg>", "match": "<svg viewBox=\"0 0 24 24\"><circle cx=\"6\" cy=\"7\" r=\"2.5\"/><circle cx=\"18\" cy=\"17\" r=\"2.5\"/><circle cx=\"18\" cy=\"7\" r=\"2.5\"/><circle cx=\"6\" cy=\"17\" r=\"2.5\"/><path d=\"M8.3 8.2 15.7 15.8M8.5 17h7\"/></svg>", "test": "<svg viewBox=\"0 0 24 24\"><path d=\"M7 3h10v18H7z\"/><path d=\"M10 8h4M10 12h4M10 16h2\"/></svg>"};
 function setTitleOf(i){return i==='W'?'오답 노트':DATA.sets[i].t}
@@ -1928,10 +1961,10 @@ function teacher(msg=''){
   const list=ids.map(id=>migrate(getUser(id))).filter(Boolean).map(u=>({u,L:lvInfo(u.xp)})).sort((a,b)=>CO.indexOf(a.u.cls||'')-CO.indexOf(b.u.cls||'')||(a.u.name||a.u.id).localeCompare(b.u.name||b.u.id));
   const bookSel=(id,cur)=>`<select class="bsel" data-uid="${esc(id)}" aria-label="${esc(id)} 단어책"><option value="">— 배정 안 함 —</option>${[...new Set(BOOKS.map(b=>b.grp))].map(g=>`<optgroup label="${esc(g)}">${BOOKS.map((b,n)=>[b,n]).filter(([b])=>b.grp===g).map(([b,n])=>`<option value="${b.id}" ${cur===b.id?'selected':''}>${b.lazy?'':(n+1)+'단계 '}${esc(b.short)}</option>`).join('')}</optgroup>`).join('')}</select>`;
   const nob=list.filter(({u})=>!u.bookBy).length;
-  const charSel=u=>`<select class="csel" data-cuid="${esc(u.id)}" aria-label="${esc(u.id)} 캐릭터 방식"><option value="" ${u.cmode?'':'selected'}>자동 (${cmodeDefault(u)}번)</option>${CMODES.map(([v,nm])=>`<option value="${v}" ${+u.cmode===v?'selected':''}>${v}. ${nm}</option>`).join('')}</select><label class="memo" style="display:flex;gap:4px;align-items:center"><input type="checkbox" class="cgirl" data-cuid="${esc(u.id)}" ${u.girl?'checked':''}> 여학생 모습</label>`;
+  const charSel=u=>`<select class="csel" data-cuid="${esc(u.id)}" aria-label="${esc(u.id)} 캐릭터 방식"><option value="" ${u.cmode?'':'selected'}>자동 (${cmodeDefault(u)}번)</option>${CMODES.map(([v,nm])=>`<option value="${v}" ${+u.cmode===v?'selected':''}>${v}. ${nm}</option>`).join('')}</select><label class="memo" style="display:flex;gap:4px;align-items:center"><input type="checkbox" class="cgirl" data-cuid="${esc(u.id)}" ${u.girl?'checked':''}> 여학생 모습</label><label class="memo" style="display:flex;gap:4px;align-items:center"><input type="checkbox" class="cgame" data-cuid="${esc(u.id)}" ${u.games?'checked':''}> 단어 게임</label>`;
   const gramSel=u=>{const g=u.gram&&u.gbook&&u.gram[u.gbook]&&u.gram[u.gbook].prog;return `<select class="gsel" data-guid="${esc(u.id)}" aria-label="${esc(u.id)} 문법 교재"><option value="">—</option>${GBOOKS.map(b=>`<option value="${b[0]}" ${u.gbook===b[0]?'selected':''}>${b[2]}</option>`).join('')}</select>${g?`<div class="memo">${g.done}/${g.total} 통과</div>`:''}`};
   $('#app').innerHTML=`${topbar('<button class="btn" id="tout">로그아웃</button>')}
-  <h2 style="font-size:24px">선생님 화면</h2><p class="muted" style="margin:2px 0 12px">학생 아이디마다 단어책 단계, 문법 교재(해커스 중1·중2·중3, 어법 제대로, 어법끝 START), 캐릭터 방식을 정해 주세요. 캐릭터 방식은 1 게임 캐릭터 · 2 교실 캐릭터 · 3 캐릭터 없음이고, '자동'이면 초6·중1은 2번, 중2·중3은 3번이에요. 학생은 배정된 책만 볼 수 있어요. 학생 명단·이름·반은 학생 대시보드에서 가져오고, 대시보드에서 단어책이나 Day를 바꾸면 여기 들어올 때 함께 바뀝니다.</p>
+  <h2 style="font-size:24px">선생님 화면</h2><p class="muted" style="margin:2px 0 12px">학생 아이디마다 단어책 단계, 문법 교재(해커스 중1·중2·중3, 어법 제대로, 어법끝 START), 캐릭터 방식을 정해 주세요. 캐릭터 방식은 1 게임 캐릭터 · 2 교실 캐릭터 · 3 캐릭터 없음이고, '자동'이면 초6·중1은 2번, 중2·중3은 3번이에요. 캐릭터 방식 칸의 '단어 게임'을 체크한 학생은 세트 화면에서 치킨보카·스펠링 달리기·RESCUE·곰돌이 구출을 그 세트 단어로 할 수 있어요. 학생은 배정된 책만 볼 수 있어요. 학생 명단·이름·반은 학생 대시보드에서 가져오고, 대시보드에서 단어책이나 Day를 바꾸면 여기 들어올 때 함께 바뀝니다.</p>
   <form class="panel addst" id="addf" autocomplete="off">
     <b>학생 아이디 추가</b>
     <div class="row"><input id="nid" placeholder="아이디 이름 (예: cmk701 홍길동)" autocapitalize="off" spellcheck="false" aria-label="학생 아이디">${bookSel('',BOOKS[0].id).replace('class="bsel" data-uid=""','id="nbook"')}<button class="btn primary" type="submit">추가</button></div>
@@ -1956,6 +1989,7 @@ function teacher(msg=''){
     teacher(`${CLASSES[c]} ${n}명에게 ${BOOKS.find(b=>b.id===bk).short}을(를) 배정했어요`)};
   $('#clsGramGo').onclick=()=>{const c=$('#clsSel').value,g=$('#clsGram').value,only=$('#onlyNo').checked;let n=0;list.forEach(({u})=>{if(u.cls!==c||(only&&u.gbook))return;u.gbook=g;Store.saveUser(u);n++});teacher(`${CLASSES[c]} ${n}명에게 문법 ${GBOOKS.find(b=>b[0]===g)[2]}을(를) 배정했어요`)};
   document.querySelectorAll('select.csel').forEach(sel=>sel.onchange=()=>{const u=migrate(getUser(sel.dataset.cuid));if(!u)return;if(sel.value)u.cmode=+sel.value;else delete u.cmode;Store.saveUser(u);toast(`${u.name||u.id} → 캐릭터 ${cmodeOf(u)}번 (${CMODES.find(x=>x[0]===cmodeOf(u))[1]})`)});
+  document.querySelectorAll('input.cgame').forEach(cb=>cb.onchange=()=>{const u=migrate(getUser(cb.dataset.cuid));if(!u)return;if(cb.checked)u.games=1;else delete u.games;Store.saveUser(u);toast(`${u.name||u.id} 단어 게임 ${cb.checked?'켰어요':'껐어요'}`)});
   document.querySelectorAll('input.cgirl').forEach(cb=>cb.onchange=()=>{const u=migrate(getUser(cb.dataset.cuid));if(!u)return;if(cb.checked)u.girl=1;else delete u.girl;Store.saveUser(u);toast(`${u.name||u.id} 교실 캐릭터 ${cb.checked?'여학생':'남학생'} 모습`)});
   document.querySelectorAll('select.gsel').forEach(sel=>sel.onchange=()=>{const u=migrate(getUser(sel.dataset.guid));if(!u)return;if(sel.value)u.gbook=sel.value;else delete u.gbook;Store.saveUser(u);toast(sel.value?`${u.name||u.id} → 문법 ${GBOOKS.find(b=>b[0]===sel.value)[2]} 배정했어요`:`${u.name||u.id} 문법 배정을 뺐어요`)});
   document.querySelectorAll('input.dayin').forEach(inp=>inp.onchange=()=>{const u=migrate(getUser(inp.dataset.day));const v=parseInt(inp.value,10);if(v>0)u.day=v;else delete u.day;Store.saveUser(u);toast(`${u.name||u.id} 지금 위치 ${v>0?'Day '+v:'지움'}`)});

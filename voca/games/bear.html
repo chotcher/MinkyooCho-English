@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"><script>function cmkBack(){try{if(window.parent!==window&&window.parent.cmkCloseGame){window.parent.cmkCloseGame();return false}}catch(e){}return true}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>곰돌이 구출 대작전 · 조민규영어</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#1a1a2e; font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif; display:flex; flex-direction:column; align-items:center; }
+#gameCanvas { display:block; width:100%; max-width:520px; height:auto; }
+#inputArea { width:100%; max-width:520px; background:#0d0d1a; border-top:2px solid #2a2a4a; padding:8px 12px 10px; }
+#koreanHint { color:#aaddff; font-size:14px; margin-bottom:4px; line-height:1.5; min-height:20px; font-weight:bold; }
+#sentenceDisplay { display:none; }
+#typeInput { width:100%; padding:9px 14px; font-size:15px; border-radius:8px; border:2px solid #ffe066; background:#111128; color:#fff; outline:none; }
+#typeInput:focus { border-color:#7cfc00; }
+#progress { color:#888; font-size:11px; margin-top:4px; }
+#startScreen { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; z-index:10; }
+#startScreen h1 { font-size:20px; color:#ffe066; margin-bottom:8px; }
+#startScreen p { font-size:12px; color:#ccc; margin-bottom:6px; text-align:center; line-height:1.9; }
+.stageBtn { padding:9px 22px; font-size:14px; background:#ffe066; color:#1a1a2e; border:none; border-radius:8px; cursor:pointer; font-weight:bold; margin:5px; }
+.stageBtn:hover { background:#ffd700; }
+#stageSelect { display:flex; flex-wrap:wrap; justify-content:center; margin-top:8px; }
+#overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.88); z-index:30; display:none; flex-direction:column; align-items:center; justify-content:flex-start; overflow-y:auto; padding:24px 16px; }
+#cmkNo{position:fixed;inset:0;z-index:99;background:#edf2fb;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;text-align:center;padding:20px}#cmkNo div{background:#fff;border-radius:16px;padding:24px 20px;max-width:360px;box-shadow:0 4px 20px #0002;line-height:1.6;color:#223}#cmkNo a{display:inline-block;margin-top:12px;background:#2457d6;color:#fff;padding:10px 18px;border-radius:10px;text-decoration:none;font-weight:700}.cmkBack{position:fixed;left:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:50;background:#2457d6;color:#fff;font:700 13px system-ui,sans-serif;padding:8px 12px;border-radius:20px;text-decoration:none;box-shadow:0 2px 8px #0003;opacity:.92}
+</style>
+</head>
+<body>
+<canvas id="gameCanvas" width="520" height="480"></canvas>
+<div id="inputArea">
+  <div id="koreanHint"></div>
+  <div id="sentenceDisplay"></div>
+  <input type="text" id="typeInput" placeholder="영어로 입력 후 Enter..." autocomplete="off" spellcheck="false" disabled />
+  <div id="progress"></div>
+</div>
+
+<div id="startScreen">
+  <h1>곰돌이 구출 대작전</h1>
+  <p>한글 힌트를 보고 <b style="color:#ffe066">영어 문장</b>을 입력하세요!<br>문장 완성 → 곰돌이 위로 / 하트 3개 소진 → 게임오버<br>모두 맞추면 탈출 성공!</p>
+  <div id="stageSelect">
+    <button class="stageBtn" onclick="startStage(0)">Stage 1<br><small>본문 도입</small></button>
+    <button class="stageBtn" onclick="startStage(1)">Stage 2<br><small>고산토끼</small></button>
+    <button class="stageBtn" onclick="startStage(2)">Stage 3<br><small>문어</small></button>
+    <button class="stageBtn" onclick="startStage(3)">Stage 4<br><small>부엉이</small></button>
+  </div>
+</div>
+
+<div id="overlay"></div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const W=520, H=480;
+
+const HO=(()=>{try{return JSON.parse(localStorage.getItem('cmk_game')||'null')}catch(e){return null}})();
+const GW=(HO&&HO.items||[]).filter(it=>it&&it.w&&it.m);
+if(GW.length<1){document.addEventListener('DOMContentLoaded',()=>{const d=document.createElement('div');d.id='cmkNo';d.innerHTML='<div><b>연습할 문장이 없어요</b><br>학습창에서 공부할 세트를 연 다음<br>아래쪽 <b>단어 게임</b> 버튼을 눌러 주세요.<br><a href="../" onclick="return cmkBack()">← 학습창으로</a></div>';document.body.appendChild(d)})}
+
+const STAGES = [];
+const SSZ = 6;
+GW.forEach((it, i) => { const n = Math.floor(i / SSZ); (STAGES[n] = STAGES[n] || { title: 'Stage ' + (n + 1), pairs: [] }).pairs.push([it.m, it.w]); });
+document.addEventListener('DOMContentLoaded', () => {
+  const box = document.getElementById('stageSelect');
+  if (box) box.innerHTML = STAGES.map((st, n) => `<button class="stageBtn" onclick="startStage(${n})">${st.title}<br><small>${st.pairs.length}문장</small></button>`).join('');
+  const h = document.querySelector('#startScreen h1'); if (h) h.insertAdjacentHTML('afterend', `<p style="color:#9fc3ff">${HO ? HO.title : ''}</p>`);
+});
+
+const MAX_HEARTS = 3;
+let gameState='idle', currentIdx=0, stageData=null;
+const ROPE_TOP=55, ROPE_BOTTOM=370, RX=W/2;
+let TOTAL=6, STEP=0;
+let bearPos=ROPE_BOTTOM, targetBearPos=ROPE_BOTTOM;
+let hearts=MAX_HEARTS, wrongCount=0, shakeTimer=0;
+let victoryAnim=0, crocsAnim=0;
+let wrongSentences=[];
+let audioCtx=null, musicInterval=null;
+// game over splash anim
+let gameOverAnim=0, bearSplashY=0, splashParticles=[];
+
+function calcStep(n){ STEP=(ROPE_BOTTOM-ROPE_TOP)/(n+1); }
+
+// ── Audio ──────────────────────────────────────────────
+function initAudio(){ audioCtx=new(window.AudioContext||window.webkitAudioContext)(); playGameMusic(); }
+function playNote(f,s,d,v=0.15,t='square'){
+  if(!audioCtx)return;
+  const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+  o.type=t; o.frequency.value=f;
+  g.gain.setValueAtTime(0,audioCtx.currentTime+s);
+  g.gain.linearRampToValueAtTime(v,audioCtx.currentTime+s+0.01);
+  g.gain.linearRampToValueAtTime(0,audioCtx.currentTime+s+d-0.01);
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start(audioCtx.currentTime+s); o.stop(audioCtx.currentTime+s+d);
+}
+function playGameMusic(){
+  if(!audioCtx)return;
+  const m=[[392,0],[440,.2],[494,.4],[523,.6],[587,.8],[523,1],[494,1.2],[440,1.4],[392,1.6],[349,1.8],[392,2],[440,2.2],[494,2.4],[440,2.6],[392,2.8],[349,3],[330,3.2],[349,3.4],[392,3.6],[440,3.8],[392,4],[349,4.2],[330,4.4],[294,4.6]];
+  const b=[[196,0,.4],[220,.8,.4],[196,1.6,.4],[175,2.4,.4],[165,3.2,.4],[175,4,.4]];
+  function loop(){ m.forEach(([f,t])=>playNote(f,t%4.8,.18,.12,'square')); b.forEach(([f,t,d])=>playNote(f,t%4.8,d,.1,'triangle')); }
+  loop(); musicInterval=setInterval(loop,4800);
+}
+function stopMusic(){ if(musicInterval)clearInterval(musicInterval); musicInterval=null; }
+function playSFX(t){
+  if(!audioCtx)return;
+  if(t==='up')[523,659,784].forEach((f,i)=>playNote(f,i*.08,.12,.2,'sine'));
+  else if(t==='down')[300,250,200].forEach((f,i)=>playNote(f,i*.08,.12,.2,'sawtooth'));
+  else if(t==='victory')[523,659,784,1047].forEach((f,i)=>playNote(f,i*.12,.2,.25,'sine'));
+  else if(t==='splash')[200,150,100,80].forEach((f,i)=>playNote(f,i*.1,.2,.3,'sawtooth'));
+}
+
+// ── Background ─────────────────────────────────────────
+function drawBackground(){
+  ctx.fillStyle='#0d0d2b'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#fff';
+  [[60,30],[120,50],[200,20],[310,45],[400,15],[470,35],[490,55]].forEach(([x,y])=>{ ctx.beginPath(); ctx.arc(x,y,1.2,0,Math.PI*2); ctx.fill(); });
+  ctx.fillStyle='#ffe090'; ctx.beginPath(); ctx.arc(440,38,20,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#0d0d2b'; ctx.beginPath(); ctx.arc(449,33,16,0,Math.PI*2); ctx.fill();
+  const grd=ctx.createLinearGradient(0,H-110,0,H);
+  grd.addColorStop(0,'#1a3d0e'); grd.addColorStop(1,'#0d2208');
+  ctx.fillStyle=grd; ctx.fillRect(0,H-110,W,110);
+  [[50,220],[485,200],[28,310],[492,290]].forEach(([tx,ty])=>{
+    ctx.fillStyle='#0f2208'; ctx.beginPath(); ctx.moveTo(tx,ty); ctx.lineTo(tx-16,ty+45); ctx.lineTo(tx+16,ty+45); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#1a3d0a'; ctx.beginPath(); ctx.moveTo(tx,ty-18); ctx.lineTo(tx-20,ty+32); ctx.lineTo(tx+20,ty+32); ctx.closePath(); ctx.fill();
+  });
+}
+function drawPlatform(){
+  ctx.fillStyle='#6b4f10'; ctx.beginPath(); ctx.roundRect(RX-55,ROPE_TOP-22,110,18,4); ctx.fill();
+  ctx.fillStyle='#ffe066'; ctx.font='bold 10px Malgun Gothic'; ctx.textAlign='center';
+  ctx.fillText('탈출 지점', RX, ROPE_TOP-8);
+}
+function drawRope(){
+  ctx.strokeStyle='#b89030'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(RX,ROPE_TOP); ctx.lineTo(RX,ROPE_BOTTOM+20); ctx.stroke();
+  for(let i=0;i<=TOTAL+1;i++){
+    const y=ROPE_TOP+STEP*i;
+    ctx.fillStyle=i===0?'#ffe066':'#9a7020';
+    ctx.beginPath(); ctx.arc(RX,y,3.5,0,Math.PI*2); ctx.fill();
+  }
+}
+
+// ── Hearts HUD ─────────────────────────────────────────
+function drawHearts(){
+  if(gameState!=='playing') return;
+  const startX = W/2 - (MAX_HEARTS-1)*22;
+  for(let i=0;i<MAX_HEARTS;i++){
+    const hx = startX + i*22;
+    const hy = 18;
+    const filled = i < hearts;
+    // heart shape
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(hx, hy+4);
+    ctx.bezierCurveTo(hx, hy, hx-8, hy, hx-8, hy+5);
+    ctx.bezierCurveTo(hx-8, hy+10, hx, hy+15, hx, hy+17);
+    ctx.bezierCurveTo(hx, hy+15, hx+8, hy+10, hx+8, hy+5);
+    ctx.bezierCurveTo(hx+8, hy, hx, hy, hx, hy+4);
+    ctx.closePath();
+    if(filled){
+      const hg=ctx.createRadialGradient(hx-2,hy+4,1,hx,hy+8,10);
+      hg.addColorStop(0,'#ff6699'); hg.addColorStop(1,'#cc0033');
+      ctx.fillStyle=hg;
+    } else {
+      ctx.fillStyle='rgba(80,0,20,0.4)';
+    }
+    ctx.fill();
+    if(filled){
+      ctx.fillStyle='rgba(255,255,255,0.4)';
+      ctx.beginPath(); ctx.ellipse(hx-2,hy+5,2.5,1.5,-.5,0,Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+  }
+  // stage & wrong count
+  ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.beginPath(); ctx.roundRect(6,6,130,28,5); ctx.fill();
+  ctx.fillStyle='#ffe066'; ctx.font='11px Malgun Gothic'; ctx.textAlign='left';
+  ctx.fillText((stageData?stageData.title:'')+' '+currentIdx+'/'+TOTAL, 12, 24);
+}
+
+// ── Sea ────────────────────────────────────────────────
+function drawSea(){
+  crocsAnim+=0.03;
+  const seaTop=H-70;
+  const seaGrd=ctx.createLinearGradient(0,seaTop,0,H);
+  seaGrd.addColorStop(0,'#1a6a9a'); seaGrd.addColorStop(0.4,'#0d4a7a'); seaGrd.addColorStop(1,'#061e3a');
+  ctx.fillStyle=seaGrd; ctx.fillRect(0,seaTop,W,H-seaTop);
+  ctx.save(); ctx.globalAlpha=0.07; ctx.fillStyle='#a0d8ff';
+  for(let r=0;r<5;r++){
+    const rx=60+r*100+Math.sin(crocsAnim*.5+r)*10;
+    ctx.beginPath(); ctx.moveTo(rx-10,seaTop); ctx.lineTo(rx+10,seaTop); ctx.lineTo(rx+30,H); ctx.lineTo(rx-30,H); ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+  ctx.fillStyle='rgba(180,220,255,0.5)';
+  [[40,.7,.8],[110,1.4,1.2],[210,.3,.6],[300,1.9,1.0],[380,.9,.7],[460,1.6,1.3],[500,.4,.9]].forEach(([bx,bp,br])=>{
+    const by=seaTop+20+((crocsAnim*18*br+bp*60)%(H-seaTop-20));
+    ctx.beginPath(); ctx.arc(bx+Math.sin(crocsAnim*2+bp)*4,by,br*3,0,Math.PI*2); ctx.fill();
+  });
+  const waveLayers=[
+    {color:'#1e7ab0',alpha:.6,amp:8,speed:.8,yOff:seaTop+4,freq:.018},
+    {color:'#2a90c8',alpha:.7,amp:10,speed:1.1,yOff:seaTop,freq:.022},
+    {color:'#3aaee0',alpha:.8,amp:12,speed:1.4,yOff:seaTop-6,freq:.025},
+    {color:'#60c8f0',alpha:.9,amp:9,speed:1.8,yOff:seaTop-10,freq:.030},
+  ];
+  waveLayers.forEach(({color,alpha,amp,speed,yOff,freq})=>{
+    ctx.save(); ctx.globalAlpha=alpha; ctx.fillStyle=color;
+    ctx.beginPath(); ctx.moveTo(0,H); ctx.lineTo(0,yOff+amp);
+    for(let wx=0;wx<=W;wx+=2){
+      ctx.lineTo(wx,yOff+Math.sin(wx*freq+crocsAnim*speed)*amp+Math.sin(wx*freq*1.7+crocsAnim*speed*.6)*(amp*.4));
+    }
+    ctx.lineTo(W,H); ctx.closePath(); ctx.fill(); ctx.restore();
+  });
+  ctx.save(); ctx.strokeStyle='rgba(255,255,255,0.75)'; ctx.lineWidth=1.5; ctx.lineCap='round';
+  for(let fw=0;fw<W;fw+=3){
+    const fy=seaTop-10+Math.sin(fw*.025+crocsAnim*1.8)*9+Math.sin(fw*.042+crocsAnim*.9)*4;
+    ctx.globalAlpha=.4+.6*Math.pow(Math.abs(Math.sin(fw*.025+crocsAnim*1.8)),2);
+    ctx.beginPath(); ctx.moveTo(fw,fy); ctx.lineTo(fw+2,fy-1.5); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ── Bear ───────────────────────────────────────────────
+function drawBear(x,y,shake=false,isTop=false){
+  const ox=x+(shake?(Math.random()-.5)*5:0), oy=y;
+  const fur='#f0ece0', furShadow='#d8d0b8', furInner='#e8e0cc', nose='#5c3a1e';
+  const uniformColor=isTop?'#1a2a4a':'#5a5a6a';
+  const uniformDark=isTop?'#111e36':'#444452';
+  const uniformLight=isTop?'#2a3d60':'#70707e';
+  ctx.save();
+  ctx.fillStyle='rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.ellipse(ox,oy+20,13,4,0,0,Math.PI*2); ctx.fill();
+  // skirt
+  ctx.fillStyle=uniformColor;
+  ctx.beginPath(); ctx.moveTo(ox-14,oy+8); ctx.quadraticCurveTo(ox-16,oy+22,ox-13,oy+30); ctx.lineTo(ox+13,oy+30); ctx.quadraticCurveTo(ox+16,oy+22,ox+14,oy+8); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle=uniformDark; ctx.lineWidth=0.8;
+  for(let p=-2;p<=2;p++){ ctx.beginPath(); ctx.moveTo(ox+p*5,oy+14); ctx.lineTo(ox+p*5,oy+29); ctx.stroke(); }
+  ctx.strokeStyle=uniformLight; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(ox-13,oy+29); ctx.lineTo(ox+13,oy+29); ctx.stroke();
+  // body
+  const bodyG=ctx.createRadialGradient(ox-3,oy-2,2,ox,oy+2,18);
+  bodyG.addColorStop(0,fur); bodyG.addColorStop(1,furShadow);
+  ctx.fillStyle=bodyG; ctx.beginPath(); ctx.ellipse(ox,oy+4,13,15,0,0,Math.PI*2); ctx.fill();
+  // shirt
+  ctx.fillStyle='#f5f5f5';
+  ctx.beginPath(); ctx.moveTo(ox-5,oy-8); ctx.lineTo(ox-8,oy+2); ctx.lineTo(ox,oy-2); ctx.lineTo(ox+8,oy+2); ctx.lineTo(ox+5,oy-8); ctx.closePath(); ctx.fill();
+  // jacket
+  ctx.fillStyle=uniformColor;
+  ctx.beginPath(); ctx.moveTo(ox-13,oy-4); ctx.lineTo(ox-14,oy+10); ctx.lineTo(ox-1,oy+10); ctx.lineTo(ox,oy-2); ctx.lineTo(ox-5,oy-8); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(ox+13,oy-4); ctx.lineTo(ox+14,oy+10); ctx.lineTo(ox+1,oy+10); ctx.lineTo(ox,oy-2); ctx.lineTo(ox+5,oy-8); ctx.closePath(); ctx.fill();
+  ctx.fillStyle=uniformDark;
+  ctx.beginPath(); ctx.moveTo(ox-13,oy-4); ctx.lineTo(ox-14,oy+10); ctx.lineTo(ox-10,oy+10); ctx.lineTo(ox-9,oy-4); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(ox+13,oy-4); ctx.lineTo(ox+14,oy+10); ctx.lineTo(ox+10,oy+10); ctx.lineTo(ox+9,oy-4); ctx.closePath(); ctx.fill();
+  ctx.fillStyle=isTop?'#8899bb':'#888';
+  [oy+1,oy+7].forEach(by=>{ ctx.beginPath(); ctx.arc(ox,by,1.8,0,Math.PI*2); ctx.fill(); });
+  // badge
+  const bx2=ox-7, by2=oy-1;
+  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(bx2,by2,5,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='#2a7a2a'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(bx2,by2,5,0,Math.PI*2); ctx.stroke();
+  ctx.fillStyle='#2a7a2a'; ctx.beginPath(); ctx.arc(bx2,by2,3.5,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#fff'; ctx.font='bold 4px sans-serif'; ctx.textAlign='center'; ctx.fillText('CMK',bx2,by2+1.5);
+  // pink ribbon
+  const rx2=ox+8, ry=oy-29;
+  ctx.fillStyle='#f0a0b8';
+  ctx.beginPath(); ctx.moveTo(rx2,ry); ctx.quadraticCurveTo(rx2+6,ry-5,rx2+8,ry-2); ctx.quadraticCurveTo(rx2+5,ry+2,rx2,ry); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(rx2,ry); ctx.quadraticCurveTo(rx2+4,ry+5,rx2+7,ry+3); ctx.quadraticCurveTo(rx2+4,ry-1,rx2,ry); ctx.fill();
+  ctx.fillStyle='#e06080'; ctx.beginPath(); ctx.arc(rx2,ry,1.8,0,Math.PI*2); ctx.fill();
+  // head
+  const headG=ctx.createRadialGradient(ox-3,oy-22,2,ox,oy-18,14);
+  headG.addColorStop(0,fur); headG.addColorStop(0.7,furInner); headG.addColorStop(1,furShadow);
+  ctx.fillStyle=headG; ctx.beginPath(); ctx.arc(ox,oy-18,13,0,Math.PI*2); ctx.fill();
+  // ears
+  [ox-9,ox+9].forEach(ex=>{
+    const eg=ctx.createRadialGradient(ex-1,oy-30,1,ex,oy-29,6);
+    eg.addColorStop(0,fur); eg.addColorStop(1,furShadow);
+    ctx.fillStyle=eg; ctx.beginPath(); ctx.arc(ex,oy-29,6,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#d4a090'; ctx.beginPath(); ctx.arc(ex,oy-29,3.2,0,Math.PI*2); ctx.fill();
+  });
+  // muzzle
+  const mG=ctx.createRadialGradient(ox,oy-14,1,ox,oy-14,7);
+  mG.addColorStop(0,'#e8e0cc'); mG.addColorStop(1,furInner);
+  ctx.fillStyle=mG; ctx.beginPath(); ctx.ellipse(ox,oy-14,7,5.5,0,0,Math.PI*2); ctx.fill();
+  // eyes
+  ctx.fillStyle='rgba(255,255,255,0.6)';
+  ctx.beginPath(); ctx.ellipse(ox-4.5,oy-20,3,2.8,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(ox+4.5,oy-20,3,2.8,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#0d0800';
+  ctx.beginPath(); ctx.arc(ox-4.5,oy-20,2.4,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(ox+4.5,oy-20,2.4,0,Math.PI*2); ctx.fill();
+  // nose
+  const noG=ctx.createRadialGradient(ox-1,oy-16,.5,ox,oy-15.5,4);
+  noG.addColorStop(0,'#7a5030'); noG.addColorStop(1,nose);
+  ctx.fillStyle=noG; ctx.beginPath(); ctx.ellipse(ox,oy-15.5,3.8,2.8,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.beginPath(); ctx.ellipse(ox-1,oy-16.5,1.5,1,0,0,Math.PI*2); ctx.fill();
+  // cheeks
+  ctx.fillStyle='rgba(255,150,150,0.28)';
+  ctx.beginPath(); ctx.ellipse(ox-7,oy-13,4.5,3,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(ox+7,oy-13,4.5,3,0,0,Math.PI*2); ctx.fill();
+  // smile
+  ctx.strokeStyle='#5c3a1e'; ctx.lineWidth=1.2; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(ox-5,oy-11); ctx.quadraticCurveTo(ox-3,oy-8.5,ox,oy-10); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ox,oy-10); ctx.quadraticCurveTo(ox+3,oy-8.5,ox+5,oy-11); ctx.stroke();
+  // eye sparkle
+  ctx.strokeStyle='#0d0800'; ctx.lineWidth=2.5; ctx.lineCap='round';
+  ctx.beginPath(); ctx.arc(ox-4.5,oy-19,2.4,Math.PI+0.3,Math.PI*2-0.3); ctx.stroke();
+  ctx.beginPath(); ctx.arc(ox+4.5,oy-19,2.4,Math.PI+0.3,Math.PI*2-0.3); ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,0.95)';
+  ctx.beginPath(); ctx.arc(ox-3.4,oy-20.5,1,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(ox+5.6,oy-20.5,1,0,Math.PI*2); ctx.fill();
+
+  if(!isTop){
+    // arms relaxed
+    ctx.strokeStyle=uniformColor; ctx.lineWidth=6; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(ox-13,oy-2); ctx.quadraticCurveTo(ox-18,oy+6,ox-15,oy+13); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ox+13,oy-2); ctx.quadraticCurveTo(ox+18,oy+6,ox+15,oy+13); ctx.stroke();
+    const pawG1=ctx.createRadialGradient(ox-15,oy+14,1,ox-15,oy+14,5);
+    pawG1.addColorStop(0,fur); pawG1.addColorStop(1,furShadow);
+    ctx.fillStyle=pawG1; ctx.beginPath(); ctx.arc(ox-15,oy+14,5,0,Math.PI*2); ctx.fill();
+    const pawG2=ctx.createRadialGradient(ox+15,oy+14,1,ox+15,oy+14,5);
+    pawG2.addColorStop(0,fur); pawG2.addColorStop(1,furShadow);
+    ctx.fillStyle=pawG2; ctx.beginPath(); ctx.arc(ox+15,oy+14,5,0,Math.PI*2); ctx.fill();
+    // rope knot at waist
+    const ropeAnchorY=oy+6;
+    ctx.strokeStyle='#b89030'; ctx.lineWidth=3; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(ox-8,ropeAnchorY); ctx.lineTo(ox+8,ropeAnchorY); ctx.stroke();
+    ctx.fillStyle='#c8a040'; ctx.beginPath(); ctx.ellipse(ox,ropeAnchorY,6,4,0,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#a07820'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(ox-4,ropeAnchorY-2); ctx.quadraticCurveTo(ox,ropeAnchorY-5,ox+4,ropeAnchorY-2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ox-4,ropeAnchorY+2); ctx.quadraticCurveTo(ox,ropeAnchorY+5,ox+4,ropeAnchorY+2); ctx.stroke();
+    // legs
+    ctx.strokeStyle=uniformColor; ctx.lineWidth=6; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(ox-5,oy+18); ctx.quadraticCurveTo(ox-8,oy+28,ox-6,oy+34); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ox+5,oy+18); ctx.quadraticCurveTo(ox+8,oy+28,ox+6,oy+34); ctx.stroke();
+    const fG1=ctx.createRadialGradient(ox-6,oy+35,1,ox-6,oy+35,5);
+    fG1.addColorStop(0,fur); fG1.addColorStop(1,furShadow);
+    ctx.fillStyle=fG1; ctx.beginPath(); ctx.ellipse(ox-6,oy+36,5,4,.15,0,Math.PI*2); ctx.fill();
+    const fG2=ctx.createRadialGradient(ox+6,oy+35,1,ox+6,oy+35,5);
+    fG2.addColorStop(0,fur); fG2.addColorStop(1,furShadow);
+    ctx.fillStyle=fG2; ctx.beginPath(); ctx.ellipse(ox+6,oy+36,5,4,-.15,0,Math.PI*2); ctx.fill();
+  } else {
+    ctx.strokeStyle=uniformColor; ctx.lineWidth=6; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(ox-13,oy-2); ctx.quadraticCurveTo(ox-18,oy+8,ox-14,oy+14); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ox+13,oy-2); ctx.quadraticCurveTo(ox+18,oy+8,ox+14,oy+14); ctx.stroke();
+    const pg1=ctx.createRadialGradient(ox-14,oy+15,1,ox-14,oy+15,5);
+    pg1.addColorStop(0,fur); pg1.addColorStop(1,furShadow);
+    ctx.fillStyle=pg1; ctx.beginPath(); ctx.arc(ox-14,oy+15,5,0,Math.PI*2); ctx.fill();
+    const pg2=ctx.createRadialGradient(ox+14,oy+15,1,ox+14,oy+15,5);
+    pg2.addColorStop(0,fur); pg2.addColorStop(1,furShadow);
+    ctx.fillStyle=pg2; ctx.beginPath(); ctx.arc(ox+14,oy+15,5,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle=uniformColor; ctx.lineWidth=6;
+    ctx.beginPath(); ctx.moveTo(ox-5,oy+18); ctx.lineTo(ox-5,oy+30); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ox+5,oy+18); ctx.lineTo(ox+5,oy+30); ctx.stroke();
+    const fg1=ctx.createRadialGradient(ox-5,oy+32,1,ox-5,oy+32,5);
+    fg1.addColorStop(0,fur); fg1.addColorStop(1,furShadow);
+    ctx.fillStyle=fg1; ctx.beginPath(); ctx.ellipse(ox-5,oy+33,5.5,4,0,0,Math.PI*2); ctx.fill();
+    const fg2=ctx.createRadialGradient(ox+5,oy+32,1,ox+5,oy+32,5);
+    fg2.addColorStop(0,fur); fg2.addColorStop(1,furShadow);
+    ctx.fillStyle=fg2; ctx.beginPath(); ctx.ellipse(ox+5,oy+33,5.5,4,0,0,Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ── Game Over splash animation ─────────────────────────
+function initSplash(){
+  bearSplashY = ROPE_BOTTOM;
+  splashParticles=[];
+  for(let i=0;i<28;i++){
+    const angle=-Math.PI+(Math.random()*Math.PI);
+    splashParticles.push({
+      x:RX, y:H-70,
+      vx:Math.cos(angle)*(2+Math.random()*5),
+      vy:-(3+Math.random()*7),
+      r:2+Math.random()*4,
+      life:1, decay:0.02+Math.random()*0.02
+    });
+  }
+}
+function drawGameOverAnim(){
+  gameOverAnim++;
+  // bear falls into water
+  const fallDuration=40;
+  if(gameOverAnim<=fallDuration){
+    const t=gameOverAnim/fallDuration;
+    bearSplashY = ROPE_BOTTOM + t*t*(H-70-ROPE_BOTTOM+20);
+    drawBear(RX, bearSplashY, true, false);
+  } else {
+    // splash particles
+    splashParticles.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy; p.vy+=0.3; p.life-=p.decay;
+      if(p.life>0){
+        ctx.save(); ctx.globalAlpha=p.life;
+        ctx.fillStyle='#80d0ff';
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+        ctx.restore();
+      }
+    });
+    // ripple
+    const rAge=(gameOverAnim-fallDuration);
+    if(rAge<60){
+      ctx.save(); ctx.globalAlpha=Math.max(0,1-rAge/60)*0.6;
+      ctx.strokeStyle='#a0d8ff'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.ellipse(RX,H-68,rAge*1.5,rAge*0.4,0,0,Math.PI*2); ctx.stroke();
+      ctx.restore();
+    }
+    // game over text
+    if(gameOverAnim>fallDuration+20){
+      ctx.fillStyle='rgba(0,0,0,0.65)'; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#ff4444'; ctx.font='bold 30px Malgun Gothic'; ctx.textAlign='center';
+      ctx.fillText('💦 GAME OVER 💦',W/2,H/2-20);
+      ctx.fillStyle='#fff'; ctx.font='14px Malgun Gothic';
+      ctx.fillText('곰돌이가 물에 빠졌어요!',W/2,H/2+16);
+    }
+    if(gameOverAnim>fallDuration+80){
+      showResultScreen(false);
+      gameState='result';
+    }
+  }
+}
+
+// ── Top bear & victory ─────────────────────────────────
+let victoryWalkFrame=0;
+function drawTopBear(){
+  if(gameState==='victory'&&victoryAnim>30) return;
+  if(gameState==='gameover') return;
+  drawBear(RX+32,ROPE_TOP-18,false,true);
+}
+function drawVictoryScene(){
+  if(gameState!=='victory')return;
+  victoryAnim++;
+  if(victoryAnim>60){
+    victoryWalkFrame++;
+    const t=(victoryAnim-60)*3, bx=RX+t;
+    if(bx<W+80){
+      drawBear(bx,ROPE_TOP-18,false,false);
+      drawBear(bx+38,ROPE_TOP-18,false,true);
+      ctx.strokeStyle='#c8a060'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.moveTo(bx+14,ROPE_TOP-22); ctx.lineTo(bx+24,ROPE_TOP-22); ctx.stroke();
+      ctx.fillStyle='#ff6b8a'; ctx.font='15px serif'; ctx.textAlign='center';
+      ctx.fillText('♡',bx+18,ROPE_TOP-36);
+    } else {
+      showResultScreen(true);
+      gameState='result';
+    }
+  }
+}
+
+// ── Result / Review overlay ────────────────────────────
+function showResultScreen(isVictory){
+  const ol=document.getElementById('overlay');
+  ol.innerHTML='';
+  ol.style.display='flex';
+
+  const title=document.createElement('div');
+  title.style.cssText='font-size:22px;font-weight:bold;margin-bottom:6px;margin-top:10px;';
+  title.style.color=isVictory?'#ffe066':'#ff6666';
+  title.textContent=isVictory?'🎉 구출 성공!':'💦 게임 오버!';
+  ol.appendChild(title);
+
+  const sub=document.createElement('div');
+  sub.style.cssText='color:#ccc;font-size:13px;margin-bottom:20px;';
+  sub.textContent='틀린 횟수: '+wrongCount;
+  ol.appendChild(sub);
+
+  if(wrongSentences.length===0){
+    const perfect=document.createElement('div');
+    perfect.style.cssText='color:#7cfc00;font-size:15px;font-weight:bold;margin-bottom:20px;';
+    perfect.textContent='🌟 완벽한 암기! 틀린 문장이 없어요!';
+    ol.appendChild(perfect);
+  } else {
+    const rt=document.createElement('div');
+    rt.style.cssText='color:#ff9966;font-size:14px;font-weight:bold;margin-bottom:10px;width:100%;max-width:480px;';
+    rt.textContent='📝 틀린 문장 복습 ('+wrongSentences.length+'개)';
+    ol.appendChild(rt);
+    wrongSentences.forEach((item,i)=>{
+      const card=document.createElement('div');
+      card.style.cssText='background:#1a1a3a;border:1px solid #3a3a6a;border-radius:10px;padding:12px 16px;margin-bottom:10px;width:100%;max-width:480px;box-sizing:border-box;';
+      const num=document.createElement('div');
+      num.style.cssText='color:#888;font-size:11px;margin-bottom:4px;';
+      num.textContent=(i+1)+'/'+wrongSentences.length;
+      const kor=document.createElement('div');
+      kor.style.cssText='color:#aaddff;font-size:13px;margin-bottom:6px;line-height:1.5;';
+      kor.textContent=item.kor;
+      const eng=document.createElement('div');
+      eng.style.cssText='color:#ffe066;font-size:14px;font-weight:bold;line-height:1.6;';
+      eng.textContent=item.eng;
+      card.appendChild(num); card.appendChild(kor); card.appendChild(eng);
+      ol.appendChild(card);
+    });
+  }
+
+  const btnRow=document.createElement('div');
+  btnRow.style.cssText='display:flex;gap:10px;margin-top:18px;margin-bottom:24px;flex-wrap:wrap;justify-content:center;';
+
+  if(wrongSentences.length>0){
+    const retryBtn=document.createElement('button');
+    retryBtn.style.cssText='padding:10px 22px;font-size:14px;background:#ff6633;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;';
+    retryBtn.textContent='틀린 문장만 다시 연습';
+    retryBtn.onclick=()=>{
+      ol.style.display='none';
+      const wrongPairs=wrongSentences.map(w=>[w.kor,w.eng]);
+      stageData={title:(stageData?stageData.title:'')+'(복습)', pairs:wrongPairs};
+      TOTAL=stageData.pairs.length; calcStep(TOTAL);
+      currentIdx=0; wrongCount=0; wrongSentences=[];
+      hearts=MAX_HEARTS;
+      bearPos=ROPE_BOTTOM; targetBearPos=ROPE_BOTTOM;
+      victoryAnim=0; gameOverAnim=0; splashParticles=[];
+      gameState='playing';
+      inputEl.disabled=false; inputEl.focus();
+      loadSentence(); if(!musicInterval) playGameMusic();
+    };
+    btnRow.appendChild(retryBtn);
+  }
+
+  const backBtn=document.createElement('button');
+  backBtn.style.cssText='padding:10px 22px;font-size:14px;background:#ffe066;color:#1a1a2e;border:none;border-radius:8px;cursor:pointer;font-weight:bold;';
+  backBtn.textContent='스테이지 선택으로';
+  backBtn.onclick=()=>{
+    ol.style.display='none';
+    gameState='idle'; wrongSentences=[];
+    document.getElementById('startScreen').style.display='flex';
+  };
+  btnRow.appendChild(backBtn);
+  ol.appendChild(btnRow);
+}
+
+// ── Input ──────────────────────────────────────────────
+const inputEl=document.getElementById('typeInput');
+const korHint=document.getElementById('koreanHint');
+const progressEl=document.getElementById('progress');
+let lastSpaceCount=0;
+function norm(w){ return w.replace(/[^a-zA-Z0-9']/g,'').toLowerCase(); }
+
+function loseHeart(){
+  hearts--;
+  shakeTimer=20;
+  targetBearPos=Math.min(ROPE_BOTTOM,targetBearPos+STEP);
+  playSFX('down');
+  const pair=stageData.pairs[currentIdx];
+  if(!wrongSentences.find(w=>w.eng===pair[1])) wrongSentences.push({kor:pair[0],eng:pair[1]});
+  if(hearts<=0){
+    gameState='gameover';
+    stopMusic(); playSFX('splash');
+    inputEl.disabled=true;
+    korHint.textContent='';
+    progressEl.textContent='';
+    initSplash();
+  } else {
+    progressEl.textContent='❌ 틀렸어요! 하트 '+hearts+'개 남았어요!';
+  }
+}
+
+inputEl.addEventListener('input',(e)=>{
+  if(gameState!=='playing')return;
+  const val=e.target.value;
+  const sc=(val.match(/ /g)||[]).length;
+  if(sc>lastSpaceCount){
+    const tw=val.trim().split(' '), wi=tw.length-2;
+    if(wi>=0){
+      const exp=stageData.pairs[currentIdx][1].split(' ');
+      if(norm(tw[wi])!==norm(exp[wi]||'')){ wrongCount++; loseHeart(); }
+    }
+  }
+  lastSpaceCount=sc;
+});
+
+inputEl.addEventListener('keydown',(e)=>{
+  if(e.key!=='Enter'||gameState!=='playing')return;
+  e.preventDefault();
+  const val=inputEl.value.trim(), target=stageData.pairs[currentIdx][1].trim();
+  if(val.split(' ').map(norm).join(' ')===target.split(' ').map(norm).join(' ')){
+    currentIdx++;
+    targetBearPos=Math.max(ROPE_TOP+STEP,targetBearPos-STEP);
+    playSFX('up');
+    if(currentIdx>=TOTAL){
+      targetBearPos=ROPE_TOP;
+      korHint.textContent='🎉 모든 문장 완성!';
+      progressEl.textContent='';
+      setTimeout(()=>{ gameState='victory'; stopMusic(); playSFX('victory'); inputEl.disabled=true; korHint.textContent=''; },800);
+    } else { loadSentence(); }
+  } else {
+    wrongCount++; loseHeart();
+  }
+});
+
+function loadSentence(){
+  korHint.textContent=stageData.pairs[currentIdx][0];
+  inputEl.value=''; lastSpaceCount=0;
+  progressEl.textContent='('+(currentIdx+1)+'/'+TOTAL+') 영어로 입력하고 Enter!';
+}
+
+function startStage(n){
+  if(!audioCtx) initAudio();
+  stageData=STAGES[n]; TOTAL=stageData.pairs.length; calcStep(TOTAL);
+  currentIdx=0; wrongCount=0; wrongSentences=[];
+  hearts=MAX_HEARTS;
+  bearPos=ROPE_BOTTOM; targetBearPos=ROPE_BOTTOM;
+  gameState='playing'; victoryAnim=0; gameOverAnim=0; splashParticles=[];
+  document.getElementById('startScreen').style.display='none';
+  document.getElementById('overlay').style.display='none';
+  inputEl.disabled=false; inputEl.focus();
+  loadSentence(); if(!musicInterval) playGameMusic();
+}
+
+// ── Game loop ──────────────────────────────────────────
+function gameLoop(){
+  ctx.clearRect(0,0,W,H);
+  drawBackground(); drawPlatform(); drawRope();
+  bearPos+=(targetBearPos-bearPos)*0.12;
+  if(shakeTimer>0) shakeTimer--;
+  if(gameState==='playing') drawBear(RX,bearPos,shakeTimer>0,false);
+  if(gameState==='gameover') drawGameOverAnim();
+  drawSea(); drawTopBear();
+  drawVictoryScene(); drawHearts();
+  requestAnimationFrame(gameLoop);
+}
+gameLoop();
+</script>
+<a class="cmkBack" href="../" onclick="return cmkBack()">← 학습창</a>
+</body>
+</html>
