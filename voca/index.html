@@ -813,6 +813,18 @@ svg.scene.v45 .shaft{animation:shaft45 7s ease-in-out infinite alternate}
 @media (prefers-reduced-motion: reduce){.battle.v45 *,.opt.right,.opt.wrong,.pbar i,svg.scene.v45 *{animation:none!important}#v45fx{display:none}}
 @container (max-width:560px){.battle.q3.v45 .dmg.crit{font-size:24px;left:-46%}}
 @media (max-width:480px){.topbar .btn.ghost{padding:7px 9px;font-size:13px}.topbar{gap:6px}.vic45{font-size:40px}}
+/* v49: 보스가 위쪽 체력 칸에 가리지 않게 — 무대 높이↑, 체력 칸 한 줄로, 캐릭터는 체력 칸 아래에서 시작 */
+.battle.q3.v45{height:360px}
+.battle.q3.v45 .hud.foe.bmid{display:grid;grid-template-columns:1fr auto;grid-template-areas:"nm hp" "bar bar";align-items:baseline;gap:4px 10px;padding:7px 12px 9px}
+.battle.q3.v45 .hud.foe.bmid .bname{grid-area:nm;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.battle.q3.v45 .hud.foe.bmid .bhp{grid-area:hp}
+.battle.q3.v45 .hud.foe.bmid .hpbar{grid-area:bar}
+.battle.v45 .hud.me{padding:7px 12px 8px;gap:3px}
+.battle.q3.v45 .fighter{height:74%}
+.battle.q3.v45 .fighter canvas.mon{height:86%}
+.battle.q3.v45 .fighter canvas.mon.boss{height:100%;margin-top:0}
+@media (max-width:640px){.battle.q3.v45{height:290px}.battle.q3.v45 .fighter{height:70%}}
+@container (max-width:560px){.battle.q3.v45 .hud.foe.bmid{width:auto;left:calc(42% + 4px);right:8px;top:8px;grid-template-areas:"nm nm" "bar bar";padding:6px 9px 7px}.battle.q3.v45 .hud.foe.bmid .bhp{display:none}.battle.q3.v45 .hud.foe.bmid .bname{font-size:13px;white-space:normal}.battle.v45 .hud.me{left:8px;top:8px;max-width:42%}.battle.v45 .hud .nm{font-size:13px}.battle.q3.v45 .myhearts{font-size:13px;letter-spacing:1px}.battle.q3.v45 .fighter{height:64%}}
 /* ===== v48-calm: 눈이 편한 학습창 — 색 면을 빼고 테두리로만 구분 (밝은 화면에서만) ===== */
 @media not (prefers-color-scheme: dark){
 :root{--bg:#f4f5f2;--surface:#fdfdfb;--surface2:#f1f2ee;--ink:#27313f;--muted:#69727e;--line:#d3d8df;--blue:#5873b8;--blue-soft:#edf0f7;--blue-ink:#ffffff;--navy:#35435e;--good:#2e8f5e;--bad:#c2524c;--ac:#5873b8;--sh:none}
@@ -2208,6 +2220,8 @@ function teacher(msg=''){
 }
 
 login();
+
+
 
 
 
